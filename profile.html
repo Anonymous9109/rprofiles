@@ -6,12 +6,18 @@
     <title>rprofiles - Profile</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 50px; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
         header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
         header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
-        footer { border-top: 1px solid #e5e5e5; height: 44px; bottom: 0; }
-        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; cursor: pointer; }
+        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
+        
+        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
+        .footer-tab.active { color: #000; }
+        .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .footer-tab.active .footer-icon { stroke: #000; }
+
         .profile-grid { display: flex; gap: 16px; }
         .profile-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
         .profile-left img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; }
@@ -22,8 +28,6 @@
         .panel-content { padding: 10px; }
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; }
         .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; }
-        .footer-tab { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #111; font-weight: 600; cursor: pointer; text-decoration: none; }
-        .footer-tab.active { background: #000; color: #fff; border-color: #000; }
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
         .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
@@ -38,15 +42,14 @@
 
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
-        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; }
+        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
         
-        /* DM Chat styles */
-        .chat-container { height: 280px; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
+        .chat-container { height: 280px; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; flex-grow: 1; }
         .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-word; }
         .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
         .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
@@ -83,11 +86,22 @@
     </div>
 
     <footer>
-        <div style="display: flex; gap: 6px;">
-            <a href="feed.html" class="footer-tab">Home Feed</a>
-            <a href="profile.html" class="footer-tab active">Profile</a>
-        </div>
-        <div style="color: #666; font-size: 11px;">rprofiles © 2026</div>
+        <a href="feed.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="feed.html" onclick="openModal('post-modal'); return false;" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Post
+        </a>
+        <a href="messages.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Messages
+        </a>
+        <a href="profile.html" class="footer-tab active">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
     </footer>
 
     <!-- EDIT PROFILE MODAL -->
@@ -185,7 +199,6 @@
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
                 } else {
-                    // Show DM button when visiting someone else's profile
                     controlsEl.innerHTML = `
                         <button class="btn-app" style="width: 100%; padding: 8px;" onclick="openDmModal()">DM</button>
                     `;
@@ -247,7 +260,7 @@
                 if (!res.ok) throw new Error(data.error);
 
                 if (!data.messages.length) {
-                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin-top: auto; margin-bottom: auto;">No messages yet. Say hello!</p>';
+                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No messages yet. Say hello!</p>';
                     return;
                 }
 
