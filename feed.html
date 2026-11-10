@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rprofiles - Home Feed</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 50px; }
+        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
+        footer { border-top: 1px solid #e5e5e5; height: 44px; bottom: 0; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
+        .post-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
+        .post-box:first-child { border-top: none; }
+        .post-header-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; }
+        .post-meta { font-weight: 600; color: #111; text-decoration: none; cursor: pointer; }
+        .post-meta:hover { text-decoration: underline; }
+        .post-timestamp { color: #666; font-size: 10px; }
+        .post-text { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+        .post-media { max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #e5e5e5; margin-top: 6px; }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; }
+        .footer-tab { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #111; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .footer-tab.active { background: #000; color: #fff; border-color: #000; }
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
+        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
+        .modal-body { padding: 14px; }
+        .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .progress-bar { height: 6px; background: #000; width: 0%; transition: width 0.2s; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="feed.html" class="brand">rprofiles</a>
+        <button class="btn-app" onclick="openModal('post-modal')">+ Create Post</button>
+    </header>
+
+    <div class="wrapper">
+        <div id="feed-container">Loading feed...</div>
+    </div>
+
+    <footer>
+        <div style="display: flex; gap: 6px;">
+            <a href="feed.html" class="footer-tab active">Home Feed</a>
+            <a href="profile.html" class="footer-tab">Profile</a>
+        </div>
+        <div style="color: #666; font-size: 11px;">rprofiles © 2026</div>
+    </footer>
+
+    <!-- CREATE POST MODAL -->
+    <div id="post-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Create Post</span>
+                <span style="cursor: pointer;" onclick="closeModal('post-modal')">✕</span>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="submitPost(event)">
+                    <div class="form-row">
+                        <label>Text Content:</label>
+                        <textarea id="post-text" placeholder="What's on your mind?"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>Media (Max 25MB):</label>
+                        <input type="file" id="post-media" accept="image/*">
+                    </div>
+                    <div style="background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-bottom: 8px; display: none;" id="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn-app" id="pub-btn" style="flex: 1;">Publish</button>
+                        <button type="button" class="footer-tab" onclick="closeModal('post-modal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const currentUser = requireAuth();
+
+        async function loadFeed() {
+            const container = document.getElementById('feed-container');
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/posts/feed`);
+                const data = await res.json();
+                if (!data.posts.length) {
+                    container.innerHTML = '<p style="color: #666;">No posts recorded.</p>';
+                    return;
+                }
+                container.innerHTML = data.posts.map(post => `
+                    <div class="post-box">
+                        <div class="post-header-line">
+                            <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                            <div>
+                                <a href="profile.html?user=${encodeURIComponent(post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>
+                                <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        ${post.content ? `<div class="post-text">${escapeHtml(post.content)}</div>` : ''}
+                        ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color: red;">Failed to load posts.</p>';
+            }
+        }
+
+        async function submitPost(event) {
+            event.preventDefault();
+            const text = document.getElementById('post-text').value.trim();
+            const media = document.getElementById('post-media').files[0];
+            if (!text && !media) return alert('Post cannot be empty.');
+
+            const btn = document.getElementById('pub-btn');
+            btn.disabled = true;
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-bar').style.width = '50%';
+
+            const formData = new FormData();
+            formData.append('email', currentUser.email);
+            formData.append('content', text);
+            if (media) formData.append('media', media);
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/posts/create`, { method: 'POST', body: formData });
+                if (!res.ok) throw new Error('Upload failed');
+                document.getElementById('progress-bar').style.width = '100%';
+                setTimeout(() => {
+                    closeModal('post-modal');
+                    loadFeed();
+                    btn.disabled = false;
+                }, 300);
+            } catch (err) {
+                alert(err.message);
+                btn.disabled = false;
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        loadFeed();
+    </script>
+</body>
+</html>
