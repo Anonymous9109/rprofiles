@@ -21,7 +21,7 @@
         .footer-tab.active .footer-icon { stroke: #000; }
 
         .post-box, .user-result-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
-        .post-box:first-child, .user-result-box:first-child { border-top: none; }
+        .post-box.highlighted { background: #fafafa; border: 1px solid #ccc; border-radius: 6px; padding: 12px; }
         .post-header-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; }
         .post-meta { font-weight: 600; color: #111; text-decoration: none; }
@@ -38,23 +38,15 @@
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
 
-        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
-        
-        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
-        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
-        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; }
-        .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
     </style>
 </head>
 <body>
     <header>
         <div class="header-top">
             <a href="feed.html" class="brand">rprofiles</a>
-            <button class="btn-app" onclick="openModal('post-modal')">+ Create Post</button>
+            <a href="create-post.html" class="btn-app">+ Create Post</a>
         </div>
         <input type="text" id="search-input" class="search-bar" placeholder="Search users or posts..." oninput="handleSearch(this.value)">
     </header>
@@ -68,7 +60,7 @@
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             Home
         </a>
-        <a href="feed.html" onclick="openModal('post-modal'); return false;" class="footer-tab">
+        <a href="create-post.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
         </a>
@@ -82,37 +74,10 @@
         </a>
     </footer>
 
-    <!-- CREATE POST MODAL -->
-    <div id="post-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span>Create Post</span>
-                <span style="cursor: pointer;" onclick="closeModal('post-modal')">✕</span>
-            </div>
-            <div class="modal-body">
-                <div id="post-modal-error" class="error-msg"></div>
-                <form id="create-post-form" onsubmit="submitPost(event)">
-                    <div class="form-row">
-                        <label>Text Content:</label>
-                        <textarea id="post-text" placeholder="What's on your mind?"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <label>Media Attachment (Max 25MB):</label>
-                        <input type="file" id="post-media" accept="image/*">
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-top: 12px;">
-                        <button type="submit" class="btn-app" id="pub-btn" style="flex: 1;">Publish</button>
-                        <button type="button" class="btn-app-secondary" onclick="closeModal('post-modal')">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script src="app.js"></script>
     <script>
         const currentUser = requireAuth();
-        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 
         async function loadFeed() {
@@ -182,14 +147,22 @@
                 return;
             }
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const highlightPostId = urlParams.get('highlight');
+
             for (const post of posts) {
                 const isOwner = post.user_email.toLowerCase() === currentUser.email.toLowerCase();
                 const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${post.id}&email=${encodeURIComponent(currentUser.email)}`);
                 const rxData = await rxRes.json();
 
+                const isHighlighted = highlightPostId === post.id;
                 const postEl = document.createElement('div');
-                postEl.className = 'post-box';
+                postEl.className = `post-box ${isHighlighted ? 'highlighted' : ''}`;
                 postEl.id = `post-${post.id}`;
+                
+                // Format text with clickable @mentions
+                const formattedContent = escapeHtml(post.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
+
                 postEl.innerHTML = `
                     <div class="post-header-line">
                         <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
@@ -199,7 +172,7 @@
                         </div>
                         ${isOwner ? `<button onclick="deletePost('${post.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
                     </div>
-                    ${post.content ? `<div class="post-text">${escapeHtml(post.content)}</div>` : ''}
+                    ${post.content ? `<div class="post-text">${formattedContent}</div>` : ''}
                     ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
                     <div class="post-actions">
                         <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
@@ -211,6 +184,11 @@
                     </div>
                 `;
                 container.appendChild(postEl);
+            }
+
+            if (highlightPostId) {
+                const target = document.getElementById(`post-${highlightPostId}`);
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
@@ -236,28 +214,6 @@
             }
         }
 
-        async function submitPost(event) {
-            event.preventDefault();
-            const text = document.getElementById('post-text').value.trim();
-            const media = document.getElementById('post-media').files[0];
-            if (!text && !media) return alert('Post cannot be empty');
-
-            const formData = new FormData();
-            formData.append('email', currentUser.email);
-            formData.append('content', text);
-            if (media) formData.append('media', media);
-
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/posts/create`, { method: 'POST', body: formData });
-                if (!res.ok) throw new Error('Failed to create post');
-                closeModal('post-modal');
-                document.getElementById('create-post-form').reset();
-                loadFeed();
-            } catch (err) {
-                alert(err.message);
-            }
-        }
-
         async function deletePost(postId) {
             if (!confirm("Delete post?")) return;
             await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
@@ -268,8 +224,6 @@
             document.getElementById(`post-${postId}`)?.remove();
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         loadFeed();
     </script>
 </body>
