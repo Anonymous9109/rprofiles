@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rprofiles - Profile</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 50px; }
+        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
+        footer { border-top: 1px solid #e5e5e5; height: 44px; bottom: 0; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
+        .profile-grid { display: flex; gap: 16px; }
+        .profile-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+        .profile-left img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; }
+        .profile-right { flex-grow: 1; min-width: 0; }
+        .profile-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; }
+        .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+        .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
+        .panel-content { padding: 10px; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; }
+        .footer-tab { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #111; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .footer-tab.active { background: #000; color: #fff; border-color: #000; }
+        .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
+        .post-box:first-child { border-top: none; }
+        .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
+        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
+        .modal-body { padding: 14px; }
+        .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <header><a href="feed.html" class="brand">rprofiles</a></header>
+
+    <div class="wrapper">
+        <div class="profile-grid">
+            <div class="profile-left">
+                <img id="pfp-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>">
+                <div id="owner-controls" style="display: none; flex-direction: column; gap: 6px;">
+                    <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
+                    <button class="btn-app-secondary" onclick="openModal('settings-modal')">Settings</button>
+                </div>
+            </div>
+            <div class="profile-right">
+                <div class="profile-name" id="username-display">Loading profile...</div>
+                <div class="panel">
+                    <div class="panel-header">Bio</div>
+                    <div class="panel-content" id="bio-display">No bio provided.</div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header" id="posts-header">Posts</div>
+                    <div class="panel-content" id="posts-container">Loading posts...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div style="display: flex; gap: 6px;">
+            <a href="feed.html" class="footer-tab">Home Feed</a>
+            <a href="profile.html" class="footer-tab active">Profile</a>
+        </div>
+        <div style="color: #666; font-size: 11px;">rprofiles © 2026</div>
+    </footer>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Edit Profile</span>
+                <span style="cursor: pointer;" onclick="closeModal('edit-modal')">✕</span>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveProfile(event)">
+                    <div class="form-row">
+                        <label>Username:</label>
+                        <input type="text" id="edit-username" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Bio:</label>
+                        <textarea id="edit-bio"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>PFP Image (Max 25MB):</label>
+                        <input type="file" id="edit-pfp" accept="image/*">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn-app-secondary" style="flex: 1; background: #000; color: #fff;">Save</button>
+                        <button type="button" class="btn-app-secondary" onclick="closeModal('edit-modal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Account Settings</span>
+                <span style="cursor: pointer;" onclick="closeModal('settings-modal')">✕</span>
+            </div>
+            <div class="modal-body">
+                <button class="btn-app-secondary" style="width: 100%; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const loggedUser = requireAuth();
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserEmail = urlParams.get('user') || loggedUser.email;
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetUserEmail)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                const user = data.user;
+                document.getElementById('username-display').innerText = user.username ? `@${user.username}` : user.email;
+                document.getElementById('bio-display').innerText = user.bio || 'No bio provided.';
+                if (user.pfp_url) document.getElementById('pfp-img').src = user.pfp_url;
+
+                const isOwner = user.email.toLowerCase() === loggedUser.email.toLowerCase();
+                if (isOwner) {
+                    document.getElementById('owner-controls').style.display = 'flex';
+                    document.getElementById('edit-username').value = user.username || '';
+                    document.getElementById('edit-bio').value = user.bio || '';
+                }
+
+                const container = document.getElementById('posts-container');
+                if (!data.posts.length) {
+                    container.innerHTML = '<p style="color: #666;">No posts recorded.</p>';
+                } else {
+                    container.innerHTML = data.posts.map(p => `
+                        <div class="post-box">
+                            <span style="color:#666; font-size: 10px;">${new Date(p.created_at).toLocaleString()}</span>
+                            ${p.content ? `<div style="font-size: 13px; margin-top: 4px;">${escapeHtml(p.content)}</div>` : ''}
+                            ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('username-display').innerText = 'User not found';
+            }
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('email', loggedUser.email);
+            formData.append('username', document.getElementById('edit-username').value.trim());
+            formData.append('bio', document.getElementById('edit-bio').value.trim());
+            const file = document.getElementById('edit-pfp').files[0];
+            if (file) formData.append('pfp', file);
+
+            const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                setSessionUser(data.user);
+                closeModal('edit-modal');
+                loadProfile();
+            } else {
+                alert(data.error);
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        loadProfile();
+    </script>
+</body>
+</html>
