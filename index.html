@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rprofiles - Login</title>
+    <title>rprofiles - Welcome</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; }
@@ -23,7 +23,7 @@
 <body>
     <header><a href="index.html" class="brand">rprofiles</a></header>
     <div class="auth-wrapper">
-        <div class="auth-header" id="auth-title">Welcome to rprofiles</div>
+        <div class="auth-header" id="auth-title">Create your rprofiles account</div>
         <div class="auth-body">
             <div id="auth-error" class="error-msg"></div>
             <form id="auth-form" onsubmit="handleAuth(event)">
@@ -36,8 +36,8 @@
                     <input type="password" id="auth-password" required>
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 14px;">
-                    <button type="submit" class="btn-app" id="auth-submit-btn" style="flex: 1;">Login</button>
-                    <button type="button" class="btn-app-secondary" id="auth-toggle-btn" onclick="toggleAuth()">Register</button>
+                    <button type="submit" class="btn-app" id="auth-submit-btn" style="flex: 1;">Register</button>
+                    <button type="button" class="btn-app-secondary" id="auth-toggle-btn" onclick="toggleAuth()">Login</button>
                 </div>
             </form>
         </div>
@@ -46,13 +46,16 @@
     <script src="app.js"></script>
     <script>
         if (getSessionUser()) window.location.href = 'feed.html';
-        let isRegister = false;
+        
+        // Start in Register mode by default
+        let isRegister = true;
 
         function toggleAuth() {
             isRegister = !isRegister;
-            document.getElementById('auth-title').innerText = isRegister ? 'Register for rprofiles' : 'Welcome to rprofiles';
+            document.getElementById('auth-title').innerText = isRegister ? 'Create your rprofiles account' : 'Welcome back to rprofiles';
             document.getElementById('auth-submit-btn').innerText = isRegister ? 'Register' : 'Login';
-            document.getElementById('auth-toggle-btn').innerText = isRegister ? 'Back to Login' : 'Register';
+            document.getElementById('auth-toggle-btn').innerText = isRegister ? 'Login' : 'Register';
+            document.getElementById('auth-error').style.display = 'none';
         }
 
         async function handleAuth(event) {
@@ -71,8 +74,17 @@
                 if (!res.ok) throw new Error(data.error || 'Auth failed');
 
                 if (isRegister) {
-                    alert('Registration complete! Please log in.');
-                    toggleAuth();
+                    // Automatically log in right after successful registration
+                    const loginRes = await fetch(`${WORKER_ORIGIN}/api/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const loginData = await loginRes.json();
+                    if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
+
+                    setSessionUser(loginData.user);
+                    window.location.href = 'feed.html';
                 } else {
                     setSessionUser(data.user);
                     window.location.href = 'feed.html';
