@@ -20,22 +20,19 @@
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; }
         .footer-tab { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #111; font-weight: 600; cursor: pointer; text-decoration: none; }
         .footer-tab.active { background: #000; color: #fff; border-color: #000; }
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
         .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
         
-        /* Reaction Button Styles & SVGs */
         .post-actions { display: flex; gap: 10px; margin-top: 8px; align-items: center; font-size: 12px; }
-        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; transition: background-color 0.15s; }
-        .reaction-btn:hover { background: #f5f5f5; }
+        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; }
         .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        
         .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
         .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-        
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
 
@@ -47,6 +44,13 @@
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
+        
+        /* DM Chat styles */
+        .chat-container { height: 280px; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
+        .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-word; }
+        .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
+        .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
+
         @media (max-width: 640px) {
             .profile-grid { flex-direction: column; }
             .profile-left { width: 100%; flex-direction: row; align-items: center; }
@@ -62,10 +66,7 @@
         <div class="profile-grid">
             <div class="profile-left">
                 <img id="pfp-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>">
-                <div id="owner-controls" style="display: none; flex-direction: column; gap: 6px;">
-                    <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
-                    <button class="btn-app-secondary" onclick="openModal('settings-modal')">Settings</button>
-                </div>
+                <div id="owner-controls" style="display: none; flex-direction: column; gap: 6px;"></div>
             </div>
             <div class="profile-right">
                 <div class="profile-name" id="username-display">Loading profile...</div>
@@ -134,11 +135,29 @@
         </div>
     </div>
 
+    <!-- DM CHAT MODAL -->
+    <div id="dm-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span id="dm-title">Direct Message</span>
+                <span style="cursor: pointer;" onclick="closeModal('dm-modal')">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="chat-container" id="chat-messages">Loading messages...</div>
+                <form onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
+                    <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                    <button type="submit" class="btn-app">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
         const urlParams = new URLSearchParams(window.location.search);
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
+        let activeProfileUser = null;
 
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
@@ -149,19 +168,30 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                const user = data.user;
-                document.getElementById('username-display').innerText = user.username ? `@${user.username}` : user.email;
-                document.getElementById('bio-display').innerText = user.bio || 'No bio provided.';
-                if (user.pfp_url) document.getElementById('pfp-img').src = user.pfp_url;
+                activeProfileUser = data.user;
+                document.getElementById('username-display').innerText = activeProfileUser.username ? `@${activeProfileUser.username}` : activeProfileUser.email;
+                document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
+                if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
 
-                const isOwner = user.email.toLowerCase() === loggedUser.email.toLowerCase();
+                const isOwner = activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
+                const controlsEl = document.getElementById('owner-controls');
+                controlsEl.style.display = 'flex';
+
                 if (isOwner) {
-                    document.getElementById('owner-controls').style.display = 'flex';
-                    document.getElementById('edit-username').value = user.username || '';
-                    document.getElementById('edit-bio').value = user.bio || '';
+                    controlsEl.innerHTML = `
+                        <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
+                        <button class="btn-app-secondary" onclick="openModal('settings-modal')">Settings</button>
+                    `;
+                    document.getElementById('edit-username').value = activeProfileUser.username || '';
+                    document.getElementById('edit-bio').value = activeProfileUser.bio || '';
+                } else {
+                    // Show DM button when visiting someone else's profile
+                    controlsEl.innerHTML = `
+                        <button class="btn-app" style="width: 100%; padding: 8px;" onclick="openDmModal()">DM</button>
+                    `;
                 }
 
-                document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${user.username || 'User'}'s Posts`;
+                document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${activeProfileUser.username || 'User'}'s Posts`;
 
                 const container = document.getElementById('posts-container');
                 if (!data.posts.length) {
@@ -198,6 +228,58 @@
             } catch (e) {
                 document.getElementById('username-display').innerText = 'User not found';
                 document.getElementById('posts-container').innerHTML = '';
+            }
+        }
+
+        async function openDmModal() {
+            if (!activeProfileUser) return;
+            document.getElementById('dm-title').innerText = `Chat with @${activeProfileUser.username || activeProfileUser.email}`;
+            openModal('dm-modal');
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            const chatContainer = document.getElementById('chat-messages');
+            chatContainer.innerHTML = 'Loading messages...';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(loggedUser.email)}&user2=${encodeURIComponent(activeProfileUser.email)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                if (!data.messages.length) {
+                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin-top: auto; margin-bottom: auto;">No messages yet. Say hello!</p>';
+                    return;
+                }
+
+                chatContainer.innerHTML = data.messages.map(m => {
+                    const isSent = m.sender_email.toLowerCase() === loggedUser.email.toLowerCase();
+                    return `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                }).join('');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } catch (err) {
+                chatContainer.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load messages.</p>';
+            }
+        }
+
+        async function sendDm(e) {
+            e.preventDefault();
+            const input = document.getElementById('dm-input');
+            const content = input.value.trim();
+            if (!content || !activeProfileUser) return;
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senderEmail: loggedUser.email, receiverEmail: activeProfileUser.email, content })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                input.value = '';
+                loadMessages();
+            } catch (err) {
+                alert(err.message);
             }
         }
 
