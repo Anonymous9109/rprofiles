@@ -6,115 +6,20 @@
     <title>rprofiles - Welcome</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background: #ffffff; 
-            color: #111; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            font-size: 13px; 
-            display: flex; 
-            flex-direction: column; 
-            min-height: 100vh; 
-            padding-top: 48px; 
-        }
-        header { 
-            background: #ffffff; 
-            border-bottom: 1px solid #e5e5e5; 
-            padding: 0 16px; 
-            height: 48px; 
-            display: flex; 
-            align-items: center; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            z-index: 100; 
-        }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; }
+        header { background: #ffffff; border-bottom: 1px solid #e5e5e5; padding: 0 16px; height: 48px; display: flex; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
-        
-        /* Optimized for vertical phone screens: full width with padding, card style */
-        .auth-wrapper { 
-            width: 100%; 
-            max-width: 400px; 
-            margin: auto; 
-            border-top: 1px solid #e5e5e5;
-            border-bottom: 1px solid #e5e5e5;
-            background: #fafafa; 
-            overflow: hidden; 
-        }
-        @media (min-width: 401px) {
-            .auth-wrapper {
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                margin-top: 40px;
-                margin-bottom: 40px;
-            }
-        }
-
-        .auth-header { 
-            background: #f0f0f0; 
-            border-bottom: 1px solid #e5e5e5; 
-            padding: 14px 16px; 
-            font-weight: bold; 
-            font-size: 14px;
-        }
-        .auth-body { 
-            padding: 20px 16px; 
-        }
-        .form-row { 
-            margin-bottom: 16px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-        }
-        .form-row label { 
-            font-weight: 600; 
-            color: #555; 
-            font-size: 12px; 
-        }
-        .form-row input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ccc; 
-            border-radius: 6px; 
-            font-size: 14px; 
-        }
-        .btn-app { 
-            background: #000; 
-            border: 1px solid #000; 
-            border-radius: 6px; 
-            color: #fff; 
-            font-weight: 600; 
-            padding: 12px 14px; 
-            font-size: 14px;
-            cursor: pointer; 
-            width: 100%;
-        }
-        .btn-app-secondary { 
-            background: #fff; 
-            border: 1px solid #ccc; 
-            border-radius: 6px; 
-            color: #111; 
-            padding: 12px 14px; 
-            font-size: 14px;
-            cursor: pointer; 
-            width: 100%;
-        }
-        .auth-actions {
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            margin-top: 20px;
-        }
-        .error-msg { 
-            background: #fee2e2; 
-            border: 1px solid #ef4444; 
-            color: #b91c1c; 
-            padding: 10px; 
-            border-radius: 6px; 
-            margin-bottom: 14px; 
-            font-weight: 600; 
-            display: none; 
-        }
+        .auth-wrapper { width: 100%; max-width: 400px; margin: auto; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background: #fafafa; overflow: hidden; }
+        @media (min-width: 401px) { .auth-wrapper { border: 1px solid #e5e5e5; border-radius: 8px; margin-top: 40px; margin-bottom: 40px; } }
+        .auth-header { background: #f0f0f0; border-bottom: 1px solid #e5e5e5; padding: 14px 16px; font-weight: bold; font-size: 14px; }
+        .auth-body { padding: 20px 16px; }
+        .form-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+        .form-row label { font-weight: 600; color: #555; font-size: 12px; }
+        .form-row input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 6px; color: #fff; font-weight: 600; padding: 12px 14px; font-size: 14px; cursor: pointer; width: 100%; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 6px; color: #111; padding: 12px 14px; font-size: 14px; cursor: pointer; width: 100%; }
+        .auth-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 6px; margin-bottom: 14px; font-weight: 600; display: none; }
     </style>
 </head>
 <body>
@@ -124,6 +29,10 @@
         <div class="auth-body">
             <div id="auth-error" class="error-msg"></div>
             <form id="auth-form" onsubmit="handleAuth(event)">
+                <div class="form-row" id="username-row">
+                    <label>Username:</label>
+                    <input type="text" id="auth-username" required>
+                </div>
                 <div class="form-row">
                     <label>Email:</label>
                     <input type="email" id="auth-email" required>
@@ -151,6 +60,8 @@
             document.getElementById('auth-title').innerText = isRegister ? 'Create your rprofiles account' : 'Welcome back to rprofiles';
             document.getElementById('auth-submit-btn').innerText = isRegister ? 'Register' : 'Login';
             document.getElementById('auth-toggle-btn').innerText = isRegister ? 'Login' : 'Register';
+            document.getElementById('username-row').style.display = isRegister ? 'flex' : 'none';
+            document.getElementById('auth-username').required = isRegister;
             document.getElementById('auth-error').style.display = 'none';
         }
 
@@ -158,13 +69,15 @@
             event.preventDefault();
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value.trim();
+            const username = isRegister ? document.getElementById('auth-username').value.trim() : '';
             const endpoint = isRegister ? '/api/signup' : '/api/login';
 
             try {
+                const bodyData = isRegister ? { email, password, username } : { email, password };
                 const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify(bodyData)
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Auth failed');
