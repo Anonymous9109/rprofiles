@@ -121,6 +121,54 @@
             }
         }
 
+        async function handleSearch(query) {
+            const container = document.getElementById('feed-container');
+            if (!query.trim()) {
+                loadFeed();
+                return;
+            }
+            container.innerHTML = '<div class="loading-spinner">Searching...</div>';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                container.innerHTML = '';
+                if (!data.users.length && !data.posts.length) {
+                    container.innerHTML = '<p style="color: #666; padding: 12px;">No results found.</p>';
+                    return;
+                }
+
+                if (data.users.length) {
+                    const userHeader = document.createElement('div');
+                    userHeader.style.cssText = "font-weight: bold; margin-bottom: 8px; color: #666;";
+                    userHeader.innerText = "Users";
+                    container.appendChild(userHeader);
+
+                    for (const u of data.users) {
+                        const uEl = document.createElement('div');
+                        uEl.className = 'user-result-box';
+                        uEl.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                                <a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>
+                            </div>
+                        `;
+                        container.appendChild(uEl);
+                    }
+                }
+
+                if (data.posts.length) {
+                    const postHeader = document.createElement('div');
+                    postHeader.style.cssText = "font-weight: bold; margin: 16px 0 8px 0; color: #666;";
+                    postHeader.innerText = "Posts";
+                    container.appendChild(postHeader);
+                    renderPosts(data.posts, container, false);
+                }
+            } catch (e) {
+                container.innerHTML = '<p style="color: red; padding: 12px;">Search failed.</p>';
+            }
+        }
+
         async function renderPosts(posts, container = document.getElementById('feed-container'), clear = true) {
             if (clear) container.innerHTML = '';
             if (!posts.length && clear) {
