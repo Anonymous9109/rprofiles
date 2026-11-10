@@ -30,13 +30,24 @@
         .post-text { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
         .post-media { max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #e5e5e5; margin-top: 6px; }
         
-        .post-actions { display: flex; gap: 10px; margin-top: 8px; align-items: center; font-size: 12px; }
+        .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
+        .reaction-group { display: flex; gap: 10px; align-items: center; }
         .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; }
         .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
         .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+
+        /* Sliding Comments Drawer */
+        .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
+        .comments-drawer.open { bottom: 0; }
+        .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
+        .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
+        .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; background: #fafafa; }
+        .comment-item { display: flex; gap: 8px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
+        .comment-content { font-size: 12px; }
 
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
@@ -53,6 +64,21 @@
 
     <div class="wrapper">
         <div id="feed-container"><div class="loading-spinner">Loading posts...</div></div>
+    </div>
+
+    <!-- SLIDING COMMENTS DRAWER -->
+    <div id="comments-drawer" class="comments-drawer">
+        <div class="drawer-header">
+            <span>Comments</span>
+            <span style="cursor: pointer;" onclick="closeCommentsDrawer()">✕</span>
+        </div>
+        <div class="drawer-body">
+            <div class="comments-container" id="comments-list">Loading comments...</div>
+            <form onsubmit="submitComment(event)" style="display: flex; gap: 6px;">
+                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+                <button type="submit" style="background: #000; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">Post</button>
+            </form>
+        </div>
     </div>
 
     <footer>
@@ -77,8 +103,11 @@
     <script src="app.js"></script>
     <script>
         const currentUser = requireAuth();
-        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+        let activePostId = null;
+
+        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+        const COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 
         async function loadFeed() {
             const container = document.getElementById('feed-container');
@@ -89,54 +118,6 @@
                 renderPosts(data.posts);
             } catch (e) {
                 container.innerHTML = '<p style="color: red; padding: 12px;">Failed to load posts.</p>';
-            }
-        }
-
-        async function handleSearch(query) {
-            const container = document.getElementById('feed-container');
-            if (!query.trim()) {
-                loadFeed();
-                return;
-            }
-            container.innerHTML = '<div class="loading-spinner">Searching...</div>';
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/search?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                
-                container.innerHTML = '';
-                if (!data.users.length && !data.posts.length) {
-                    container.innerHTML = '<p style="color: #666; padding: 12px;">No results found.</p>';
-                    return;
-                }
-
-                if (data.users.length) {
-                    const userHeader = document.createElement('div');
-                    userHeader.style.cssText = "font-weight: bold; margin-bottom: 8px; color: #666;";
-                    userHeader.innerText = "Users";
-                    container.appendChild(userHeader);
-
-                    for (const u of data.users) {
-                        const uEl = document.createElement('div');
-                        uEl.className = 'user-result-box';
-                        uEl.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                                <a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>
-                            </div>
-                        `;
-                        container.appendChild(uEl);
-                    }
-                }
-
-                if (data.posts.length) {
-                    const postHeader = document.createElement('div');
-                    postHeader.style.cssText = "font-weight: bold; margin: 16px 0 8px 0; color: #666;";
-                    postHeader.innerText = "Posts";
-                    container.appendChild(postHeader);
-                    renderPosts(data.posts, container, false);
-                }
-            } catch (e) {
-                container.innerHTML = '<p style="color: red; padding: 12px;">Search failed.</p>';
             }
         }
 
@@ -160,7 +141,6 @@
                 postEl.className = `post-box ${isHighlighted ? 'highlighted' : ''}`;
                 postEl.id = `post-${post.id}`;
                 
-                // Format text with clickable @mentions
                 const formattedContent = escapeHtml(post.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
 
                 postEl.innerHTML = `
@@ -175,11 +155,16 @@
                     ${post.content ? `<div class="post-text">${formattedContent}</div>` : ''}
                     ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
                     <div class="post-actions">
-                        <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
-                            ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
-                        </button>
-                        <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
-                            ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
+                        <div class="reaction-group">
+                            <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
+                                ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
+                            </button>
+                            <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
+                                ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
+                            </button>
+                        </div>
+                        <button class="reaction-btn" onclick="openCommentsDrawer('${post.id}')">
+                            ${COMMENT_SVG} Comments
                         </button>
                     </div>
                 `;
@@ -189,6 +174,67 @@
             if (highlightPostId) {
                 const target = document.getElementById(`post-${highlightPostId}`);
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        async function openCommentsDrawer(postId) {
+            activePostId = postId;
+            document.getElementById('comments-drawer').classList.add('open');
+            loadComments();
+        }
+
+        function closeCommentsDrawer() {
+            document.getElementById('comments-drawer').classList.remove('open');
+            activePostId = null;
+        }
+
+        async function loadComments() {
+            const listEl = document.getElementById('comments-list');
+            listEl.innerHTML = 'Loading comments...';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                if (!data.comments.length) {
+                    listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No comments yet.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = data.comments.map(c => `
+                    <div class="comment-item">
+                        <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'28\' height=\'28\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        <div class="comment-content">
+                            <span style="font-weight: bold;">@${escapeHtml(c.username)}</span>
+                            <div style="margin-top: 2px;">${escapeHtml(c.content)}</div>
+                        </div>
+                    </div>
+                `).join('');
+                listEl.scrollTop = listEl.scrollHeight;
+            } catch (err) {
+                listEl.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load comments.</p>';
+            }
+        }
+
+        async function submitComment(e) {
+            e.preventDefault();
+            const input = document.getElementById('comment-input');
+            const content = input.value.trim();
+            if (!content || !activePostId) return;
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: activePostId, email: currentUser.email, content })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                input.value = '';
+                loadComments();
+            } catch (err) {
+                alert(err.message);
             }
         }
 
