@@ -1,7 +1,5 @@
-// Global Worker Endpoint
 const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
-// Session Management
 function getSessionUser() {
     const stored = localStorage.getItem('rprofiles_session');
     if (!stored) return null;
@@ -19,7 +17,8 @@ function setSessionUser(user) {
 
 function requireAuth() {
     const user = getSessionUser();
-    if (!user && !window.location.pathname.endsWith('index.html') && window.location.pathname !== '/') {
+    const path = window.location.pathname;
+    if (!user && !path.endsWith('index.html') && path !== '/' && !path.endsWith('/')) {
         window.location.href = 'index.html';
     }
     return user;
