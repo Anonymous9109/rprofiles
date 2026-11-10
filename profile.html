@@ -10,7 +10,7 @@
         header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
         header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
         footer { border-top: 1px solid #e5e5e5; height: 44px; bottom: 0; }
-        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; cursor: pointer; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
         .profile-grid { display: flex; gap: 16px; }
         .profile-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -26,6 +26,19 @@
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
         .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
+        
+        /* Reaction Button Styles & SVGs */
+        .post-actions { display: flex; gap: 10px; margin-top: 8px; align-items: center; font-size: 12px; }
+        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; transition: background-color 0.15s; }
+        .reaction-btn:hover { background: #f5f5f5; }
+        .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
+        .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+        
+        .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
+        .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
@@ -127,6 +140,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
 
+        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+        const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+
         async function loadProfile() {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}`);
@@ -140,7 +156,7 @@
 
                 const isOwner = user.email.toLowerCase() === loggedUser.email.toLowerCase();
                 if (isOwner) {
-                    document.getElementById('owner-controls').style.display = window.innerWidth <= 640 ? 'flex' : 'flex';
+                    document.getElementById('owner-controls').style.display = 'flex';
                     document.getElementById('edit-username').value = user.username || '';
                     document.getElementById('edit-bio').value = user.bio || '';
                 }
@@ -150,21 +166,60 @@
                 const container = document.getElementById('posts-container');
                 if (!data.posts.length) {
                     container.innerHTML = '<p style="color: #666; padding: 10px;">No posts recorded.</p>';
-                } else {
-                    container.innerHTML = data.posts.map(p => `
-                        <div class="post-box" id="post-${p.id}">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color:#666; font-size: 10px;">${new Date(p.created_at).toLocaleString()}</span>
-                                ${isOwner ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
-                            </div>
-                            ${p.content ? `<div style="font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word;">${escapeHtml(p.content)}</div>` : ''}
-                            ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
+                    return;
+                }
+
+                container.innerHTML = '';
+                for (const p of data.posts) {
+                    const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${p.id}&email=${encodeURIComponent(loggedUser.email)}`);
+                    const rxData = await rxRes.json();
+
+                    const postEl = document.createElement('div');
+                    postEl.className = 'post-box';
+                    postEl.id = `post-${p.id}`;
+                    postEl.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color:#666; font-size: 10px;">${new Date(p.created_at).toLocaleString()}</span>
+                            ${isOwner ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
                         </div>
-                    `).join('');
+                        ${p.content ? `<div style="font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word;">${escapeHtml(p.content)}</div>` : ''}
+                        ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
+                        <div class="post-actions">
+                            <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${p.id}', 'like')">
+                                ${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span>
+                            </button>
+                            <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${p.id}', 'dislike')">
+                                ${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(postEl);
                 }
             } catch (e) {
                 document.getElementById('username-display').innerText = 'User not found';
                 document.getElementById('posts-container').innerHTML = '';
+            }
+        }
+
+        async function toggleReaction(postId, reactionType) {
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId, email: loggedUser.email, reaction: reactionType })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                document.getElementById(`likes-${postId}`).innerText = data.likes;
+                document.getElementById(`dislikes-${postId}`).innerText = data.dislikes;
+
+                const parent = document.getElementById(`post-${postId}`);
+                const buttons = parent.querySelectorAll('.reaction-btn');
+                buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+                buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+            } catch (err) {
+                alert(err.message);
             }
         }
 
