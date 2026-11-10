@@ -47,7 +47,6 @@
     <script>
         if (getSessionUser()) window.location.href = 'feed.html';
         
-        // Start in Register mode by default
         let isRegister = true;
 
         function toggleAuth() {
@@ -74,7 +73,6 @@
                 if (!res.ok) throw new Error(data.error || 'Auth failed');
 
                 if (isRegister) {
-                    // Automatically log in right after successful registration
                     const loginRes = await fetch(`${WORKER_ORIGIN}/api/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
