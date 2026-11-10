@@ -13,14 +13,12 @@
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
         
-        /* Footer Nav Tab SVGs */
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-tab.active .footer-icon { stroke: #000; }
 
-        /* Inbox list items */
-        .inbox-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #e5e5e5; cursor: pointer; text-decoration: none; color: inherit; }
+        .inbox-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #e5e5e5; cursor: pointer; }
         .inbox-item:hover { background: #fafafa; }
         .inbox-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; }
         .inbox-info { flex-grow: 1; min-width: 0; }
@@ -28,12 +26,12 @@
         .inbox-preview { color: #666; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
 
-        /* Modal */
-        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
-        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
-        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        .chat-container { height: 280px; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; flex-grow: 1; }
+        /* Sliding Drawer Window */
+        .chat-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
+        .chat-drawer.open { bottom: 0; }
+        .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
+        .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
+        .chat-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
         .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-word; }
         .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
         .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
@@ -47,12 +45,27 @@
         <div id="inbox-container"><div class="loading-spinner">Loading conversations...</div></div>
     </div>
 
+    <!-- SLIDING CHAT DRAWER -->
+    <div id="chat-drawer" class="chat-drawer">
+        <div class="drawer-header">
+            <span id="drawer-title">Chat</span>
+            <span style="cursor: pointer;" onclick="closeDrawer()">✕</span>
+        </div>
+        <div class="drawer-body">
+            <div class="chat-container" id="chat-messages">Loading...</div>
+            <form onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
+                <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+                <button type="submit" style="background: #000; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">Send</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <a href="feed.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             Home
         </a>
-        <a href="feed.html" onclick="openModal('post-modal'); return false;" class="footer-tab">
+        <a href="feed.html" onclick="return false;" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
         </a>
@@ -65,23 +78,6 @@
             Profile
         </a>
     </footer>
-
-    <!-- DM CHAT MODAL -->
-    <div id="dm-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span id="dm-title">Chat</span>
-                <span style="cursor: pointer;" onclick="closeModal('dm-modal')">✕</span>
-            </div>
-            <div class="modal-body">
-                <div class="chat-container" id="chat-messages">Loading...</div>
-                <form onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
-                    <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
-                    <button type="submit" style="background: #000; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">Send</button>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <script src="app.js"></script>
     <script>
@@ -105,11 +101,11 @@
                     const peer = conv.peer;
                     const el = document.createElement('div');
                     el.className = 'inbox-item';
-                    el.onclick = () => openChat(peer);
+                    el.onclick = () => openDrawer(peer);
                     el.innerHTML = `
                         <img class="inbox-avatar" src="${peer.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         <div class="inbox-info">
-                            <div class="inbox-name">${peer.username ? '@' + escapeHtml(peer.username) : escapeHtml(peer.email)}</div>
+                            <div class="inbox-name">@${escapeHtml(peer.username)}</div>
                             <div class="inbox-preview">${escapeHtml(conv.last_message)}</div>
                         </div>
                     `;
@@ -120,11 +116,16 @@
             }
         }
 
-        async function openChat(peer) {
+        async function openDrawer(peer) {
             activePeer = peer;
-            document.getElementById('dm-title5' || 'dm-title').innerText = `Chat with @${peer.username || peer.email}`;
-            openModal('dm-modal');
+            document.getElementById('drawer-title').innerText = `Chat with @${peer.username}`;
+            document.getElementById('chat-drawer').classList.add('open');
             loadThread();
+        }
+
+        function closeDrawer() {
+            document.getElementById('chat-drawer').classList.remove('open');
+            loadInbox();
         }
 
         async function loadThread() {
@@ -171,8 +172,6 @@
             }
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         loadInbox();
     </script>
 </body>
