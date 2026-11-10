@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rprofiles - Welcome</title>
+    <title>rprofiles - Login</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; }
@@ -71,7 +71,7 @@
                 if (!res.ok) throw new Error(data.error || 'Auth failed');
 
                 if (isRegister) {
-                    alert('Registration complete! Logging in...');
+                    alert('Registration complete! Please log in.');
                     toggleAuth();
                 } else {
                     setSessionUser(data.user);
