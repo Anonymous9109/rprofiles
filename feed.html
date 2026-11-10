@@ -6,21 +6,22 @@
     <title>rprofiles - Home Feed</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
-        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
-        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 96px; padding-bottom: 54px; }
+        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; padding: 0 16px; }
+        header { border-bottom: 1px solid #e5e5e5; top: 0; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; padding-top: 8px; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .search-bar { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; display: flex; align-items: center; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
         
-        /* Footer Nav Tab SVGs */
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-tab.active .footer-icon { stroke: #000; }
 
-        .post-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
-        .post-box:first-child { border-top: none; }
+        .post-box, .user-result-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
+        .post-box:first-child, .user-result-box:first-child { border-top: none; }
         .post-header-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; }
         .post-meta { font-weight: 600; color: #111; text-decoration: none; }
@@ -46,15 +47,16 @@
         .modal-body { padding: 14px; }
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .progress-container { width: 100%; background: #f0f0f0; height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden; display: none; }
-        .progress-bar { height: 100%; background: #000; width: 0%; transition: width 0.2s; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
     </style>
 </head>
 <body>
     <header>
-        <a href="feed.html" class="brand">rprofiles</a>
-        <button class="btn-app" onclick="openModal('post-modal')">+ Create Post</button>
+        <div class="header-top">
+            <a href="feed.html" class="brand">rprofiles</a>
+            <button class="btn-app" onclick="openModal('post-modal')">+ Create Post</button>
+        </div>
+        <input type="text" id="search-input" class="search-bar" placeholder="Search users or posts..." oninput="handleSearch(this.value)">
     </header>
 
     <div class="wrapper">
@@ -96,15 +98,11 @@
                     </div>
                     <div class="form-row">
                         <label>Media Attachment (Max 25MB):</label>
-                        <input type="file" id="post-media" accept="image/*" onchange="checkFileSize(this)">
+                        <input type="file" id="post-media" accept="image/*">
                     </div>
-                    <div class="progress-container" id="progress-container">
-                        <div class="progress-bar" id="progress-bar"></div>
-                    </div>
-                    <div id="status-text" style="font-size: 11px; color: #666; margin-top: 4px; display: none;">Uploading post...</div>
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
                         <button type="submit" class="btn-app" id="pub-btn" style="flex: 1;">Publish</button>
-                        <button type="button" class="footer-tab" onclick="closeModal('post-modal')" style="border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px;">Cancel</button>
+                        <button type="button" class="btn-app-secondary" onclick="closeModal('post-modal')">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -114,8 +112,6 @@
     <script src="app.js"></script>
     <script>
         const currentUser = requireAuth();
-        let isPublishing = false;
-
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 
@@ -125,44 +121,96 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/posts/feed`);
                 const data = await res.json();
-                if (!data.posts.length) {
-                    container.innerHTML = '<p style="color: #666; padding: 12px;">No posts recorded.</p>';
+                renderPosts(data.posts);
+            } catch (e) {
+                container.innerHTML = '<p style="color: red; padding: 12px;">Failed to load posts.</p>';
+            }
+        }
+
+        async function handleSearch(query) {
+            const container = document.getElementById('feed-container');
+            if (!query.trim()) {
+                loadFeed();
+                return;
+            }
+            container.innerHTML = '<div class="loading-spinner">Searching...</div>';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                container.innerHTML = '';
+                if (!data.users.length && !data.posts.length) {
+                    container.innerHTML = '<p style="color: #666; padding: 12px;">No results found.</p>';
                     return;
                 }
 
-                container.innerHTML = '';
-                for (const post of data.posts) {
-                    const isOwner = post.user_email.toLowerCase() === currentUser.email.toLowerCase();
-                    const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${post.id}&email=${encodeURIComponent(currentUser.email)}`);
-                    const rxData = await rxRes.json();
+                if (data.users.length) {
+                    const userHeader = document.createElement('div');
+                    userHeader.style.cssText = "font-weight: bold; margin-bottom: 8px; color: #666;";
+                    userHeader.innerText = "Users";
+                    container.appendChild(userHeader);
 
-                    const postEl = document.createElement('div');
-                    postEl.className = 'post-box';
-                    postEl.id = `post-${post.id}`;
-                    postEl.innerHTML = `
-                        <div class="post-header-line">
-                            <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                            <div style="flex-grow: 1;">
-                                <a href="profile.html?user=${encodeURIComponent(post.username || post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>
-                                <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
+                    for (const u of data.users) {
+                        const uEl = document.createElement('div');
+                        uEl.className = 'user-result-box';
+                        uEl.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                                <a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>
                             </div>
-                            ${isOwner ? `<button onclick="deletePost('${post.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
-                        </div>
-                        ${post.content ? `<div class="post-text">${escapeHtml(post.content)}</div>` : ''}
-                        ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
-                        <div class="post-actions">
-                            <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
-                                ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
-                            </button>
-                            <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
-                                ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(postEl);
+                        `;
+                        container.appendChild(uEl);
+                    }
+                }
+
+                if (data.posts.length) {
+                    const postHeader = document.createElement('div');
+                    postHeader.style.cssText = "font-weight: bold; margin: 16px 0 8px 0; color: #666;";
+                    postHeader.innerText = "Posts";
+                    container.appendChild(postHeader);
+                    renderPosts(data.posts, container, false);
                 }
             } catch (e) {
-                container.innerHTML = '<p style="color: red; padding: 12px;">Failed to load posts.</p>';
+                container.innerHTML = '<p style="color: red; padding: 12px;">Search failed.</p>';
+            }
+        }
+
+        async function renderPosts(posts, container = document.getElementById('feed-container'), clear = true) {
+            if (clear) container.innerHTML = '';
+            if (!posts.length && clear) {
+                container.innerHTML = '<p style="color: #666; padding: 12px;">No posts recorded.</p>';
+                return;
+            }
+
+            for (const post of posts) {
+                const isOwner = post.user_email.toLowerCase() === currentUser.email.toLowerCase();
+                const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${post.id}&email=${encodeURIComponent(currentUser.email)}`);
+                const rxData = await rxRes.json();
+
+                const postEl = document.createElement('div');
+                postEl.className = 'post-box';
+                postEl.id = `post-${post.id}`;
+                postEl.innerHTML = `
+                    <div class="post-header-line">
+                        <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        <div style="flex-grow: 1;">
+                            <a href="profile.html?user=${encodeURIComponent(post.username || post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>
+                            <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
+                        </div>
+                        ${isOwner ? `<button onclick="deletePost('${post.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
+                    </div>
+                    ${post.content ? `<div class="post-text">${escapeHtml(post.content)}</div>` : ''}
+                    ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
+                    <div class="post-actions">
+                        <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
+                            ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
+                        </button>
+                        <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
+                            ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(postEl);
             }
         }
 
@@ -190,23 +238,9 @@
 
         async function submitPost(event) {
             event.preventDefault();
-            if (isPublishing) return;
-
             const text = document.getElementById('post-text').value.trim();
             const media = document.getElementById('post-media').files[0];
-            if (!text && !media) {
-                showError('Post must contain text or an attachment.');
-                return;
-            }
-
-            isPublishing = true;
-            const btn = document.getElementById('pub-btn');
-            btn.disabled = true;
-            btn.innerText = "Publishing...";
-
-            document.getElementById('progress-container').style.display = 'block';
-            document.getElementById('status-text').style.display = 'block';
-            document.getElementById('progress-bar').style.width = '40%';
+            if (!text && !media) return alert('Post cannot be empty');
 
             const formData = new FormData();
             formData.append('email', currentUser.email);
@@ -214,66 +248,28 @@
             if (media) formData.append('media', media);
 
             try {
-                document.getElementById('progress-bar').style.width = '80%';
                 const res = await fetch(`${WORKER_ORIGIN}/api/posts/create`, { method: 'POST', body: formData });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Upload failed');
-
-                document.getElementById('progress-bar').style.width = '100%';
-                setTimeout(() => {
-                    closeModal('post-modal');
-                    document.getElementById('create-post-form').reset();
-                    document.getElementById('progress-container').style.display = 'none';
-                    document.getElementById('status-text').style.display = 'none';
-                    document.getElementById('progress-bar').style.width = '0%';
-                    isPublishing = false;
-                    btn.disabled = false;
-                    btn.innerText = "Publish";
-                    loadFeed();
-                }, 300);
-            } catch (err) {
-                showError(err.message);
-                document.getElementById('progress-container').style.display = 'none';
-                document.getElementById('status-text').style.display = 'none';
-                document.getElementById('progress-bar').style.width = '0%';
-                isPublishing = false;
-                btn.disabled = false;
-                btn.innerText = "Publish";
-            }
-        }
-
-        async function deletePost(postId) {
-            if (!confirm("Are you sure you want to delete this post?")) return;
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, email: currentUser.email })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to delete');
-                const el = document.getElementById(`post-${postId}`);
-                if (el) el.remove();
+                if (!res.ok) throw new Error('Failed to create post');
+                closeModal('post-modal');
+                document.getElementById('create-post-form').reset();
+                loadFeed();
             } catch (err) {
                 alert(err.message);
             }
         }
 
-        function checkFileSize(input) {
-            if (input.files && input.files[0] && input.files[0].size > 25 * 1024 * 1024) {
-                alert('File exceeds 25MB limit.');
-                input.value = '';
-            }
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('post-modal-error');
-            el.innerText = msg;
-            el.style.display = 'block';
+        async function deletePost(postId) {
+            if (!confirm("Delete post?")) return;
+            await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId, email: currentUser.email })
+            });
+            document.getElementById(`post-${postId}`)?.remove();
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { if (!isPublishing) document.getElementById(id).style.display = 'none'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         loadFeed();
     </script>
 </body>
