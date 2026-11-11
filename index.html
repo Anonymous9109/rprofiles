@@ -6,71 +6,166 @@
     <title>rprofiles - Welcome</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; }
-        header { background: #ffffff; border-bottom: 1px solid #e5e5e5; padding: 0 16px; height: 48px; display: flex; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
-        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
-        .auth-wrapper { width: 100%; max-width: 400px; margin: auto; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background: #fafafa; overflow: hidden; }
-        @media (min-width: 401px) { .auth-wrapper { border: 1px solid #e5e5e5; border-radius: 8px; margin-top: 40px; margin-bottom: 40px; } }
-        .auth-header { background: #f0f0f0; border-bottom: 1px solid #e5e5e5; padding: 14px 16px; font-weight: bold; font-size: 14px; }
-        .auth-body { padding: 20px 16px; }
-        .form-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
-        .form-row label { font-weight: 600; color: #555; font-size: 12px; }
-        .form-row input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .btn-app { background: #000; border: 1px solid #000; border-radius: 6px; color: #fff; font-weight: 600; padding: 12px 14px; font-size: 14px; cursor: pointer; width: 100%; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 6px; color: #111; padding: 12px 14px; font-size: 14px; cursor: pointer; width: 100%; }
-        .auth-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 6px; margin-bottom: 14px; font-weight: 600; display: none; }
+        body {
+            background: #f5f5f7;
+            color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+        }
+        .auth-shell { width: 100%; max-width: 380px; }
+
+        .hero { text-align: center; margin-bottom: 24px; }
+        .logo {
+            width: 56px; height: 56px; border-radius: 16px;
+            background: #000; color: #fff;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 800; margin-bottom: 14px;
+        }
+        .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        .hero p { color: #6b6b72; margin-top: 6px; font-size: 14px; }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e8e8ec;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0f0f3;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b6b72;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab.active { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+
+        .error-msg {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            display: none;
+        }
+
+        .form-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .form-row label { font-weight: 600; color: #444; font-size: 12px; }
+        .form-row input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #dcdce1;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fafafb;
+            outline: none;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .form-row input:focus { border-color: #000; background: #fff; }
+
+        .btn-app {
+            width: 100%;
+            margin-top: 6px;
+            background: #000;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            padding: 14px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .btn-app:disabled { opacity: 0.6; cursor: default; }
+
+        .footnote { text-align: center; color: #9a9aa2; font-size: 12px; margin-top: 18px; }
     </style>
 </head>
 <body>
-    <header><a href="index.html" class="brand">rprofiles</a></header>
-    <div class="auth-wrapper">
-        <div class="auth-header" id="auth-title">Create your rprofiles account</div>
-        <div class="auth-body">
+    <div class="auth-shell">
+        <div class="hero">
+            <div class="logo">r</div>
+            <h1>rprofiles</h1>
+            <p id="auth-title">Create your account to get started</p>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <button type="button" class="tab active" id="tab-register" onclick="setMode(true)">Register</button>
+                <button type="button" class="tab" id="tab-login" onclick="setMode(false)">Login</button>
+            </div>
+
             <div id="auth-error" class="error-msg"></div>
+
             <form id="auth-form" onsubmit="handleAuth(event)">
                 <div class="form-row" id="username-row">
-                    <label>Username:</label>
-                    <input type="text" id="auth-username" required>
+                    <label for="auth-username">Username</label>
+                    <input type="text" id="auth-username" placeholder="yourname" autocomplete="username" autocapitalize="none" required>
                 </div>
                 <div class="form-row">
-                    <label>Email:</label>
-                    <input type="email" id="auth-email" required>
+                    <label for="auth-email">Email</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" required>
                 </div>
                 <div class="form-row">
-                    <label>Password:</label>
-                    <input type="password" id="auth-password" required>
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" required>
                 </div>
-                <div class="auth-actions">
-                    <button type="submit" class="btn-app" id="auth-submit-btn">Register</button>
-                    <button type="button" class="btn-app-secondary" id="auth-toggle-btn" onclick="toggleAuth()">Login</button>
-                </div>
+                <button type="submit" class="btn-app" id="auth-submit-btn">Create account</button>
             </form>
         </div>
+
+        <p class="footnote">By continuing, you agree to be kind to others.</p>
     </div>
 
     <script src="app.js"></script>
     <script>
         if (getSessionUser()) window.location.href = 'feed.html';
-        
+
         let isRegister = true;
 
-        function toggleAuth() {
-            isRegister = !isRegister;
-            document.getElementById('auth-title').innerText = isRegister ? 'Create your rprofiles account' : 'Welcome back to rprofiles';
-            document.getElementById('auth-submit-btn').innerText = isRegister ? 'Register' : 'Login';
-            document.getElementById('auth-toggle-btn').innerText = isRegister ? 'Login' : 'Register';
-            document.getElementById('username-row').style.display = isRegister ? 'flex' : 'none';
-            document.getElementById('auth-username').required = isRegister;
+        function setMode(register) {
+            isRegister = register;
+            document.getElementById('tab-register').classList.toggle('active', register);
+            document.getElementById('tab-login').classList.toggle('active', !register);
+            document.getElementById('auth-title').innerText = register ? 'Create your account to get started' : 'Welcome back';
+            document.getElementById('auth-submit-btn').innerText = register ? 'Create account' : 'Log in';
+            document.getElementById('username-row').style.display = register ? 'flex' : 'none';
+            document.getElementById('auth-username').required = register;
             document.getElementById('auth-error').style.display = 'none';
         }
 
         async function handleAuth(event) {
             event.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            const idleText = btn.innerText;
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value.trim();
             const username = isRegister ? document.getElementById('auth-username').value.trim() : '';
             const endpoint = isRegister ? '/api/signup' : '/api/login';
+
+            btn.disabled = true;
+            btn.innerText = 'Please wait...';
+            document.getElementById('auth-error').style.display = 'none';
 
             try {
                 const bodyData = isRegister ? { email, password, username } : { email, password };
@@ -101,6 +196,8 @@
                 const el = document.getElementById('auth-error');
                 el.innerText = err.message;
                 el.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = idleText;
             }
         }
     </script>
