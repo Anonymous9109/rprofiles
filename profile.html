@@ -47,10 +47,16 @@
         .comments-drawer.open { bottom: 0; }
         .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
         .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; background: #fafafa; }
-        .comment-item { display: flex; gap: 8px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 6px; }
-        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
-        .comment-content { font-size: 12px; }
+        
+        .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
+        .comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
+        .comment-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
+        .comment-content { font-size: 13px; line-height: 1.4; margin-top: 3px; }
+        .comment-actions { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; align-items: center; font-weight: 600; }
+        .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; }
+        .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
+        .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
 
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
@@ -96,13 +102,17 @@
     <div id="comments-drawer" class="comments-drawer">
         <div class="drawer-header">
             <span>Comments</span>
-            <span style="cursor: pointer;" onclick="closeCommentsDrawer()">✕</span>
+            <span style="cursor: pointer; font-size: 16px;" onclick="closeCommentsDrawer()">✕</span>
         </div>
         <div class="drawer-body">
             <div class="comments-container" id="comments-list">Loading comments...</div>
+            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px;">
+                <span id="replying-to-text">Replying...</span>
+                <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
+            </div>
             <form onsubmit="submitComment(event)" style="display: flex; gap: 6px;">
-                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
-                <button type="submit" style="background: #000; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">Post</button>
+                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;">
+                <button type="submit" style="background: #000; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">Post</button>
             </form>
         </div>
     </div>
@@ -178,6 +188,8 @@
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
         let activeProfileUser = null;
         let activePostId = null;
+        let replyingToId = null;
+        let replyingToUsername = null;
 
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
@@ -261,6 +273,7 @@
 
         async function openCommentsDrawer(postId) {
             activePostId = postId;
+            cancelReply();
             document.getElementById('comments-drawer').classList.add('open');
             loadComments();
         }
@@ -268,34 +281,79 @@
         function closeCommentsDrawer() {
             document.getElementById('comments-drawer').classList.remove('open');
             activePostId = null;
+            cancelReply();
         }
 
         async function loadComments() {
             const listEl = document.getElementById('comments-list');
             listEl.innerHTML = 'Loading comments...';
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email)}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
                 if (!data.comments.length) {
-                    listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No comments yet.</p>';
+                    listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>';
                     return;
                 }
 
-                listEl.innerHTML = data.comments.map(c => `
-                    <div class="comment-item">
-                        <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'28\' height=\'28\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                        <div class="comment-content">
-                            <span style="font-weight: bold;">@${escapeHtml(c.username)}</span>
-                            <div style="margin-top: 2px;">${escapeHtml(c.content)}</div>
+                const commentMap = new Map();
+                const rootComments = [];
+
+                data.comments.forEach(c => {
+                    c.replies = [];
+                    commentMap.set(c.id, c);
+                });
+
+                data.comments.forEach(c => {
+                    if (c.parent_id && commentMap.has(c.parent_id)) {
+                        commentMap.get(c.parent_id).replies.push(c);
+                    } else if (!c.parent_id) {
+                        rootComments.push(c);
+                    }
+                });
+
+                function renderCommentNode(c, isReply = false) {
+                    return `
+                        <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
+                            <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                            <div style="flex-grow: 1;">
+                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}</span>
+                                <div class="comment-content">${escapeHtml(c.content)}</div>
+                                <div class="comment-actions">
+                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
+                                        👍 <span id="c-likes-${c.id}">${c.likes}</span>
+                                    </button>
+                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
+                                        👎 <span id="c-dislikes-${c.id}">${c.dislikes}</span>
+                                    </button>
+                                    <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                        ${c.replies.map(r => renderCommentNode(r, true)).join('')}
+                    `;
+                }
+
+                listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
                 listEl.scrollTop = listEl.scrollHeight;
             } catch (err) {
-                listEl.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load comments.</p>';
+                listEl.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load comments.</p>';
             }
+        }
+
+        function setReplyingTo(commentId, username) {
+            replyingToId = commentId;
+            replyingToUsername = username;
+            document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
+            document.getElementById('replying-banner').style.display = 'flex';
+            document.getElementById('comment-input').focus();
+        }
+
+        function cancelReply() {
+            replyingToId = null;
+            replyingToUsername = null;
+            document.getElementById('replying-banner').style.display = 'none';
         }
 
         async function submitComment(e) {
@@ -308,13 +366,41 @@
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId: activePostId, email: loggedUser.email, content })
+                    body: JSON.stringify({ 
+                        postId: activePostId, 
+                        email: loggedUser.email, 
+                        content, 
+                        parentId: replyingToId 
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
                 input.value = '';
+                cancelReply();
                 loadComments();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function toggleCommentReaction(commentId, reactionType) {
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ commentId, email: loggedUser.email, reaction: reactionType })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                document.getElementById(`c-likes-${commentId}`).innerText = data.likes;
+                document.getElementById(`c-dislikes-${commentId}`).innerText = data.dislikes;
+
+                const parent = document.getElementById(`comment-${commentId}`);
+                const buttons = parent.querySelectorAll('.comment-reaction-btn');
+                buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+                buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) {
                 alert(err.message);
             }
