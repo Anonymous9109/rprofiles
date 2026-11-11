@@ -60,11 +60,6 @@
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
-        
-        .chat-container { height: 280px; overflow-y: auto; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; flex-grow: 1; }
-        .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-word; }
-        .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
-        .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
 
         @media (max-width: 640px) {
             .profile-grid { flex-direction: column; }
@@ -176,23 +171,6 @@
         </div>
     </div>
 
-    <!-- DM CHAT MODAL -->
-    <div id="dm-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span id="dm-title">Direct Message</span>
-                <span style="cursor: pointer;" onclick="closeModal('dm-modal')">✕</span>
-            </div>
-            <div class="modal-body">
-                <div class="chat-container" id="chat-messages">Loading messages...</div>
-                <form onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
-                    <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
-                    <button type="submit" class="btn-app">Send</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
@@ -229,7 +207,7 @@
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
                 } else {
                     controlsEl.innerHTML = `
-                        <button class="btn-app" style="width: 100%; padding: 8px;" onclick="openDmModal()">DM</button>
+                        <button class="btn-app" style="width: 100%; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
                     `;
                 }
 
@@ -337,58 +315,6 @@
 
                 input.value = '';
                 loadComments();
-            } catch (err) {
-                alert(err.message);
-            }
-        }
-
-        async function openDmModal() {
-            if (!activeProfileUser) return;
-            document.getElementById('dm-title').innerText = `Chat with @${activeProfileUser.username || activeProfileUser.email}`;
-            openModal('dm-modal');
-            loadMessages();
-        }
-
-        async function loadMessages() {
-            const chatContainer = document.getElementById('chat-messages');
-            chatContainer.innerHTML = 'Loading messages...';
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(loggedUser.email)}&user2=${encodeURIComponent(activeProfileUser.email)}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                if (!data.messages.length) {
-                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No messages yet. Say hello!</p>';
-                    return;
-                }
-
-                chatContainer.innerHTML = data.messages.map(m => {
-                    const isSent = m.sender_email.toLowerCase() === loggedUser.email.toLowerCase();
-                    return `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
-                }).join('');
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            } catch (err) {
-                chatContainer.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load messages.</p>';
-            }
-        }
-
-        async function sendDm(e) {
-            e.preventDefault();
-            const input = document.getElementById('dm-input');
-            const content = input.value.trim();
-            if (!content || !activeProfileUser) return;
-
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/messages/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ senderEmail: loggedUser.email, receiverEmail: activeProfileUser.email, content })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                input.value = '';
-                loadMessages();
             } catch (err) {
                 alert(err.message);
             }
