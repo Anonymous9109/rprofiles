@@ -106,7 +106,12 @@
                     el.className = 'activity-item';
                     el.onclick = () => { window.location.href = `feed.html?highlight=${n.post_id}`; };
                     
-                    const actionText = n.type === 'tag' ? 'tagged you in a post' : 'liked your post';
+                    let actionText = 'interacted with your post';
+                    if (n.type === 'tag') actionText = 'tagged you in a post';
+                    else if (n.type === 'like') actionText = 'liked your post';
+                    else if (n.type === 'comment') actionText = 'commented on your post';
+                    else if (n.type === 'comment_reply') actionText = 'replied to your comment';
+
                     el.innerHTML = `
                         <img class="avatar" src="${n.actor_pfp || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         <div class="info">
@@ -209,8 +214,26 @@
             }
         }
 
-        loadActivity();
-        loadInbox();
+        async function init() {
+            loadActivity();
+            loadInbox();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUser = urlParams.get('user');
+            if (targetUser) {
+                try {
+                    const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetUser)}`);
+                    const data = await res.json();
+                    if (res.ok && data.user) {
+                        openDrawer(data.user);
+                    }
+                } catch (e) {
+                    console.error("Could not open direct chat target", e);
+                }
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
