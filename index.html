@@ -72,7 +72,9 @@
 
         .form-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
         .form-row label { font-weight: 600; color: #444; font-size: 12px; }
-        .form-row input {
+        .form-row input[type="text"],
+        .form-row input[type="email"],
+        .form-row input[type="password"] {
             width: 100%;
             padding: 13px 14px;
             border: 1px solid #dcdce1;
@@ -83,6 +85,10 @@
             transition: border-color 0.15s, background 0.15s;
         }
         .form-row input:focus { border-color: #000; background: #fff; }
+
+        .terms-check { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px; font-size: 12px; color: #555; line-height: 1.4; }
+        .terms-check input { margin-top: 3px; }
+        .terms-link { color: #000; font-weight: 600; text-decoration: underline; cursor: pointer; }
 
         .btn-app {
             width: 100%;
@@ -98,7 +104,10 @@
         }
         .btn-app:disabled { opacity: 0.6; cursor: default; }
 
-        .footnote { text-align: center; color: #9a9aa2; font-size: 12px; margin-top: 18px; }
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+        .modal-box { background: #fff; border-radius: 12px; max-width: 440px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-head { padding: 14px 16px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .modal-content { padding: 16px; overflow-y: auto; font-size: 12px; line-height: 1.6; color: #333; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body>
@@ -130,11 +139,29 @@
                     <label for="auth-password">Password</label>
                     <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" required>
                 </div>
+                <div class="terms-check" id="terms-row">
+                    <input type="checkbox" id="auth-terms" required>
+                    <label for="auth-terms">I agree to the <span class="terms-link" onclick="openTerms()">Terms of Service & Community Guidelines</span>. Zero tolerance for objectionable content or abusive users.</label>
+                </div>
                 <button type="submit" class="btn-app" id="auth-submit-btn">Create account</button>
             </form>
         </div>
+    </div>
 
-        <p class="footnote">By continuing, you agree to be kind to others.</p>
+    <div id="terms-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <span>Terms of Service & Safety Policy</span>
+                <span style="cursor:pointer;" onclick="closeTerms()">✕</span>
+            </div>
+            <div class="modal-content">
+                <p><strong>1. Zero Tolerance Policy:</strong> rprofiles has zero tolerance for objectionable content, hate speech, harassment, sexually explicit material, illegal acts, or copyrighted material you do not own.</p>
+                <p><strong>2. User Content Ownership:</strong> You retain ownership of original articles and photos you publish, and grant rprofiles permission to display them to other users.</p>
+                <p><strong>3. Moderation & Enforcement:</strong> Users can report posts and block abusive accounts at any time. Reported content is reviewed within 24 hours and violating accounts are permanently terminated.</p>
+                <p><strong>4. Account & Data Deletion:</strong> You may permanently delete your account and all uploaded media at any time from Profile → Settings → Delete Account.</p>
+                <button type="button" class="btn-app" onclick="closeTerms()">I Understand</button>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
@@ -143,6 +170,9 @@
 
         let isRegister = true;
 
+        function openTerms() { document.getElementById('terms-modal').style.display = 'flex'; }
+        function closeTerms() { document.getElementById('terms-modal').style.display = 'none'; }
+
         function setMode(register) {
             isRegister = register;
             document.getElementById('tab-register').classList.toggle('active', register);
@@ -150,7 +180,9 @@
             document.getElementById('auth-title').innerText = register ? 'Create your account to get started' : 'Welcome back';
             document.getElementById('auth-submit-btn').innerText = register ? 'Create account' : 'Log in';
             document.getElementById('username-row').style.display = register ? 'flex' : 'none';
+            document.getElementById('terms-row').style.display = register ? 'flex' : 'none';
             document.getElementById('auth-username').required = register;
+            document.getElementById('auth-terms').required = register;
             document.getElementById('auth-error').style.display = 'none';
         }
 
@@ -161,6 +193,7 @@
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value.trim();
             const username = isRegister ? document.getElementById('auth-username').value.trim() : '';
+            const agreedTerms = isRegister ? document.getElementById('auth-terms').checked : true;
             const endpoint = isRegister ? '/api/signup' : '/api/login';
 
             btn.disabled = true;
@@ -168,7 +201,7 @@
             document.getElementById('auth-error').style.display = 'none';
 
             try {
-                const bodyData = isRegister ? { email, password, username } : { email, password };
+                const bodyData = isRegister ? { email, password, username, agreedTerms } : { email, password };
                 const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
