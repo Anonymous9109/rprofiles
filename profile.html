@@ -64,7 +64,7 @@
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
+        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; }
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
@@ -73,7 +73,7 @@
             .profile-grid { flex-direction: column; }
             .profile-left { width: 100%; flex-direction: row; align-items: center; }
             .profile-left img { width: 90px; height: 90px; flex-shrink: 0; }
-            .profile-left div { flex-grow: 1; display: flex; gap: 6px; }
+            .profile-left div { flex-grow: 1; display: flex; gap: 6px; flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -178,9 +178,23 @@
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="theme-btn" class="btn-app-secondary" style="width: 100%;" onclick="toggleTheme()">🌙 Switch to Dark Mode</button>
-                <button class="btn-app-secondary" style="width: 100%; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="logout()">Logout</button>
+                <button class="btn-app-secondary" style="width: 100%;" onclick="openBlockedUsersModal()">Manage Blocked Users</button>
+                <button class="btn-app-secondary" style="width: 100%;" onclick="logout()">Logout</button>
+                <hr style="border:none; border-top:1px solid #e5e5e5; margin: 4px 0;">
+                <button class="btn-app-secondary" style="width: 100%; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="deleteAccount()">Delete Account & Data</button>
                 <button class="btn-app-secondary" style="width: 100%;" onclick="closeModal('settings-modal')">Close</button>
             </div>
+        </div>
+    </div>
+
+    <!-- BLOCKED USERS MODAL -->
+    <div id="blocked-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Blocked Users</span>
+                <span style="cursor: pointer;" onclick="closeModal('blocked-modal')">✕</span>
+            </div>
+            <div class="modal-body" id="blocked-list">Loading...</div>
         </div>
     </div>
 
@@ -203,7 +217,7 @@
 
         async function loadProfile() {
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}?viewer=${encodeURIComponent(loggedUser.email)}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
@@ -217,7 +231,6 @@
                 controlsEl.style.display = 'flex';
 
                 if (isOwner) {
-                    // Account's saved theme overrides whatever this device had cached
                     applyTheme(activeProfileUser.theme);
                     controlsEl.innerHTML = `
                         <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
@@ -225,9 +238,16 @@
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
+                } else if (data.isBlocked) {
+                    controlsEl.innerHTML = `
+                        <button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>
+                    `;
+                    document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
+                    return;
                 } else {
                     controlsEl.innerHTML = `
                         <button class="btn-app" style="width: 100%; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
+                        <button class="btn-app-secondary" style="width: 100%; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
                     `;
                 }
 
@@ -250,10 +270,14 @@
                     
                     const formattedContent = escapeHtml(p.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
 
+                    const actionControl = isOwner
+                        ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>`
+                        : `<button onclick="reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
+
                     postEl.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="color:#666; font-size: 10px;">${new Date(p.created_at).toLocaleString()}</span>
-                            ${isOwner ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : ''}
+                            ${actionControl}
                         </div>
                         ${p.content ? `<div style="font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word;">${formattedContent}</div>` : ''}
                         ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
@@ -274,8 +298,63 @@
                     container.appendChild(postEl);
                 }
             } catch (e) {
-                document.getElementById('username-display').innerText = 'User not found';
+                document.getElementById('username-display').innerText = 'User not found or offline';
                 document.getElementById('posts-container').innerHTML = '';
+            }
+        }
+
+        async function openBlockedUsersModal() {
+            closeModal('settings-modal');
+            openModal('blocked-modal');
+            const list = document.getElementById('blocked-list');
+            list.innerHTML = 'Loading...';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/blocked?email=${encodeURIComponent(loggedUser.email)}`);
+                const data = await res.json();
+                if (!data.blocked.length) {
+                    list.innerHTML = '<p style="color:#666;">No blocked users.</p>';
+                    return;
+                }
+                list.innerHTML = data.blocked.map(u => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
+                        <span>@${escapeHtml(u.username || u.email)}</span>
+                        <button class="btn-app-secondary" onclick="unblockUser('${escapeHtml(u.email)}', openBlockedUsersModal)">Unblock</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                list.innerHTML = '<p style="color:red;">Failed to load blocked users.</p>';
+            }
+        }
+
+        async function unblockUser(targetEmail, callback) {
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blockerEmail: loggedUser.email, blockedEmail: targetEmail })
+                });
+                if (!res.ok) throw new Error('Failed to unblock');
+                if (typeof callback === 'function') callback();
+                else loadProfile();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function deleteAccount() {
+            if (!confirm("Are you sure you want to permanently delete your account, posts, photos, and messages? This action cannot be undone.")) return;
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedUser.email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+                alert("Your account and all data have been permanently deleted.");
+                logout();
+            } catch (err) {
+                alert(err.message);
             }
         }
 
@@ -322,6 +401,7 @@
                 });
 
                 function renderCommentNode(c, isReply = false) {
+                    const isMe = c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
                     return `
                         <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
                             <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
@@ -336,6 +416,7 @@
                                         ${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span>
                                     </button>
                                     <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
+                                    ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
                                 </div>
                             </div>
                         </div>
