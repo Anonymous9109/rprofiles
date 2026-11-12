@@ -1,6 +1,6 @@
 const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
-// ===== THEME & OFFLINE BANNER =====
+// ===== THEME & TOAST SYSTEM =====
 const THEME_CSS = `
 html.dark { color-scheme: dark; }
 html.dark body { background:#121212; color:#eee; }
@@ -39,7 +39,9 @@ html.dark .inbox-item:hover, html.dark .activity-item:hover { background:#1c1c1c
 html.dark input, html.dark textarea { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark .custom-file-upload { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark [style*="background: #f0f0f0"] { background:#2a2a2a !important; color:#eee !important; }
-#offline-banner { position: fixed; bottom: 52px; left: 0; width: 100%; background: #ef4444; color: #fff; text-align: center; font-size: 11px; font-weight: 700; padding: 5px; z-index: 9999; display: none; }
+#offline-banner { position: fixed; bottom: 50px; left: 0; width: 100%; background: #ef4444; color: #fff; text-align: center; font-size: 11px; font-weight: 700; padding: 5px; z-index: 9999; display: none; }
+#toast-box { position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 10000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+#toast-box.show { opacity: 1; }
 `;
 
 function applyTheme(theme) {
@@ -60,6 +62,18 @@ async function saveTheme(email, theme) {
     if (!res.ok) throw new Error('Failed to save theme');
 }
 
+function showToast(message) {
+    let toast = document.getElementById('toast-box');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-box';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = message;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+
 (function initApp() {
     const style = document.createElement('style');
     style.textContent = THEME_CSS;
@@ -71,7 +85,7 @@ async function saveTheme(email, theme) {
     window.addEventListener('DOMContentLoaded', () => {
         const banner = document.createElement('div');
         banner.id = 'offline-banner';
-        banner.innerText = 'You are offline — showing local interface. Connect to sync posts.';
+        banner.innerText = 'You are offline — showing cached interface.';
         document.body.appendChild(banner);
 
         function updateOnlineStatus() {
@@ -87,9 +101,7 @@ async function saveTheme(email, theme) {
 function getSessionUser() {
     const stored = localStorage.getItem('rprofiles_session');
     if (!stored) return null;
-    try {
-        return JSON.parse(stored);
-    } catch (e) {
+    try { return JSON.parse(stored); } catch (e) {
         localStorage.removeItem('rprofiles_session');
         return null;
     }
@@ -126,7 +138,7 @@ function escapeHtml(str) {
 async function reportPost(postId) {
     const user = getSessionUser();
     if (!user) return;
-    const reason = prompt("Why are you reporting this post? (e.g., Spam, Harassment, Hate Speech, Explicit Content):");
+    const reason = prompt("Why are you reporting this post? (e.g., Spam, Harassment, Inappropriate Media):");
     if (!reason || !reason.trim()) return;
 
     try {
@@ -137,16 +149,16 @@ async function reportPost(postId) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to report post');
-        alert(data.message);
+        showToast(data.message || "Post reported successfully.");
     } catch (err) {
-        alert(err.message);
+        showToast(err.message);
     }
 }
 
 async function blockUser(targetEmail, targetUsername, onSuccess) {
     const user = getSessionUser();
     if (!user) return;
-    if (!confirm(`Block @${targetUsername || targetEmail}? You will no longer see their posts, comments, or messages.`)) return;
+    if (!confirm(`Block @${targetUsername || targetEmail}? You will no longer see their content or messages.`)) return;
 
     try {
         const res = await fetch(`${WORKER_ORIGIN}/api/users/block`, {
@@ -156,9 +168,9 @@ async function blockUser(targetEmail, targetUsername, onSuccess) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to block user');
-        alert(`@${targetUsername || targetEmail} has been blocked.`);
+        showToast(`Blocked @${targetUsername || targetEmail}`);
         if (typeof onSuccess === 'function') onSuccess();
     } catch (err) {
-        alert(err.message);
+        showToast(err.message);
     }
 }
