@@ -537,13 +537,19 @@
 
         async function deletePost(postId) {
             showCustomConfirm("Delete this post?", async () => {
-                await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, email: currentUser.email })
-                });
-                document.getElementById(`post-${postId}`)?.remove();
-                showToast("Post deleted");
+                try {
+                    const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ postId, email: currentUser.email })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed to delete');
+                    document.getElementById(`post-${postId}`)?.remove();
+                    showToast("Post deleted");
+                } catch (err) {
+                    showToast(err.message);
+                }
             }, true);
         }
 
