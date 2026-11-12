@@ -177,6 +177,7 @@
                 <span style="cursor: pointer;" onclick="closeModal('settings-modal')">✕</span>
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="theme-btn" class="btn-app-secondary" style="width: 100%;" onclick="toggleTheme()">🌙 Switch to Dark Mode</button>
                 <button class="btn-app-secondary" style="width: 100%; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="logout()">Logout</button>
                 <button class="btn-app-secondary" style="width: 100%;" onclick="closeModal('settings-modal')">Close</button>
             </div>
@@ -216,6 +217,8 @@
                 controlsEl.style.display = 'flex';
 
                 if (isOwner) {
+                    // Account's saved theme overrides whatever this device had cached
+                    applyTheme(activeProfileUser.theme);
                     controlsEl.innerHTML = `
                         <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
                         <button class="btn-app-secondary" onclick="openModal('settings-modal')">Settings</button>
@@ -470,6 +473,19 @@
                 const el = document.getElementById(`post-${postId}`);
                 if (el) el.remove();
             } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const next = isDark ? 'light' : 'dark';
+            try {
+                await saveTheme(loggedUser.email, next);
+                loggedUser.theme = next;
+                setSessionUser({ ...loggedUser, theme: next });
+            } catch (err) {
+                applyTheme(isDark ? 'dark' : 'light');
                 alert(err.message);
             }
         }
