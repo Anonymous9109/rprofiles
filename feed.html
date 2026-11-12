@@ -32,7 +32,7 @@
         
         .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
         .reaction-group { display: flex; gap: 10px; align-items: center; }
-        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; }
+        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; user-select: none; }
         .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
         .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
@@ -40,7 +40,7 @@
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
 
         .safety-actions { display: flex; gap: 8px; align-items: center; }
-        .safety-btn { background: none; border: none; color: #777; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; }
+        .safety-btn { background: none; border: none; color: #777; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; user-select: none; }
         .safety-btn:hover { color: #ef4444; text-decoration: underline; }
 
         /* Sliding Comments Drawer */
@@ -55,11 +55,14 @@
         .comment-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
         .comment-content { font-size: 13px; line-height: 1.4; margin-top: 3px; }
         .comment-actions { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; align-items: center; font-weight: 600; }
-        .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; }
+        .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; user-select: none; }
         .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
         .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
         .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
         .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
+
+        .comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; }
+        .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; user-select: none; }
 
         /* Custom In-App Toast & Dialog Overlays */
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -117,7 +120,7 @@
             </div>
             <form onsubmit="submitComment(event)" style="display: flex; gap: 6px;">
                 <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;">
-                <button type="submit" style="background: #000; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">Post</button>
+                <div class="comment-post-btn" onclick="submitComment(event)">Post</div>
             </form>
         </div>
     </div>
@@ -331,10 +334,10 @@
                 const formattedContent = escapeHtml(post.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
 
                 const ownerOrSafetyControls = isOwner
-                    ? `<button onclick="deletePost('${post.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>`
+                    ? `<div class="delete-btn" onclick="deletePost('${post.id}')">Delete</div>`
                     : `<div class="safety-actions">
-                        <button class="safety-btn" onclick="reportPost('${post.id}')">Report</button>
-                        <button class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(post.user_email)}', '${escapeHtml(post.username || '')}')">Block</button>
+                        <div class="safety-btn" onclick="reportPost('${post.id}')">Report</div>
+                        <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(post.user_email)}', '${escapeHtml(post.username || '')}')">Block</div>
                        </div>`;
 
                 postEl.innerHTML = `
@@ -350,16 +353,16 @@
                     ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
                     <div class="post-actions">
                         <div class="reaction-group">
-                            <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
+                            <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
                                 ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
-                            </button>
-                            <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
+                            </div>
+                            <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
                                 ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
-                            </button>
+                            </div>
                         </div>
-                        <button class="reaction-btn" onclick="openCommentsDrawer('${post.id}')">
+                        <div class="reaction-btn" onclick="openCommentsDrawer('${post.id}')">
                             ${COMMENT_SVG} Comments
-                        </button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(postEl);
@@ -429,12 +432,12 @@
                                 <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}</span>
                                 <div class="comment-content">${escapeHtml(c.content)}</div>
                                 <div class="comment-actions">
-                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
+                                    <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
                                         ${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span>
-                                    </button>
-                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
+                                    </div>
+                                    <div class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
                                         ${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span>
-                                    </button>
+                                    </div>
                                     <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
                                     ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
                                 </div>
