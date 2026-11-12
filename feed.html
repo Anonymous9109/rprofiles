@@ -61,11 +61,34 @@
         .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
         .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
 
+        /* Custom In-App Toast & Dialog Overlays */
+        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .custom-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9998; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .custom-dialog-card { background: #fff; border: 1px solid #ccc; border-radius: 8px; width: 90%; max-width: 320px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
+        .custom-dialog-msg { font-size: 13px; color: #111; line-height: 1.4; word-break: break-word; }
+        .custom-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .custom-dialog-btn { padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #ccc; background: #fff; color: #111; }
+        .custom-dialog-btn.primary { background: #000; color: #fff; border-color: #000; }
+        .custom-dialog-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
     </style>
 </head>
 <body>
+    <!-- Toast Notification Element -->
+    <div id="app-toast"></div>
+
+    <!-- Custom Dialog Modal Element -->
+    <div id="custom-dialog" class="custom-dialog-overlay">
+        <div class="custom-dialog-card">
+            <div id="custom-dialog-message" class="custom-dialog-msg"></div>
+            <div class="custom-dialog-actions" id="custom-dialog-actions"></div>
+        </div>
+    </div>
+
     <header>
         <div class="header-top">
             <a href="feed.html" class="brand">rprofiles</a>
@@ -122,6 +145,39 @@
         let activePostId = null;
         let replyingToId = null;
         let replyingToUsername = null;
+
+        // Custom In-App UI helpers (replacing native alert/confirm)
+        function showToast(message) {
+            const toast = document.getElementById('app-toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showCustomConfirm(message, onConfirm, isDanger = false) {
+            const overlay = document.getElementById('custom-dialog');
+            const msgEl = document.getElementById('custom-dialog-message');
+            const actionsEl = document.getElementById('custom-dialog-actions');
+
+            msgEl.innerText = message;
+            actionsEl.innerHTML = `
+                <button class="custom-dialog-btn" onclick="closeCustomDialog()">Cancel</button>
+                <button class="custom-dialog-btn ${isDanger ? 'danger' : 'primary'}" id="custom-dialog-confirm-btn">Confirm</button>
+            `;
+
+            document.getElementById('custom-dialog-confirm-btn').onclick = () => {
+                closeCustomDialog();
+                onConfirm();
+            };
+
+            overlay.style.display = 'flex';
+        }
+
+        function closeCustomDialog() {
+            document.getElementById('custom-dialog').style.display = 'none';
+        }
 
         const activeViewTimers = new Map();
         const postObserver = new IntersectionObserver((entries) => {
@@ -431,7 +487,7 @@
                 cancelReply();
                 loadComments();
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -453,7 +509,7 @@
                 buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -475,18 +531,20 @@
                 buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
         async function deletePost(postId) {
-            if (!confirm("Delete post?")) return;
-            await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, email: currentUser.email })
-            });
-            document.getElementById(`post-${postId}`)?.remove();
+            showCustomConfirm("Delete this post?", async () => {
+                await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId, email: currentUser.email })
+                });
+                document.getElementById(`post-${postId}`)?.remove();
+                showToast("Post deleted");
+            }, true);
         }
 
         loadFeed();
