@@ -69,8 +69,10 @@
         .custom-dialog-card { background: #fff; border: 1px solid #ccc; border-radius: 8px; width: 90%; max-width: 320px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
         .custom-dialog-msg { font-size: 13px; color: #111; line-height: 1.4; word-break: break-word; }
         .custom-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
-        .custom-dialog-btn { padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #ccc; background: #fff; color: #111; }
-        .custom-dialog-btn.primary { background: #000; color: #fff; border-color: #000; }
+        
+        /* Updated dialog button classes to match submit buttons */
+        .custom-dialog-btn { padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #000; background: #000; color: #fff; }
+        .custom-dialog-btn.secondary { background: #fff; color: #111; border: 1px solid #ccc; }
         .custom-dialog-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
 
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
@@ -163,7 +165,7 @@
 
             msgEl.innerText = message;
             actionsEl.innerHTML = `
-                <button class="custom-dialog-btn" onclick="closeCustomDialog()">Cancel</button>
+                <button class="custom-dialog-btn secondary" onclick="closeCustomDialog()">Cancel</button>
                 <button class="custom-dialog-btn ${isDanger ? 'danger' : 'primary'}" id="custom-dialog-confirm-btn">Confirm</button>
             `;
 
