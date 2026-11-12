@@ -27,7 +27,7 @@
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; }
         
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
@@ -64,7 +64,7 @@
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; }
+        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
@@ -73,7 +73,7 @@
             .profile-grid { flex-direction: column; }
             .profile-left { width: 100%; flex-direction: row; align-items: center; }
             .profile-left img { width: 90px; height: 90px; flex-shrink: 0; }
-            .profile-left div { flex-grow: 1; display: flex; gap: 6px; flex-wrap: wrap; }
+            .profile-left div { flex-grow: 1; display: flex; gap: 6px; }
         }
     </style>
 </head>
@@ -169,35 +169,6 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span>Account Settings</span>
-                <span style="cursor: pointer;" onclick="closeModal('settings-modal')">✕</span>
-            </div>
-            <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
-                <button id="theme-btn" class="btn-app-secondary" style="width: 100%;" onclick="toggleTheme()">🌙 Switch to Dark Mode</button>
-                <button class="btn-app-secondary" style="width: 100%;" onclick="openBlockedUsersModal()">Manage Blocked Users</button>
-                <button class="btn-app-secondary" style="width: 100%;" onclick="logout()">Logout</button>
-                <hr style="border:none; border-top:1px solid #e5e5e5; margin: 4px 0;">
-                <button class="btn-app-secondary" style="width: 100%; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="deleteAccount()">Delete Account & Data</button>
-                <button class="btn-app-secondary" style="width: 100%;" onclick="closeModal('settings-modal')">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- BLOCKED USERS MODAL -->
-    <div id="blocked-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span>Blocked Users</span>
-                <span style="cursor: pointer;" onclick="closeModal('blocked-modal')">✕</span>
-            </div>
-            <div class="modal-body" id="blocked-list">Loading...</div>
-        </div>
-    </div>
-
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
@@ -234,7 +205,7 @@
                     applyTheme(activeProfileUser.theme);
                     controlsEl.innerHTML = `
                         <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
-                        <button class="btn-app-secondary" onclick="openModal('settings-modal')">Settings</button>
+                        <a href="settings.html" class="btn-app-secondary" style="text-align: center;">Settings</a>
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
@@ -303,30 +274,7 @@
             }
         }
 
-        async function openBlockedUsersModal() {
-            closeModal('settings-modal');
-            openModal('blocked-modal');
-            const list = document.getElementById('blocked-list');
-            list.innerHTML = 'Loading...';
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/users/blocked?email=${encodeURIComponent(loggedUser.email)}`);
-                const data = await res.json();
-                if (!data.blocked.length) {
-                    list.innerHTML = '<p style="color:#666;">No blocked users.</p>';
-                    return;
-                }
-                list.innerHTML = data.blocked.map(u => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
-                        <span>@${escapeHtml(u.username || u.email)}</span>
-                        <button class="btn-app-secondary" onclick="unblockUser('${escapeHtml(u.email)}', openBlockedUsersModal)">Unblock</button>
-                    </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = '<p style="color:red;">Failed to load blocked users.</p>';
-            }
-        }
-
-        async function unblockUser(targetEmail, callback) {
+        async function unblockUser(targetEmail) {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
                     method: 'POST',
@@ -334,27 +282,10 @@
                     body: JSON.stringify({ blockerEmail: loggedUser.email, blockedEmail: targetEmail })
                 });
                 if (!res.ok) throw new Error('Failed to unblock');
-                if (typeof callback === 'function') callback();
-                else loadProfile();
+                showToast("User unblocked");
+                loadProfile();
             } catch (err) {
-                alert(err.message);
-            }
-        }
-
-        async function deleteAccount() {
-            if (!confirm("Are you sure you want to permanently delete your account, posts, photos, and messages? This action cannot be undone.")) return;
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedUser.email })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to delete account');
-                alert("Your account and all data have been permanently deleted.");
-                logout();
-            } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -469,7 +400,7 @@
                 cancelReply();
                 loadComments();
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -491,7 +422,7 @@
                 buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -513,7 +444,7 @@
                 buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) {
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
@@ -554,20 +485,7 @@
                 const el = document.getElementById(`post-${postId}`);
                 if (el) el.remove();
             } catch (err) {
-                alert(err.message);
-            }
-        }
-
-        async function toggleTheme() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const next = isDark ? 'light' : 'dark';
-            try {
-                await saveTheme(loggedUser.email, next);
-                loggedUser.theme = next;
-                setSessionUser({ ...loggedUser, theme: next });
-            } catch (err) {
-                applyTheme(isDark ? 'dark' : 'light');
-                alert(err.message);
+                showToast(err.message);
             }
         }
 
