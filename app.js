@@ -1,4 +1,3 @@
-
 const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
 // ===== THEME, TOAST & CUSTOM DIALOGS =====
@@ -57,6 +56,10 @@ html.dark .report-option { background:#222; border-color:#333; color:#eee; }
 .ugc-dialog-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-height: 75vh; overflow-y: auto; }
 .report-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; background: #fafafa; }
 .report-option input { width: auto; }
+.ugc-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.ugc-btn-danger { background: #ef4444; color: #fff; border: 1px solid #ef4444; }
+.ugc-btn-cancel { background: #fff; color: #111; border: 1px solid #ccc; }
+html.dark .ugc-btn-cancel { background: #2a2a2a; color: #eee; border-color: #444; }
 `;
 
 function applyTheme(theme) {
@@ -105,14 +108,15 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
                 </div>
                 <div class="ugc-dialog-body">
                     <p id="ugc-confirm-msg" style="line-height:1.4;"></p>
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <div id="ugc-confirm-yes" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Confirm</div>
-                        <div class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-confirm-overlay').style.display='none'">Cancel</div>
+                    <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                        <div id="ugc-confirm-cancel" class="ugc-btn ugc-btn-cancel">Cancel</div>
+                        <div id="ugc-confirm-yes" class="ugc-btn ugc-btn-danger">Confirm</div>
                     </div>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
+        document.getElementById('ugc-confirm-cancel').addEventListener('click', () => { overlay.style.display = 'none'; });
     }
     document.getElementById('ugc-confirm-title').innerText = title;
     document.getElementById('ugc-confirm-msg').innerText = message;
@@ -215,14 +219,15 @@ function reportPost(postId) {
                         <input type="text" id="ugc-custom-reason-input" placeholder="Type custom reason here..." style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
                     </div>
 
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <div id="ugc-report-submit" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Submit Report</div>
-                        <div class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">Cancel</div>
+                    <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                        <div id="ugc-report-cancel" class="ugc-btn ugc-btn-cancel">Cancel</div>
+                        <div id="ugc-report-submit" class="ugc-btn ugc-btn-danger">Submit Report</div>
                     </div>
                 </form>
             </div>
         `;
         document.body.appendChild(overlay);
+        document.getElementById('ugc-report-cancel').addEventListener('click', () => { overlay.style.display = 'none'; });
     }
 
     const form = document.getElementById('ugc-report-form');
