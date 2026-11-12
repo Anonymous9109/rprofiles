@@ -1,7 +1,12 @@
+
 const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
 // ===== THEME, TOAST & CUSTOM DIALOGS =====
 const THEME_CSS = `
+:where(.btn-app-secondary) { background:#fff; color:#111; border:1px solid #ccc; padding:6px 12px; border-radius:4px; font-weight:600; font-size:12px; }
+.btn-app-secondary { cursor:pointer; text-align:center; user-select:none; }
+.btn-app { user-select:none; }
+
 html.dark { color-scheme: dark; }
 html.dark body { background:#121212; color:#eee; }
 html.dark header, html.dark footer { background:#121212; border-color:#2a2a2a; }
@@ -17,7 +22,8 @@ html.dark .profile-left img, html.dark .avatar, html.dark .post-avatar, html.dar
 html.dark .post-meta { color:#eee; }
 html.dark .btn-app { background:#fff; color:#000; border-color:#fff; }
 html.dark .btn-app-secondary { background:#1c1c1c; color:#eee; border-color:#333; }
-html.dark button[style*="background: #000"] { background:#fff !important; color:#000 !important; }
+html.dark :is(button, div)[style*="background: #000"] { background:#fff !important; color:#000 !important; }
+html.dark .comment-post-btn { background:#fff; color:#000; }
 html.dark span[style*="color: #000"], html.dark a[style*="color:#000"] { color:#fff !important; }
 html.dark .reaction-btn { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark .reaction-btn.active-like { background:#fff; color:#000; border-color:#fff; }
@@ -100,8 +106,8 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
                 <div class="ugc-dialog-body">
                     <p id="ugc-confirm-msg" style="line-height:1.4;"></p>
                     <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button id="ugc-confirm-yes" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Confirm</button>
-                        <button type="button" class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-confirm-overlay').style.display='none'">Cancel</button>
+                        <div id="ugc-confirm-yes" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Confirm</div>
+                        <div class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-confirm-overlay').style.display='none'">Cancel</div>
                     </div>
                 </div>
             </div>
@@ -210,8 +216,8 @@ function reportPost(postId) {
                     </div>
 
                     <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button type="submit" id="ugc-report-submit" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Submit Report</button>
-                        <button type="button" class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">Cancel</button>
+                        <div id="ugc-report-submit" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Submit Report</div>
+                        <div class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">Cancel</div>
                     </div>
                 </form>
             </div>
@@ -233,8 +239,12 @@ function reportPost(postId) {
     });
 
     const submitBtn = document.getElementById('ugc-report-submit');
-    submitBtn.disabled = false;
-    submitBtn.innerText = 'Submit Report';
+    function setSubmitBusy(busy) {
+        submitBtn.style.pointerEvents = busy ? 'none' : 'auto';
+        submitBtn.style.opacity = busy ? '0.6' : '1';
+        submitBtn.innerText = busy ? 'Submitting...' : 'Submit Report';
+    }
+    setSubmitBusy(false);
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -255,8 +265,7 @@ function reportPost(postId) {
             finalReason = `Something else: ${customText}`;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Submitting...';
+        setSubmitBusy(true);
 
         try {
             const res = await fetch(`${WORKER_ORIGIN}/api/reports/create`, {
@@ -270,9 +279,14 @@ function reportPost(postId) {
             showToast("Report received. Our moderation team will review this post within 24 hours.");
         } catch (err) {
             showToast(err.message);
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Submit Report';
+            setSubmitBusy(false);
         }
+    };
+
+    // A div can't submit the form, so trigger the handler directly
+    submitBtn.onclick = () => form.onsubmit({ preventDefault() {} });
+    document.getElementById('ugc-custom-reason-input').onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); form.onsubmit({ preventDefault() {} }); }
     };
 
     overlay.style.display = 'flex';
