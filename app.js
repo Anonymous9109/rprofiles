@@ -48,8 +48,8 @@ html.dark .report-option { background:#222; border-color:#333; color:#eee; }
 .ugc-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 9500; padding: 16px; }
 .ugc-dialog-box { width: 100%; max-width: 400px; background: #fff; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
 .ugc-dialog-head { background: #f5f5f5; padding: 12px 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e5; font-size: 14px; }
-.ugc-dialog-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
-.report-option { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; background: #fafafa; }
+.ugc-dialog-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-height: 75vh; overflow-y: auto; }
+.report-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; background: #fafafa; }
 .report-option input { width: auto; }
 `;
 
@@ -84,7 +84,7 @@ function showToast(message) {
     toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 3200);
 }
 
-// Custom non-blocking confirm dialog (works reliably in Android WebView)
+// Custom WebView-safe confirm dialog replacing native confirm()
 function showConfirmDialog(title, message, confirmLabel, onConfirm) {
     let overlay = document.getElementById('ugc-confirm-overlay');
     if (!overlay) {
@@ -99,7 +99,7 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
                 </div>
                 <div class="ugc-dialog-body">
                     <p id="ugc-confirm-msg" style="line-height:1.4;"></p>
-                    <div style="display:flex; gap:8px; margin-top:6px;">
+                    <div style="display:flex; gap:8px; margin-top:8px;">
                         <button id="ugc-confirm-yes" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Confirm</button>
                         <button type="button" class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-confirm-overlay').style.display='none'">Cancel</button>
                     </div>
@@ -196,14 +196,20 @@ function reportPost(postId) {
                     <span style="cursor:pointer;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">✕</span>
                 </div>
                 <form id="ugc-report-form" class="ugc-dialog-body">
-                    <p style="font-size:12px; color:#666;">Select the reason you are reporting this post:</p>
+                    <p style="font-size:12px; color:#666;">Select a violation category:</p>
                     <label class="report-option"><input type="radio" name="report_reason" value="Spam or Misleading" required> Spam or Misleading</label>
                     <label class="report-option"><input type="radio" name="report_reason" value="Sexual or Explicit Content"> Sexual or Explicit Content</label>
                     <label class="report-option"><input type="radio" name="report_reason" value="Harassment or Bullying"> Harassment or Bullying</label>
                     <label class="report-option"><input type="radio" name="report_reason" value="Hate Speech or Violence"> Hate Speech or Violence</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Copyright or Intellectual Property"> Copyright Violation</label>
-                    <input type="text" id="ugc-report-details" placeholder="Additional details (optional)..." style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
-                    <div style="display:flex; gap:8px; margin-top:4px;">
+                    <label class="report-option"><input type="radio" name="report_reason" value="Copyright Violation"> Copyright Violation</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Something else" id="radio-something-else" onchange="toggleCustomReason(true)"> Something else</label>
+                    
+                    <div id="custom-reason-container" style="display:none; flex-direction:column; gap:4px; margin-top:4px;">
+                        <label style="font-size:11px; font-weight:600; color:#555;">Please specify:</label>
+                        <input type="text" id="ugc-custom-reason-input" placeholder="Type custom reason here..." style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-top:8px;">
                         <button type="submit" id="ugc-report-submit" class="btn-app" style="flex:1; background:#ef4444; border-color:#ef4444; color:#fff;">Submit Report</button>
                         <button type="button" class="btn-app-secondary" style="flex:1;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">Cancel</button>
                     </div>
@@ -215,6 +221,17 @@ function reportPost(postId) {
 
     const form = document.getElementById('ugc-report-form');
     form.reset();
+    document.getElementById('custom-reason-container').style.display = 'none';
+
+    // Toggle custom input visibility when clicking radio options
+    form.querySelectorAll('input[name="report_reason"]').forEach(radio => {
+        radio.onchange = (e) => {
+            const isSomethingElse = e.target.value === 'Something else';
+            document.getElementById('custom-reason-container').style.display = isSomethingElse ? 'flex' : 'none';
+            if (isSomethingElse) document.getElementById('ugc-custom-reason-input').focus();
+        };
+    });
+
     const submitBtn = document.getElementById('ugc-report-submit');
     submitBtn.disabled = false;
     submitBtn.innerText = 'Submit Report';
@@ -226,8 +243,17 @@ function reportPost(postId) {
             showToast("Please select a violation type.");
             return;
         }
-        const details = document.getElementById('ugc-report-details').value.trim();
-        const fullReason = details ? `${selected.value} — ${details}` : selected.value;
+
+        let finalReason = selected.value;
+        if (selected.value === 'Something else') {
+            const customText = document.getElementById('ugc-custom-reason-input').value.trim();
+            if (!customText) {
+                showToast("Please specify your reason.");
+                document.getElementById('ugc-custom-reason-input').focus();
+                return;
+            }
+            finalReason = `Something else: ${customText}`;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerText = 'Submitting...';
@@ -236,12 +262,12 @@ function reportPost(postId) {
             const res = await fetch(`${WORKER_ORIGIN}/api/reports/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, email: user.email, reason: fullReason })
+                body: JSON.stringify({ postId, email: user.email, reason: finalReason })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to submit report');
             overlay.style.display = 'none';
-            showToast("Report received. Our team will review this post within 24 hours.");
+            showToast("Report received. Our moderation team will review this post within 24 hours.");
         } catch (err) {
             showToast(err.message);
             submitBtn.disabled = false;
