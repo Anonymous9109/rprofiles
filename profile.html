@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rprofiles - Profile</title>
+    <title>Nvaritia - Profile</title>
+    <!-- Whop Native Inline Checkout SDK -->
+    <script src="https://js.whop.com/js/checkout.js" async></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
@@ -22,7 +24,7 @@
         .profile-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
         .profile-left img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; }
         .profile-right { flex-grow: 1; min-width: 0; }
-        .profile-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; }
+        .profile-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; display: flex; align-items: center; gap: 4px; }
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
@@ -42,7 +44,6 @@
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
 
-        /* Sliding Comments Drawer */
         .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
         .comments-drawer.open { bottom: 0; }
         .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
@@ -60,7 +61,6 @@
         .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
         .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
 
-        /* Custom In-App Toast & Dialog Overlays */
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -80,20 +80,10 @@
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
-
-        @media (max-width: 640px) {
-            .profile-grid { flex-direction: column; }
-            .profile-left { width: 100%; flex-direction: row; align-items: center; }
-            .profile-left img { width: 90px; height: 90px; flex-shrink: 0; }
-            .profile-left div { flex-grow: 1; display: flex; gap: 6px; }
-        }
     </style>
 </head>
 <body>
-    <!-- Toast Notification Element -->
     <div id="app-toast"></div>
-
-    <!-- Custom Dialog Modal Element -->
     <div id="custom-dialog" class="custom-dialog-overlay">
         <div class="custom-dialog-card">
             <div id="custom-dialog-message" class="custom-dialog-msg"></div>
@@ -101,7 +91,7 @@
         </div>
     </div>
 
-    <header><a href="feed.html" class="brand">rprofiles</a></header>
+    <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
         <div class="profile-grid">
@@ -123,7 +113,6 @@
         </div>
     </div>
 
-    <!-- SLIDING COMMENTS DRAWER -->
     <div id="comments-drawer" class="comments-drawer">
         <div class="drawer-header">
             <span>Comments</span>
@@ -161,7 +150,6 @@
         </a>
     </footer>
 
-    <!-- EDIT PROFILE MODAL -->
     <div id="edit-modal" class="modal">
         <div class="modal-window">
             <div class="modal-header">
@@ -202,14 +190,11 @@
         let replyingToId = null;
         let replyingToUsername = null;
 
-        // Custom In-App UI helpers (replacing native alert/confirm)
         function showToast(message) {
             const toast = document.getElementById('app-toast');
             toast.innerText = message;
             toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
         function showCustomConfirm(message, onConfirm, isDanger = false) {
@@ -222,12 +207,10 @@
                 <button class="custom-dialog-btn" onclick="closeCustomDialog()">Cancel</button>
                 <button class="custom-dialog-btn ${isDanger ? 'danger' : 'primary'}" id="custom-dialog-confirm-btn">Confirm</button>
             `;
-
             document.getElementById('custom-dialog-confirm-btn').onclick = () => {
                 closeCustomDialog();
                 onConfirm();
             };
-
             overlay.style.display = 'flex';
         }
 
@@ -238,7 +221,6 @@
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
         const COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-
         const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 
@@ -249,7 +231,7 @@
                 if (!res.ok) throw new Error(data.error);
 
                 activeProfileUser = data.user;
-                document.getElementById('username-display').innerText = activeProfileUser.username ? `@${activeProfileUser.username}` : activeProfileUser.email;
+                document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
                 document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
                 if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
 
@@ -259,9 +241,30 @@
 
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
+                    let verificationSection = '';
+                    if (!activeProfileUser.verified) {
+                        verificationSection = `
+                            <div id="verification-box" style="margin-top: 4px; width: 100%;">
+                                <button id="btn-get-verified" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; width:100%; text-align:center;" onclick="showNativeCheckout()">
+                                    ✨ Get Verified
+                                </button>
+                                <div id="whop-embed-wrapper" style="display: none; margin-top: 8px; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; background: #fff;">
+                                    <div class="whop-checkout-embed" 
+                                         data-plan-id="plan_fD88Rj5uYPNHM"
+                                         data-whop-checkout-email="${escapeHtml(loggedUser.email)}"
+                                         data-whop-checkout-on-complete="onWhopPaymentComplete">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        verificationSection = `<div style="background:#eff6ff; color:#1d4ed8; padding:8px; border-radius:4px; font-weight:600; text-align:center; font-size:12px; margin-top:4px;">✓ Verified Account</div>`;
+                    }
+
                     controlsEl.innerHTML = `
                         <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
                         <a href="settings.html" class="btn-app-secondary" style="text-align: center;">Settings</a>
+                        ${verificationSection}
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
@@ -330,6 +333,24 @@
             }
         }
 
+        function showNativeCheckout() {
+            document.getElementById('btn-get-verified').style.display = 'none';
+            document.getElementById('whop-embed-wrapper').style.display = 'block';
+        }
+
+        async function onWhopPaymentComplete() {
+            showToast("Payment successful! Activating your badge...");
+            for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 1500));
+                await loadProfile();
+                if (activeProfileUser && activeProfileUser.verified) {
+                    showToast("Verified! Your badge is now active.");
+                    return;
+                }
+            }
+            showToast("Payment received. Refresh the page if your badge hasn't appeared yet.");
+        }
+
         async function unblockUser(targetEmail) {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
@@ -393,7 +414,7 @@
                         <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
                             <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                             <div style="flex-grow: 1;">
-                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}</span>
+                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</span>
                                 <div class="comment-content">${escapeHtml(c.content)}</div>
                                 <div class="comment-actions">
                                     <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
@@ -442,12 +463,7 @@
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        postId: activePostId, 
-                        email: loggedUser.email, 
-                        content, 
-                        parentId: replyingToId 
-                    })
+                    body: JSON.stringify({ postId: activePostId, email: loggedUser.email, content, parentId: replyingToId })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -538,8 +554,7 @@
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed to delete');
-                    const el = document.getElementById(`post-${postId}`);
-                    if (el) el.remove();
+                    document.getElementById(`post-${postId}`)?.remove();
                     showToast("Post deleted");
                 } catch (err) {
                     showToast(err.message);
