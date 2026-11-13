@@ -65,7 +65,7 @@ html.dark .ugc-btn-cancel { background: #2a2a2a; color: #eee; border-color: #444
 function applyTheme(theme) {
     const t = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.classList.toggle('dark', t === 'dark');
-    try { localStorage.setItem('rprofiles_theme', t); } catch (e) {}
+    try { localStorage.setItem('Nvaritia_theme', t); } catch (e) {}
     const btn = document.getElementById('theme-btn');
     if (btn) btn.innerText = t === 'dark' ? 'Switch to Light Mode' : ' Switch to Dark Mode';
 }
