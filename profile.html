@@ -18,11 +18,11 @@
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-tab.active .footer-icon { stroke: #000; }
 
-        .profile-grid { display: flex; gap: 16px; }
-        .profile-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
-        .profile-left img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; }
-        .profile-right { flex-grow: 1; min-width: 0; }
-        .profile-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
+        .profile-pfp { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
+        .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
+        .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
@@ -92,22 +92,28 @@
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
-        <div class="profile-grid">
-            <div class="profile-left">
-                <img id="pfp-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>">
-                <div id="owner-controls" style="display: none; flex-direction: column; gap: 6px;"></div>
-            </div>
-            <div class="profile-right">
+        <!-- Top Profile Header: PFP on left, Username & verification button on right -->
+        <div class="profile-header-card">
+            <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>">
+            <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
-                <div class="panel">
-                    <div class="panel-header">Bio</div>
-                    <div class="panel-content" id="bio-display">No bio provided.</div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header" id="posts-header">Posts</div>
-                    <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
-                </div>
+                <div id="verification-btn-container"></div>
             </div>
+        </div>
+
+        <!-- Bio Container -->
+        <div class="panel">
+            <div class="panel-header">Bio</div>
+            <div class="panel-content" id="bio-display">No bio provided.</div>
+        </div>
+
+        <!-- Owner / Action Buttons Side-by-Side (Edit & Settings or Message & Block) -->
+        <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
+
+        <!-- Posts Container -->
+        <div class="panel">
+            <div class="panel-header" id="posts-header">Posts</div>
+            <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
         </div>
     </div>
 
@@ -234,49 +240,42 @@
                 if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
 
                 const isOwner = activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
+                const verificationBtnContainer = document.getElementById('verification-btn-container');
                 const controlsEl = document.getElementById('owner-controls');
                 controlsEl.style.display = 'flex';
 
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
-                    let verificationSection = '';
+                    
+                    // Show Get Verified button under username only if not verified
                     if (!activeProfileUser.verified) {
-                        verificationSection = `
-                            <div id="verification-box" style="margin-top: 4px; width: 100%;">
-                                <button id="btn-get-verified" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; width:100%; text-align:center;" onclick="showInlineCheckout()">
-                                    ✨ Get Verified
-                                </button>
-                                <div id="inline-checkout-wrapper" style="display: none; margin-top: 8px; width: 100%; height: 520px; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; background: #fff; position: relative;">
-                                    <div style="background: #f8f9fa; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600;">
-                                        <span>Secure Whop Checkout</span>
-                                        <button onclick="checkPaymentStatus()" style="background: #000; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">I've Paid — Refresh Badge</button>
-                                    </div>
-                                    <iframe id="whop-inline-iframe" src="" style="width: 100%; height: calc(100% - 37px); border: none;"></iframe>
-                                </div>
-                            </div>
-                        `;
+                        verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
                     } else {
-                        verificationSection = `<div style="background:#eff6ff; color:#1d4ed8; padding:8px; border-radius:4px; font-weight:600; text-align:center; font-size:12px; margin-top:4px;">✓ Verified Account</div>`;
+                        verificationBtnContainer.innerHTML = '';
                     }
 
+                    // Side-by-side buttons under bio for owner
                     controlsEl.innerHTML = `
-                        <button class="btn-app-secondary" onclick="openModal('edit-modal')">Edit Profile</button>
-                        <a href="settings.html" class="btn-app-secondary" style="text-align: center;">Settings</a>
-                        ${verificationSection}
+                        <button class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
+                        <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
                     document.getElementById('edit-bio').value = activeProfileUser.bio || '';
-                } else if (data.isBlocked) {
-                    controlsEl.innerHTML = `
-                        <button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>
-                    `;
-                    document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
-                    return;
                 } else {
-                    controlsEl.innerHTML = `
-                        <button class="btn-app" style="width: 100%; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
-                        <button class="btn-app-secondary" style="width: 100%; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
-                    `;
+                    verificationBtnContainer.innerHTML = '';
+                    if (data.isBlocked) {
+                        controlsEl.innerHTML = `
+                            <button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>
+                        `;
+                        document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
+                        return;
+                    } else {
+                        // Side-by-side buttons under bio for visitor
+                        controlsEl.innerHTML = `
+                            <button class="btn-app" style="flex: 1; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
+                            <button class="btn-app-secondary" style="flex: 1; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
+                        `;
+                    }
                 }
 
                 document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${activeProfileUser.username || 'User'}'s Posts`;
@@ -328,26 +327,6 @@
             } catch (e) {
                 document.getElementById('username-display').innerText = 'User not found or offline';
                 document.getElementById('posts-container').innerHTML = '';
-            }
-        }
-
-        function showInlineCheckout() {
-            document.getElementById('btn-get-verified').style.display = 'none';
-            const wrapper = document.getElementById('inline-checkout-wrapper');
-            const iframe = document.getElementById('whop-inline-iframe');
-            
-            // Load the official Whop checkout URL with the user's email prefilled
-            iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
-            wrapper.style.display = 'block';
-        }
-
-        async function checkPaymentStatus() {
-            showToast("Checking payment status...");
-            await loadProfile();
-            if (activeProfileUser && activeProfileUser.verified) {
-                showToast("Success! Your verification badge is now active.");
-            } else {
-                showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
             }
         }
 
