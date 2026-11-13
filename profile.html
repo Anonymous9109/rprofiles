@@ -241,15 +241,27 @@
 
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
-                    let verificationSection = '';
-                    if (!activeProfileUser.verified) {
-                        verificationSection = `
-                            <div id="verification-box" style="margin-top: 4px; width: 100%;">
-                                <button id="btn-get-verified" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; width:100%; text-align:center;" onclick="showNativeCheckout()">
-                                    ✨ Get Verified
-                                </button>
-                                <div id="whop-embed-wrapper" style="display: none; margin-top: 8px; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; background: #fff;">
-                                    <div class="whop-checkout-embed" 
+                    function showInlineCheckout() {
+    document.getElementById('btn-get-verified').style.display = 'none';
+    const wrapper = document.getElementById('inline-checkout-wrapper');
+    const iframe = document.getElementById('whop-inline-iframe');
+    
+    // Load the official Whop checkout URL with the user's email prefilled
+    iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
+    wrapper.style.display = 'block';
+}
+
+async function checkPaymentStatus() {
+    showToast("Checking payment status...");
+    await loadProfile();
+    if (activeProfileUser && activeProfileUser.verified) {
+        showToast("Success! Your verification badge is now active.");
+    } else {
+        showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
+    }
+}
+
+                                    class="whop-checkout-embed" 
                                          data-plan-id="plan_fD88Rj5uYPNHM"
                                          data-whop-checkout-email="${escapeHtml(loggedUser.email)}"
                                          data-whop-checkout-on-complete="onWhopPaymentComplete">
@@ -565,6 +577,26 @@
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         loadProfile();
+function showInlineCheckout() {
+    document.getElementById('btn-get-verified').style.display = 'none';
+    const wrapper = document.getElementById('inline-checkout-wrapper');
+    const iframe = document.getElementById('whop-inline-iframe');
+    
+    // Load the official Whop checkout URL with the user's email prefilled
+    iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
+    wrapper.style.display = 'block';
+}
+
+async function checkPaymentStatus() {
+    showToast("Checking payment status...");
+    await loadProfile();
+    if (activeProfileUser && activeProfileUser.verified) {
+        showToast("Success! Your verification badge is now active.");
+    } else {
+        showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
+    }
+}
+
     </script>
 </body>
 </html>
