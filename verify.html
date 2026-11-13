@@ -24,10 +24,10 @@
 
     <div class="checkout-container">
         <div class="checkout-toolbar">
-            <span>Secure Whop Checkout</span>
+            <span>Secure Whop Checkout (Account Locked)</span>
             <button onclick="checkPaymentAndReturn()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">I've Paid — Return to Profile</button>
         </div>
-        <!-- Iframe with prefilled user email -->
+        <!-- Iframe with prefilled AND locked email -->
         <iframe id="whop-iframe" style="width: 100%; flex-grow: 1; border: none;"></iframe>
     </div>
 
@@ -35,8 +35,9 @@
     <script>
         const loggedUser = requireAuth();
 
-        // Pass user's email directly into Whop checkout URL so it auto-matches their account
-        document.getElementById('whop-iframe').src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
+        // Automatically pass the user's Nvaritia email and disable editing to prevent mistakes
+        const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1`;
+        document.getElementById('whop-iframe').src = checkoutUrl;
 
         function showToast(message) {
             const toast = document.getElementById('app-toast');
