@@ -4,33 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nvaritia - Get Verified</title>
-    <script src="https://js.whop.com/js/checkout.js" async></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding: 24px; align-items: center; justify-content: center; }
-        .verify-card { width: 100%; max-width: 480px; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .verify-header { background: #fafafa; padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; }
-        .verify-body { padding: 16px; }
-        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: #ffffff; border-bottom: 1px solid #e5e5e5; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .checkout-container { margin-top: 48px; flex-grow: 1; display: flex; flex-direction: column; height: calc(100vh - 48px); position: relative; }
+        .checkout-toolbar { background: #f8f9fa; padding: 10px 16px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; }
+        #app-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
     <div id="app-toast"></div>
-    <div class="verify-card">
-        <div class="verify-header">
-            <span>Account Verification</span>
-            <a href="profile.html" style="color: #666; text-decoration: none; font-size: 12px;">← Back to Profile</a>
+    <header>
+        <a href="profile.html" class="brand">Nvaritia</a>
+        <a href="profile.html" style="font-weight: 600; color: #000; text-decoration: none; font-size: 12px;">← Back to Profile</a>
+    </header>
+
+    <div class="checkout-container">
+        <div class="checkout-toolbar">
+            <span>Secure Whop Checkout</span>
+            <button onclick="checkPaymentAndReturn()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">I've Paid — Return to Profile</button>
         </div>
-        <div class="verify-body">
-            <p style="margin-bottom: 14px; color: #555; line-height: 1.4;">Complete your secure payment via Whop to unlock your blue verification badge on Nvaritia instantly.</p>
-            <div style="min-height: 480px;">
-                <div class="whop-checkout-embed" 
-                     data-plan-id="plan_fD88Rj5uYPNHM"
-                     data-whop-checkout-on-complete="onPaymentComplete">
-                </div>
-            </div>
-        </div>
+        <!-- Direct iframe embedding your exact Whop plan -->
+        <iframe src="https://whop.com/checkout/plan_fD88Rj5uYPNHM" style="width: 100%; flex-grow: 1; border: none;"></iframe>
     </div>
 
     <script src="app.js"></script>
@@ -44,25 +42,20 @@
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        async function onPaymentComplete() {
-            showToast("Payment successful! Activating your badge...");
-            
-            // Poll worker until the webhook processes and sets verified = true
-            for (let i = 0; i < 6; i++) {
-                await new Promise(r => setTimeout(r, 1500));
-                try {
-                    const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(loggedUser.email)}?viewer=${encodeURIComponent(loggedUser.email)}`);
-                    const data = await res.json();
-                    if (res.ok && data.user && data.user.verified) {
-                        showToast("Verified! Redirecting to profile...");
-                        setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
-                        return;
-                    }
-                } catch(e) {}
+        async function checkPaymentAndReturn() {
+            showToast("Checking payment status...");
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(loggedUser.email)}?viewer=${encodeURIComponent(loggedUser.email)}`);
+                const data = await res.json();
+                if (res.ok && data.user && data.user.verified) {
+                    showToast("Verified! Returning to profile...");
+                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
+                } else {
+                    showToast("Payment processing... if your badge updates, click again to return.");
+                }
+            } catch(e) {
+                showToast("Error checking verification status.");
             }
-            
-            // Fallback redirect
-            window.location.href = 'profile.html';
         }
     </script>
 </body>
