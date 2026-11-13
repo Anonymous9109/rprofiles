@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nvaritia - Profile</title>
-    <!-- Whop Native Inline Checkout SDK -->
-    <script src="https://js.whop.com/js/checkout.js" async></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
@@ -241,31 +239,19 @@
 
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
-                    function showInlineCheckout() {
-    document.getElementById('btn-get-verified').style.display = 'none';
-    const wrapper = document.getElementById('inline-checkout-wrapper');
-    const iframe = document.getElementById('whop-inline-iframe');
-    
-    // Load the official Whop checkout URL with the user's email prefilled
-    iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
-    wrapper.style.display = 'block';
-}
-
-async function checkPaymentStatus() {
-    showToast("Checking payment status...");
-    await loadProfile();
-    if (activeProfileUser && activeProfileUser.verified) {
-        showToast("Success! Your verification badge is now active.");
-    } else {
-        showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
-    }
-}
-
-                                    class="whop-checkout-embed" 
-                                         data-plan-id="plan_fD88Rj5uYPNHM"
-                                         data-whop-checkout-email="${escapeHtml(loggedUser.email)}"
-                                         data-whop-checkout-on-complete="onWhopPaymentComplete">
+                    let verificationSection = '';
+                    if (!activeProfileUser.verified) {
+                        verificationSection = `
+                            <div id="verification-box" style="margin-top: 4px; width: 100%;">
+                                <button id="btn-get-verified" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; width:100%; text-align:center;" onclick="showInlineCheckout()">
+                                    ✨ Get Verified
+                                </button>
+                                <div id="inline-checkout-wrapper" style="display: none; margin-top: 8px; width: 100%; height: 520px; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; background: #fff; position: relative;">
+                                    <div style="background: #f8f9fa; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600;">
+                                        <span>Secure Whop Checkout</span>
+                                        <button onclick="checkPaymentStatus()" style="background: #000; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">I've Paid — Refresh Badge</button>
                                     </div>
+                                    <iframe id="whop-inline-iframe" src="" style="width: 100%; height: calc(100% - 37px); border: none;"></iframe>
                                 </div>
                             </div>
                         `;
@@ -345,22 +331,24 @@ async function checkPaymentStatus() {
             }
         }
 
-        function showNativeCheckout() {
+        function showInlineCheckout() {
             document.getElementById('btn-get-verified').style.display = 'none';
-            document.getElementById('whop-embed-wrapper').style.display = 'block';
+            const wrapper = document.getElementById('inline-checkout-wrapper');
+            const iframe = document.getElementById('whop-inline-iframe');
+            
+            // Load the official Whop checkout URL with the user's email prefilled
+            iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
+            wrapper.style.display = 'block';
         }
 
-        async function onWhopPaymentComplete() {
-            showToast("Payment successful! Activating your badge...");
-            for (let i = 0; i < 5; i++) {
-                await new Promise(r => setTimeout(r, 1500));
-                await loadProfile();
-                if (activeProfileUser && activeProfileUser.verified) {
-                    showToast("Verified! Your badge is now active.");
-                    return;
-                }
+        async function checkPaymentStatus() {
+            showToast("Checking payment status...");
+            await loadProfile();
+            if (activeProfileUser && activeProfileUser.verified) {
+                showToast("Success! Your verification badge is now active.");
+            } else {
+                showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
             }
-            showToast("Payment received. Refresh the page if your badge hasn't appeared yet.");
         }
 
         async function unblockUser(targetEmail) {
@@ -577,26 +565,6 @@ async function checkPaymentStatus() {
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         loadProfile();
-function showInlineCheckout() {
-    document.getElementById('btn-get-verified').style.display = 'none';
-    const wrapper = document.getElementById('inline-checkout-wrapper');
-    const iframe = document.getElementById('whop-inline-iframe');
-    
-    // Load the official Whop checkout URL with the user's email prefilled
-    iframe.src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
-    wrapper.style.display = 'block';
-}
-
-async function checkPaymentStatus() {
-    showToast("Checking payment status...");
-    await loadProfile();
-    if (activeProfileUser && activeProfileUser.verified) {
-        showToast("Success! Your verification badge is now active.");
-    } else {
-        showToast("Payment processing... if your badge doesn't appear, wait a moment and click it again.");
-    }
-}
-
     </script>
 </body>
 </html>
