@@ -67,7 +67,7 @@ function applyTheme(theme) {
     document.documentElement.classList.toggle('dark', t === 'dark');
     try { localStorage.setItem('rprofiles_theme', t); } catch (e) {}
     const btn = document.getElementById('theme-btn');
-    if (btn) btn.innerText = t === 'dark' ? '☀️ Switch to Light Mode' : '🌙 Switch to Dark Mode';
+    if (btn) btn.innerText = t === 'dark' ? 'Switch to Light Mode' : ' Switch to Dark Mode';
 }
 
 async function saveTheme(email, theme) {
