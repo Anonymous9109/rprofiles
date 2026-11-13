@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nvaritia - Get Verified</title>
+    <script src="https://js.whop.com/js/checkout.js" async></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding: 24px; align-items: center; justify-content: center; }
+        .verify-card { width: 100%; max-width: 480px; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .verify-header { background: #fafafa; padding: 12px 16px; font-weight: bold; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; }
+        .verify-body { padding: 16px; }
+        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div id="app-toast"></div>
+    <div class="verify-card">
+        <div class="verify-header">
+            <span>Account Verification</span>
+            <a href="profile.html" style="color: #666; text-decoration: none; font-size: 12px;">← Back to Profile</a>
+        </div>
+        <div class="verify-body">
+            <p style="margin-bottom: 14px; color: #555; line-height: 1.4;">Complete your secure payment via Whop to unlock your blue verification badge on Nvaritia instantly.</p>
+            <div style="min-height: 480px;">
+                <div class="whop-checkout-embed" 
+                     data-plan-id="plan_fD88Rj5uYPNHM"
+                     data-whop-checkout-on-complete="onPaymentComplete">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const loggedUser = requireAuth();
+
+        function showToast(message) {
+            const toast = document.getElementById('app-toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        async function onPaymentComplete() {
+            showToast("Payment successful! Activating your badge...");
+            
+            // Poll worker until the webhook processes and sets verified = true
+            for (let i = 0; i < 6; i++) {
+                await new Promise(r => setTimeout(r, 1500));
+                try {
+                    const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(loggedUser.email)}?viewer=${encodeURIComponent(loggedUser.email)}`);
+                    const data = await res.json();
+                    if (res.ok && data.user && data.user.verified) {
+                        showToast("Verified! Redirecting to profile...");
+                        setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
+                        return;
+                    }
+                } catch(e) {}
+            }
+            
+            // Fallback redirect
+            window.location.href = 'profile.html';
+        }
+    </script>
+</body>
+</html>
