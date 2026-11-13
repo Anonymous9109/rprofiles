@@ -27,13 +27,16 @@
             <span>Secure Whop Checkout</span>
             <button onclick="checkPaymentAndReturn()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">I've Paid — Return to Profile</button>
         </div>
-        <!-- Direct iframe embedding your exact Whop plan -->
-        <iframe src="https://whop.com/checkout/plan_fD88Rj5uYPNHM" style="width: 100%; flex-grow: 1; border: none;"></iframe>
+        <!-- Iframe with prefilled user email -->
+        <iframe id="whop-iframe" style="width: 100%; flex-grow: 1; border: none;"></iframe>
     </div>
 
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
+
+        // Pass user's email directly into Whop checkout URL so it auto-matches their account
+        document.getElementById('whop-iframe').src = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}`;
 
         function showToast(message) {
             const toast = document.getElementById('app-toast');
@@ -43,15 +46,20 @@
         }
 
         async function checkPaymentAndReturn() {
-            showToast("Checking payment status...");
+            showToast("Verifying with Whop...");
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(loggedUser.email)}?viewer=${encodeURIComponent(loggedUser.email)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/check-whop-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedUser.email })
+                });
                 const data = await res.json();
-                if (res.ok && data.user && data.user.verified) {
+                
+                if (res.ok && data.verified) {
                     showToast("Verified! Returning to profile...");
                     setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
                 } else {
-                    showToast("Payment processing... if your badge updates, click again to return.");
+                    showToast("Trial/Payment not detected yet. Complete the checkout above first.");
                 }
             } catch(e) {
                 showToast("Error checking verification status.");
