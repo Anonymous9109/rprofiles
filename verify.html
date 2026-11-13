@@ -10,7 +10,7 @@
         header { background: #ffffff; border-bottom: 1px solid #e5e5e5; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .checkout-container { margin-top: 48px; flex-grow: 1; display: flex; flex-direction: column; height: calc(100vh - 48px); position: relative; }
-        .checkout-toolbar { background: #f8f9fa; padding: 10px 16px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; }
+        .checkout-toolbar { background: #f8f9fa; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; }
         #app-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
@@ -24,10 +24,12 @@
 
     <div class="checkout-container">
         <div class="checkout-toolbar">
-            <span>Secure Whop Checkout (Account Locked)</span>
-            <button onclick="checkPaymentAndReturn()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">I've Paid — Return to Profile</button>
+            <span id="toolbar-text">Secure Whop Checkout</span>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="syncAndReturn()" style="background: #3b82f6; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">✓ Sync Badge & Return</button>
+                <button onclick="resetCheckout()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">New Checkout</button>
+            </div>
         </div>
-        <!-- Iframe with prefilled AND locked email -->
         <iframe id="whop-iframe" style="width: 100%; flex-grow: 1; border: none;"></iframe>
     </div>
 
@@ -35,9 +37,11 @@
     <script>
         const loggedUser = requireAuth();
 
-        // Automatically pass the user's Nvaritia email and disable editing to prevent mistakes
-        const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1`;
-        document.getElementById('whop-iframe').src = checkoutUrl;
+        function loadCheckout() {
+            const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1`;
+            document.getElementById('whop-iframe').src = checkoutUrl;
+        }
+        loadCheckout();
 
         function showToast(message) {
             const toast = document.getElementById('app-toast');
@@ -46,8 +50,8 @@
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        async function checkPaymentAndReturn() {
-            showToast("Verifying with Whop...");
+        async function syncAndReturn() {
+            showToast("Syncing membership with Whop...");
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/check-whop-status`, {
                     method: 'POST',
@@ -60,11 +64,16 @@
                     showToast("Verified! Returning to profile...");
                     setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
                 } else {
-                    showToast("Trial/Payment not detected yet. Complete the checkout above first.");
+                    showToast("No active trial/membership found for this email yet.");
                 }
             } catch(e) {
-                showToast("Error checking verification status.");
+                showToast("Error connecting to verification server.");
             }
+        }
+
+        function resetCheckout() {
+            showToast("Refreshing checkout session...");
+            loadCheckout();
         }
     </script>
 </body>
