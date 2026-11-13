@@ -22,11 +22,11 @@
         .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 12px; cursor: pointer; text-align: center; font-weight: 600; width: 100%; font-size: 13px; }
         .btn-app-secondary:hover { background: #fafafa; }
         
-        /* Modal for blocked users */
+        /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; }
+        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; gap: 12px; }
     </style>
 </head>
 <body>
@@ -38,7 +38,7 @@
         <button class="btn-app-secondary" onclick="openBlockedUsersModal()">Manage Blocked Users</button>
         <button class="btn-app-secondary" onclick="logout()">Logout</button>
         <hr style="border:none; border-top:1px solid #e5e5e5; margin: 8px 0;">
-        <button class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="deleteAccount()">Delete Account & Data</button>
+        <button class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="openDeleteModal()">Delete Account & Data</button>
     </div>
 
     <!-- BLOCKED USERS MODAL -->
@@ -49,6 +49,23 @@
                 <span style="cursor: pointer;" onclick="closeBlockedModal()">✕</span>
             </div>
             <div class="modal-body" id="blocked-list">Loading...</div>
+        </div>
+    </div>
+
+    <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Delete Account</span>
+                <span style="cursor: pointer;" onclick="closeDeleteModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <p style="color: #333; line-height: 1.4;">Are you sure you want to permanently delete your account, posts, photos, and messages? This action cannot be undone.</p>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="btn-app-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="deleteAccount()">Yes, Delete</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -129,8 +146,16 @@
             }
         }
 
+        function openDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+        }
+
         async function deleteAccount() {
-            if (!confirm("Are you sure you want to permanently delete your account, posts, photos, and messages? This action cannot be undone.")) return;
+            closeDeleteModal();
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
                     method: 'POST',
