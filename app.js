@@ -1,5 +1,12 @@
 const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
+// Verified Badge SVG HTML helper
+const VERIFIED_BADGE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-left:3px;color:#3b82f6;" title="Verified Account"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+
+function renderVerifiedBadge(isVerified) {
+    return isVerified ? VERIFIED_BADGE_SVG : '';
+}
+
 // ===== THEME, TOAST & CUSTOM DIALOGS =====
 const THEME_CSS = `
 :where(.btn-app-secondary) { background:#fff; color:#111; border:1px solid #ccc; padding:6px 12px; border-radius:4px; font-weight:600; font-size:12px; }
@@ -56,7 +63,7 @@ html.dark .report-option { background:#222; border-color:#333; color:#eee; }
 .ugc-dialog-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-height: 75vh; overflow-y: auto; }
 .report-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; background: #fafafa; }
 .report-option input { width: auto; }
-.ugc-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.ugc-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; }
 .ugc-btn-danger { background: #ef4444; color: #fff; border: 1px solid #ef4444; }
 .ugc-btn-cancel { background: #fff; color: #111; border: 1px solid #ccc; }
 html.dark .ugc-btn-cancel { background: #2a2a2a; color: #eee; border-color: #444; }
@@ -93,7 +100,6 @@ function showToast(message) {
     toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 3200);
 }
 
-// Custom WebView-safe confirm dialog replacing native confirm()
 function showConfirmDialog(title, message, confirmLabel, onConfirm) {
     let overlay = document.getElementById('ugc-confirm-overlay');
     if (!overlay) {
@@ -134,7 +140,7 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
     style.textContent = THEME_CSS;
     document.head.appendChild(style);
     let saved = 'light';
-    try { saved = localStorage.getItem('rprofiles_theme') || 'light'; } catch (e) {}
+    try { saved = localStorage.getItem('Nvaritia_theme') || 'light'; } catch (e) {}
     applyTheme(saved);
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -154,17 +160,17 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
 
 // ===== SESSION =====
 function getSessionUser() {
-    const stored = localStorage.getItem('rprofiles_session');
+    const stored = localStorage.getItem('Nvaritia_session');
     if (!stored) return null;
     try { return JSON.parse(stored); } catch (e) {
-        localStorage.removeItem('rprofiles_session');
+        localStorage.removeItem('Nvaritia_session');
         return null;
     }
 }
 
 function setSessionUser(user) {
     if (user && user.theme) applyTheme(user.theme);
-    localStorage.setItem('rprofiles_session', JSON.stringify(user));
+    localStorage.setItem('Nvaritia_session', JSON.stringify(user));
 }
 
 function requireAuth() {
@@ -178,8 +184,8 @@ function requireAuth() {
 }
 
 function logout() {
-    localStorage.removeItem('rprofiles_session');
-    localStorage.removeItem('rprofiles_theme');
+    localStorage.removeItem('Nvaritia_session');
+    localStorage.removeItem('Nvaritia_theme');
     window.location.href = 'index.html';
 }
 
@@ -212,7 +218,7 @@ function reportPost(postId) {
                     <label class="report-option"><input type="radio" name="report_reason" value="Harassment or Bullying"> Harassment or Bullying</label>
                     <label class="report-option"><input type="radio" name="report_reason" value="Hate Speech or Violence"> Hate Speech or Violence</label>
                     <label class="report-option"><input type="radio" name="report_reason" value="Copyright Violation"> Copyright Violation</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Something else" id="radio-something-else" onchange="toggleCustomReason(true)"> Something else</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Something else" id="radio-something-else"> Something else</label>
                     
                     <div id="custom-reason-container" style="display:none; flex-direction:column; gap:4px; margin-top:4px;">
                         <label style="font-size:11px; font-weight:600; color:#555;">Please specify:</label>
@@ -234,7 +240,6 @@ function reportPost(postId) {
     form.reset();
     document.getElementById('custom-reason-container').style.display = 'none';
 
-    // Toggle custom input visibility when clicking radio options
     form.querySelectorAll('input[name="report_reason"]').forEach(radio => {
         radio.onchange = (e) => {
             const isSomethingElse = e.target.value === 'Something else';
@@ -288,7 +293,6 @@ function reportPost(postId) {
         }
     };
 
-    // A div can't submit the form, so trigger the handler directly
     submitBtn.onclick = () => form.onsubmit({ preventDefault() {} });
     document.getElementById('ugc-custom-reason-input').onkeydown = (e) => {
         if (e.key === 'Enter') { e.preventDefault(); form.onsubmit({ preventDefault() {} }); }
