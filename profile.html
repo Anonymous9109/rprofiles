@@ -93,6 +93,13 @@
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
 
+        /* Mutual friends row */
+        .mutual-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
+        .mutual-item { display: flex; flex-direction: column; align-items: center; width: 58px; flex-shrink: 0; text-decoration: none; color: inherit; }
+        .mutual-pfp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; }
+        .mutual-name { font-size: 10px; font-weight: 600; margin-top: 4px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+        html.dark .mutual-pfp { border-color: #333; background: #1c1c1c; }
+
         /* Choose Image button (PFP picker) */
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
@@ -128,6 +135,9 @@
 
         <!-- Owner / Action Buttons Side-by-Side (Edit & Settings or Message & Block) -->
         <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
+
+        <!-- Mutual friends (shown on other people's profiles) -->
+        <div id="mutual-friends" style="display: none;"></div>
 
         <!-- Posts Container -->
         <div class="panel">
@@ -256,6 +266,7 @@
         const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 
         async function loadProfile() {
+            document.getElementById('mutual-friends').style.display = 'none';
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}?viewer=${encodeURIComponent(loggedUser.email)}`);
                 const data = await res.json();
@@ -297,14 +308,20 @@
                         document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
                         return;
                     } else {
-                        // Side-by-side buttons under bio for visitor (guests are sent to sign up)
-                        const messageAction = loggedUser.guest
-                            ? `promptSignup('send messages')`
-                            : `location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'`;
+                        // Friend request / Message button + Block (guests are sent to sign up)
+                        let fStatus = 'none';
+                        if (!loggedUser.guest) {
+                            try {
+                                const fr = await fetch(`${WORKER_ORIGIN}/api/friends/status?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
+                                if (fr.ok) fStatus = (await fr.json()).status;
+                            } catch (e) {}
+                        }
                         controlsEl.innerHTML = `
-                            <button class="btn-app" style="flex: 1; padding: 8px;" onclick="${messageAction}">Message</button>
+                            <button id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
                             <button class="btn-app-secondary" style="flex: 1; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
                         `;
+                        setFriendButton(fStatus);
+                        if (!loggedUser.guest) loadMutualFriends();
                     }
                 }
 
@@ -357,6 +374,77 @@
             } catch (e) {
                 document.getElementById('username-display').innerText = 'User not found or offline';
                 document.getElementById('posts-container').innerHTML = '';
+            }
+        }
+
+        // status: none | sent | received | friends
+        function setFriendButton(status) {
+            const btn = document.getElementById('friend-btn');
+            if (!btn || !activeProfileUser) return;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            if (status === 'friends') {
+                btn.innerText = 'Message';
+                btn.onclick = () => { location.href = `messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}`; };
+            } else if (status === 'sent') {
+                btn.innerText = 'Request Sent';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.onclick = null;
+            } else if (status === 'received') {
+                btn.innerText = 'Respond to Request';
+                btn.onclick = () => { location.href = 'messages.html'; };
+            } else {
+                btn.innerText = 'Friend Request';
+                btn.onclick = sendFriendRequest;
+            }
+        }
+
+        async function sendFriendRequest() {
+            if (loggedUser.guest) return promptSignup('send friend requests');
+            const btn = document.getElementById('friend-btn');
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requesterEmail: loggedUser.email, addresseeEmail: activeProfileUser.email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setFriendButton(data.status);
+                if (data.status === 'friends') loadMutualFriends();
+            } catch (err) {
+                setFriendButton('none');
+                showToast(err.message);
+            }
+        }
+
+        async function loadMutualFriends() {
+            const box = document.getElementById('mutual-friends');
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/mutual?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                const list = data.mutual || [];
+                const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+                box.innerHTML = `
+                    <div class="panel">
+                        <div class="panel-header">Mutual Friends (${list.length})</div>
+                        <div class="panel-content">
+                            ${list.length ? `<div class="mutual-row">${list.map(f => `
+                                <a class="mutual-item" href="profile.html?user=${encodeURIComponent(f.username)}">
+                                    <img class="mutual-pfp" src="${f.pfp_url || placeholder}">
+                                    <span class="mutual-name">${escapeHtml(f.username)}</span>
+                                </a>`).join('')}</div>` : '<span style="color: #666;">No mutual friends yet.</span>'}
+                        </div>
+                    </div>
+                `;
+                box.style.display = 'block';
+            } catch (e) {
+                box.style.display = 'none';
             }
         }
 
