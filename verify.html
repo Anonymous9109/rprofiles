@@ -36,6 +36,7 @@
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
+        let redirecting = false;
 
         function loadCheckout() {
             const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1`;
@@ -43,38 +44,60 @@
         }
         loadCheckout();
 
-        function showToast(message) {
+        function showVerifyToast(message) {
             const toast = document.getElementById('app-toast');
             toast.innerText = message;
             toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // Ask the worker if this user is verified; if so, update the cached session
+        async function checkVerified() {
+            const res = await fetch(`${WORKER_ORIGIN}/api/check-whop-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: loggedUser.email })
+            });
+            const data = await res.json();
+            if (res.ok && data.verified) {
+                const u = getSessionUser();
+                if (u) { u.verified = 1; setSessionUser(u); }
+                return true;
+            }
+            return false;
+        }
+
+        function goToProfile() {
+            if (redirecting) return;
+            redirecting = true;
+            showVerifyToast("Verified! Returning to profile...");
+            setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
         }
 
         async function syncAndReturn() {
-            showToast("Syncing membership with Whop...");
+            showVerifyToast("Syncing membership with Whop...");
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/check-whop-status`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedUser.email })
-                });
-                const data = await res.json();
-                
-                if (res.ok && data.verified) {
-                    showToast("Verified! Returning to profile...");
-                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
+                if (await checkVerified()) {
+                    goToProfile();
                 } else {
-                    showToast("No active trial/membership found for this email yet.");
+                    showVerifyToast("No active trial/membership found for this email yet.");
                 }
-            } catch(e) {
-                showToast("Error connecting to verification server.");
+            } catch (e) {
+                showVerifyToast("Error connecting to verification server.");
             }
         }
 
         function resetCheckout() {
-            showToast("Refreshing checkout session...");
+            showVerifyToast("Refreshing checkout session...");
             loadCheckout();
         }
+
+        // Quietly re-check every 8 seconds so the badge appears right after checkout
+        setInterval(async () => {
+            if (redirecting) return;
+            try { if (await checkVerified()) goToProfile(); } catch (e) {}
+        }, 8000);
     </script>
 </body>
 </html>
