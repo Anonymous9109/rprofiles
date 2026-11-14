@@ -9,13 +9,16 @@
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; }
         header { background: #ffffff; border-bottom: 1px solid #e5e5e5; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
-        .checkout-container { margin-top: 48px; flex-grow: 1; display: flex; flex-direction: column; height: calc(100vh - 48px); position: relative; }
+        .checkout-container { margin-top: 48px; flex-grow: 1; display: none; flex-direction: column; height: calc(100vh - 48px); position: relative; }
         .checkout-toolbar { background: #f8f9fa; padding: 10px 16px; border-bottom: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 8px; font-weight: 600; font-size: 12px; }
         .toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .email-pill { background: #e5e7eb; border-radius: 4px; padding: 3px 8px; font-weight: 700; word-break: break-all; }
         .btn { border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
         .btn-blue { background: #3b82f6; color: #fff; }
         .btn-black { background: #000; color: #fff; }
+        .btn-red { background: #ef4444; color: #fff; }
+        .btn-outline { background: #fff; color: #111; border: 1px solid #ccc; }
+        .btn-big { padding: 12px 16px; font-size: 14px; border-radius: 6px; width: 100%; }
         .btn:disabled { opacity: 0.6; cursor: default; }
         #status { font-size: 11px; font-weight: 600; min-height: 14px; color: #555; }
         #status.ok { color: #16a34a; }
@@ -23,16 +26,35 @@
         #whop-iframe { width: 100%; flex-grow: 1; border: none; }
         #success-overlay { position: absolute; inset: 0; background: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px; z-index: 5; }
         #success-overlay h2 { font-size: 20px; }
+
+        .manage-view { margin-top: 48px; display: none; width: 100%; max-width: 480px; margin-left: auto; margin-right: auto; padding: 20px 16px; flex-direction: column; gap: 14px; }
+        .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .card h2 { font-size: 16px; }
+        .card p { color: #555; line-height: 1.5; }
+        .loading { margin-top: 80px; text-align: center; color: #666; font-weight: 600; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 16px; }
+        .dialog { background: #fff; border: 1px solid #ccc; border-radius: 8px; width: 100%; max-width: 340px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .dialog h3 { font-size: 15px; }
+        .dialog p { color: #555; line-height: 1.4; }
+        .dialog input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; }
+        .dialog .row { display: flex; gap: 8px; justify-content: flex-end; }
+        #dialog-error { color: #dc2626; font-weight: 600; font-size: 12px; min-height: 14px; }
+
         #app-toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
         html.dark body { background: #121212; color: #eee; }
         html.dark header { background: #121212; border-color: #2a2a2a; }
         html.dark .brand { color: #fff; }
         html.dark .checkout-toolbar { background: #1c1c1c; border-color: #2a2a2a; }
         html.dark .email-pill { background: #2a2a2a; }
-        html.dark #status { color: #aaa; }
+        html.dark #status, html.dark .card p, html.dark .dialog p { color: #aaa; }
         html.dark #success-overlay { background: #121212; }
+        html.dark .card { border-color: #2a2a2a; }
+        html.dark .dialog { background: #181818; border-color: #333; color: #eee; }
         html.dark .btn-black { background: #fff; color: #000; }
+        html.dark .btn-outline { background: #1c1c1c; color: #eee; border-color: #333; }
     </style>
 </head>
 <body>
@@ -42,7 +64,10 @@
         <a href="profile.html" style="font-weight: 600; color: inherit; text-decoration: none; font-size: 12px;">← Back to Profile</a>
     </header>
 
-    <div class="checkout-container">
+    <div class="loading" id="loading-view">Loading...</div>
+
+    <!-- CHECKOUT VIEW (not verified yet) -->
+    <div class="checkout-container" id="checkout-view">
         <div class="checkout-toolbar">
             <div class="toolbar-row">
                 <span>Checkout for: <span class="email-pill" id="email-display"></span></span>
@@ -55,12 +80,36 @@
             </div>
             <div id="status"></div>
         </div>
-
         <iframe id="whop-iframe" allow="payment *; clipboard-write"></iframe>
-
         <div id="success-overlay">
             <h2>You're verified! ✓</h2>
             <p>Taking you back to your profile...</p>
+        </div>
+    </div>
+
+    <!-- MANAGE VIEW (already verified) -->
+    <div class="manage-view" id="manage-view">
+        <div class="card">
+            <h2>You're verified ✓</h2>
+            <p>Your account <strong id="manage-email"></strong> has an active Nvaritia verification.</p>
+            <p id="manage-note"></p>
+            <button class="btn btn-red btn-big" id="cancel-btn" onclick="openCancelDialog()">Cancel subscription</button>
+            <a id="manage-link" href="#" target="_blank" rel="noopener" style="display:none; text-align:center; font-weight:600; color:#3b82f6; font-size:12px;">Manage on Whop</a>
+        </div>
+        <button class="btn btn-outline btn-big" onclick="window.location.href='profile.html'">Back to Profile</button>
+    </div>
+
+    <!-- CANCEL DIALOG -->
+    <div class="overlay" id="cancel-overlay">
+        <div class="dialog">
+            <h3>Cancel subscription?</h3>
+            <p>You won't be charged again. Your badge stays until the current trial or billing period ends. Enter your password to confirm.</p>
+            <input type="password" id="cancel-password" placeholder="Your password" autocomplete="current-password">
+            <div id="dialog-error"></div>
+            <div class="row">
+                <button class="btn btn-outline" onclick="closeCancelDialog()">Keep it</button>
+                <button class="btn btn-red" id="confirm-cancel-btn" onclick="confirmCancel()">Cancel subscription</button>
+            </div>
         </div>
     </div>
 
@@ -69,15 +118,14 @@
         const loggedUser = requireAuth();
         let redirecting = false;
         let autoCheckCount = 0;
-
-        document.getElementById('email-display').innerText = loggedUser.email;
+        let pollTimer = null;
 
         function showVerifyToast(message) {
             const toast = document.getElementById('app-toast');
             toast.innerText = message;
             toast.classList.add('show');
             clearTimeout(toast._t);
-            toast._t = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+            toast._t = setTimeout(() => { toast.classList.remove('show'); }, 3500);
         }
 
         function setStatus(text, cls) {
@@ -85,14 +133,6 @@
             el.innerText = text;
             el.className = cls || '';
         }
-
-        // Checkout always loads inside this page with the logged-in Nvaritia email locked in.
-        // The timestamp makes every load a fresh checkout so an old/expired link is never reused.
-        function loadCheckout() {
-            const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1&t=${Date.now()}`;
-            document.getElementById('whop-iframe').src = checkoutUrl;
-        }
-        loadCheckout();
 
         // Ask the worker if this user is verified; if so, update the cached session
         async function checkVerified() {
@@ -108,6 +148,25 @@
                 return true;
             }
             return false;
+        }
+
+        // ---------- CHECKOUT VIEW ----------
+        function loadCheckout() {
+            const checkoutUrl = `https://whop.com/checkout/plan_fD88Rj5uYPNHM?email=${encodeURIComponent(loggedUser.email)}&email.disabled=1&t=${Date.now()}`;
+            document.getElementById('whop-iframe').src = checkoutUrl;
+        }
+
+        function showCheckoutView() {
+            document.getElementById('loading-view').style.display = 'none';
+            document.getElementById('email-display').innerText = loggedUser.email;
+            document.getElementById('checkout-view').style.display = 'flex';
+            loadCheckout();
+
+            // Quietly re-check every 8 seconds (up to ~5 minutes) so the badge appears right after checkout
+            pollTimer = setInterval(async () => {
+                if (redirecting || ++autoCheckCount > 38) { clearInterval(pollTimer); return; }
+                try { if (await checkVerified()) goToProfile(); } catch (e) {}
+            }, 8000);
         }
 
         function goToProfile() {
@@ -139,12 +198,74 @@
             loadCheckout();
         }
 
-        // Quietly re-check every 8 seconds (up to ~5 minutes). Once checkout completes,
-        // the badge is granted and the success screen covers any "can't reopen this checkout" page.
-        const poll = setInterval(async () => {
-            if (redirecting || ++autoCheckCount > 38) { clearInterval(poll); return; }
-            try { if (await checkVerified()) goToProfile(); } catch (e) {}
-        }, 8000);
+        // ---------- MANAGE / CANCEL VIEW ----------
+        function showManageView() {
+            document.getElementById('loading-view').style.display = 'none';
+            document.getElementById('manage-email').innerText = loggedUser.email;
+            document.getElementById('manage-view').style.display = 'flex';
+        }
+
+        function openCancelDialog() {
+            document.getElementById('cancel-password').value = '';
+            document.getElementById('dialog-error').innerText = '';
+            document.getElementById('cancel-overlay').style.display = 'flex';
+            document.getElementById('cancel-password').focus();
+        }
+
+        function closeCancelDialog() {
+            document.getElementById('cancel-overlay').style.display = 'none';
+        }
+
+        async function confirmCancel() {
+            const password = document.getElementById('cancel-password').value;
+            const errEl = document.getElementById('dialog-error');
+            const btn = document.getElementById('confirm-cancel-btn');
+            if (!password) { errEl.innerText = 'Enter your password.'; return; }
+
+            btn.disabled = true;
+            errEl.innerText = '';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/whop/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedUser.email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.cancelled) {
+                    closeCancelDialog();
+                    const ends = data.endsAt ? new Date(data.endsAt).toLocaleDateString() : null;
+                    document.getElementById('manage-note').innerText = ends
+                        ? `Subscription cancelled. You won't be charged again, and your badge stays until ${ends}.`
+                        : `Subscription cancelled. You won't be charged again, and your badge stays until the current period ends.`;
+                    document.getElementById('cancel-btn').style.display = 'none';
+                    showVerifyToast('Subscription cancelled');
+                } else {
+                    errEl.innerText = data.error || 'Could not cancel.';
+                    if (data.manage_url) {
+                        const link = document.getElementById('manage-link');
+                        link.href = data.manage_url;
+                        link.style.display = 'block';
+                        errEl.innerText += ' Use "Manage on Whop" instead.';
+                        closeCancelDialog();
+                        showVerifyToast('Automatic cancel failed. Use Manage on Whop.');
+                    }
+                }
+            } catch (e) {
+                errEl.innerText = 'Error connecting to the server.';
+            }
+            btn.disabled = false;
+        }
+
+        // ---------- START ----------
+        (async function init() {
+            try {
+                if (await checkVerified()) showManageView();
+                else showCheckoutView();
+            } catch (e) {
+                showCheckoutView();
+            }
+        })();
     </script>
 </body>
 </html>
