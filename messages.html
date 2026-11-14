@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>rprofiles - Messages & Activity</title>
-    <style>
+   <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
         header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
@@ -135,7 +135,7 @@
                     el.innerHTML = `
                         <img class="avatar" src="${n.actor_pfp || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         <div class="info">
-                            <div class="name">@${escapeHtml(n.actor_username)}</div>
+                            <div class="name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
                             <div class="preview">${actionText} • ${new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                         </div>
                     `;
@@ -167,7 +167,7 @@
                     el.innerHTML = `
                         <img class="avatar" src="${peer.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         <div class="info">
-                            <div class="name">@${escapeHtml(peer.username)}</div>
+                            <div class="name">@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}</div>
                             <div class="preview">${escapeHtml(conv.last_message)}</div>
                         </div>
                     `;
@@ -180,7 +180,7 @@
 
         async function openDrawer(peer) {
             activePeer = peer;
-            document.getElementById('drawer-title').innerText = `Chat with @${peer.username}`;
+            document.getElementById('drawer-title').innerHTML = `Chat with @${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
             document.getElementById('chat-drawer').classList.add('open');
             loadThread();
         }
