@@ -70,6 +70,18 @@
             display: none;
         }
 
+        .notice-msg {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            display: none;
+        }
+
         .form-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
         .form-row label { font-weight: 600; color: #444; font-size: 12px; }
         .form-row input[type="text"],
@@ -104,6 +116,8 @@
         }
         .btn-app:disabled { opacity: 0.6; cursor: default; }
 
+        .guest-link { display: block; text-align: center; margin-top: 14px; color: #6b6b72; font-weight: 600; font-size: 13px; text-decoration: underline; }
+
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
         .modal-box { background: #fff; border-radius: 12px; max-width: 440px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
         .modal-head { padding: 14px 16px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
@@ -124,6 +138,7 @@
                 <button type="button" class="tab" id="tab-login" onclick="setMode(false)">Login</button>
             </div>
 
+            <div id="auth-notice" class="notice-msg"></div>
             <div id="auth-error" class="error-msg"></div>
 
             <form id="auth-form" onsubmit="handleAuth(event)">
@@ -145,6 +160,8 @@
                 </div>
                 <button type="submit" class="btn-app" id="auth-submit-btn">Create account</button>
             </form>
+
+            <a class="guest-link" href="feed.html">Continue without an account</a>
         </div>
     </div>
 
@@ -167,6 +184,17 @@
     <script src="app.js"></script>
     <script>
         if (getSessionUser()) window.location.href = 'feed.html';
+
+        // Show a "sign up to ..." notice when a guest was sent here after trying to interact
+        try {
+            const n = sessionStorage.getItem('Nvaritia_notice');
+            if (n) {
+                const el = document.getElementById('auth-notice');
+                el.innerText = n;
+                el.style.display = 'block';
+                sessionStorage.removeItem('Nvaritia_notice');
+            }
+        } catch (e) {}
 
         let isRegister = true;
 
