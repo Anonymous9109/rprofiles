@@ -1,563 +1,346 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nvaritia - Profile</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
-        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
-        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
-        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
-        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
-        
-        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
-        .footer-tab.active { color: #000; }
-        .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .footer-tab.active .footer-icon { stroke: #000; }
+const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 
-        .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
-        .profile-pfp { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
-        .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
-        .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
+// Verified Badge SVG HTML helper
+const VERIFIED_BADGE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-left:3px;color:#3b82f6;" title="Verified Account"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
 
-        /* Dark Mode Compatibility for Profile Header */
-        html.dark .profile-header-card {
-            background: #181818;
-            border-color: #2a2a2a;
-            color: #eee;
-        }
-        html.dark .profile-pfp {
-            border-color: #333;
-            background: #1c1c1c;
-        }
-        html.dark .profile-name {
-            color: #eee;
-        }
+// Accepts 1, true, "1" etc.
+function renderVerifiedBadge(isVerified) {
+    return (isVerified === true || Number(isVerified) === 1) ? VERIFIED_BADGE_SVG : '';
+}
 
-        .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
-        .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
-        .panel-content { padding: 10px; }
-        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; }
-        
-        .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
-        .post-box:first-child { border-top: none; }
-        .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
-        
-        .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
-        .reaction-group { display: flex; gap: 10px; align-items: center; }
-        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; }
-        .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
-        .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-        .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
-        .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+// ===== THEME, TOAST & CUSTOM DIALOGS =====
+const THEME_CSS = `
+:where(.btn-app-secondary) { background:#fff; color:#111; border:1px solid #ccc; padding:6px 12px; border-radius:4px; font-weight:600; font-size:12px; }
+.btn-app-secondary { cursor:pointer; text-align:center; user-select:none; }
+.btn-app { user-select:none; }
 
-        .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
-        .comments-drawer.open { bottom: 0; }
-        .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
-        .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        
-        .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
-        .comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
-        .comment-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
-        .comment-content { font-size: 13px; line-height: 1.4; margin-top: 3px; }
-        .comment-actions { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; align-items: center; font-weight: 600; }
-        .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; }
-        .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
-        .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
-        .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
-        .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
+html.dark { color-scheme: dark; }
+html.dark body { background:#121212; color:#eee; }
+html.dark header, html.dark footer { background:#121212; border-color:#2a2a2a; }
+html.dark .brand { color:#fff; }
+html.dark .footer-tab { color:#999; }
+html.dark .footer-tab.active { color:#fff; }
+html.dark .footer-tab.active .footer-icon { stroke:#fff; }
+html.dark .panel, html.dark .post-box, html.dark .user-result-box { border-color:#2a2a2a; }
+html.dark .profile-name, html.dark .section-title { border-color:#2a2a2a; color:#eee; }
+html.dark .panel-header { background:#1c1c1c; border-color:#2a2a2a; }
+html.dark .post-box.highlighted { background:#1c1c1c; border-color:#333; }
+html.dark .profile-left img, html.dark .avatar, html.dark .post-avatar, html.dark .post-media { border-color:#333; background:#1c1c1c; }
+html.dark .post-meta { color:#eee; }
+html.dark .btn-app { background:#fff; color:#000; border-color:#fff; }
+html.dark .btn-app-secondary { background:#1c1c1c; color:#eee; border-color:#333; }
+html.dark :is(button, div)[style*="background: #000"] { background:#fff !important; color:#000 !important; }
+html.dark .comment-post-btn { background:#fff; color:#000; }
+html.dark span[style*="color: #000"], html.dark a[style*="color:#000"] { color:#fff !important; }
+html.dark .reaction-btn { background:#1c1c1c; color:#eee; border-color:#333; }
+html.dark .reaction-btn.active-like { background:#fff; color:#000; border-color:#fff; }
+html.dark .reaction-btn.active-like .reaction-icon { fill:#000; stroke:#000; }
+html.dark .reaction-btn.active-dislike { background:#ef4444; color:#fff; border-color:#ef4444; }
+html.dark .comments-drawer, html.dark .chat-drawer, html.dark .modal-window, html.dark .ugc-dialog-box { background:#181818; border-color:#333; color:#eee; }
+html.dark .drawer-header, html.dark .modal-header, html.dark .ugc-dialog-head { background:#222; border-color:#2a2a2a; color:#eee; }
+html.dark .comments-container, html.dark .chat-container { background:#1c1c1c; border-color:#2a2a2a; }
+html.dark .comment-item { border-color:#2a2a2a; }
+html.dark .comment-item.reply { border-left-color:#333; }
+html.dark .comment-avatar { border-color:#333; }
+html.dark .comment-reaction-btn { color:#aaa; }
+html.dark .comment-reaction-btn.active-like { color:#fff; }
+html.dark .comment-reaction-btn.active-like svg { stroke:#fff; fill:#fff; }
+html.dark .chat-bubble.received { background:#2a2a2a; color:#eee; }
+html.dark .chat-bubble.sent { background:#fff; color:#000; }
+html.dark .inbox-item, html.dark .activity-item { border-color:#2a2a2a; }
+html.dark .inbox-item:hover, html.dark .activity-item:hover { background:#1c1c1c; }
+html.dark input, html.dark textarea, html.dark select { background:#1c1c1c; color:#eee; border-color:#333; }
+html.dark .custom-file-upload { background:#1c1c1c; color:#eee; border-color:#333; }
+html.dark [style*="background: #f0f0f0"] { background:#2a2a2a !important; color:#eee !important; }
+html.dark .report-option { background:#222; border-color:#333; color:#eee; }
 
-        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#offline-banner { position: fixed; bottom: 50px; left: 0; width: 100%; background: #ef4444; color: #fff; text-align: center; font-size: 11px; font-weight: 700; padding: 5px; z-index: 9999; display: none; }
+#toast-box { position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 10000; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-align: center; max-width: 90%; }
+#toast-box.show { opacity: 1; }
 
-        .custom-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9998; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .custom-dialog-card { background: #fff; border: 1px solid #ccc; border-radius: 8px; width: 90%; max-width: 320px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
-        .custom-dialog-msg { font-size: 13px; color: #111; line-height: 1.4; word-break: break-word; }
-        .custom-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
-        .custom-dialog-btn { padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #ccc; background: #fff; color: #111; }
-        .custom-dialog-btn.primary { background: #000; color: #fff; border-color: #000; }
-        .custom-dialog-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+.ugc-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 9500; padding: 16px; }
+.ugc-dialog-box { width: 100%; max-width: 400px; background: #fff; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.ugc-dialog-head { background: #f5f5f5; padding: 12px 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e5; font-size: 14px; }
+.ugc-dialog-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; max-height: 75vh; overflow-y: auto; }
+.report-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; background: #fafafa; }
+.report-option input { width: auto; }
+.ugc-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; user-select: none; }
+.ugc-btn-danger { background: #ef4444; color: #fff; border: 1px solid #ef4444; }
+.ugc-btn-cancel { background: #fff; color: #111; border: 1px solid #ccc; }
+html.dark .ugc-btn-cancel { background: #2a2a2a; color: #eee; border-color: #444; }
+`;
 
-        .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
-        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
-        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
-        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
-    </style>
-</head>
-<body>
-    <div id="app-toast"></div>
-    <div id="custom-dialog" class="custom-dialog-overlay">
-        <div class="custom-dialog-card">
-            <div id="custom-dialog-message" class="custom-dialog-msg"></div>
-            <div class="custom-dialog-actions" id="custom-dialog-actions"></div>
-        </div>
-    </div>
+function applyTheme(theme) {
+    const t = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('dark', t === 'dark');
+    try { localStorage.setItem('Nvaritia_theme', t); } catch (e) {}
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.innerText = t === 'dark' ? 'Switch to Light Mode' : ' Switch to Dark Mode';
+}
 
-    <header><a href="feed.html" class="brand">Nvaritia</a></header>
+async function saveTheme(email, theme) {
+    applyTheme(theme);
+    const res = await fetch(`${WORKER_ORIGIN}/api/profile/theme`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, theme })
+    });
+    if (!res.ok) throw new Error('Failed to save theme');
+}
 
-    <div class="wrapper">
-        <!-- Top Profile Header: PFP on left, Username & verification button on right -->
-        <div class="profile-header-card">
-            <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
-            <div class="profile-info">
-                <div class="profile-name" id="username-display">Loading profile...</div>
-                <div id="verification-btn-container"></div>
-            </div>
-        </div>
+function showToast(message) {
+    let toast = document.getElementById('toast-box');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-box';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = message;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 3200);
+}
 
-        <!-- Bio Container -->
-        <div class="panel">
-            <div class="panel-header">Bio</div>
-            <div class="panel-content" id="bio-display">No bio provided.</div>
-        </div>
-
-        <!-- Owner / Action Buttons Side-by-Side (Edit & Settings or Message & Block) -->
-        <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
-
-        <!-- Posts Container -->
-        <div class="panel">
-            <div class="panel-header" id="posts-header">Posts</div>
-            <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
-        </div>
-    </div>
-
-    <div id="comments-drawer" class="comments-drawer">
-        <div class="drawer-header">
-            <span>Comments</span>
-            <span style="cursor: pointer; font-size: 16px;" onclick="closeCommentsDrawer()">✕</span>
-        </div>
-        <div class="drawer-body">
-            <div class="comments-container" id="comments-list">Loading comments...</div>
-            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px;">
-                <span id="replying-to-text">Replying...</span>
-                <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
-            </div>
-            <form onsubmit="submitComment(event)" style="display: flex; gap: 6px;">
-                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;">
-                <button type="submit" style="background: #000; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">Post</button>
-            </form>
-        </div>
-    </div>
-
-    <footer>
-        <a href="feed.html" class="footer-tab">
-            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            Home
-        </a>
-        <a href="create-post.html" class="footer-tab">
-            <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Post
-        </a>
-        <a href="messages.html" class="footer-tab">
-            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            Messages
-        </a>
-        <a href="profile.html" class="footer-tab active">
-            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            Profile
-        </a>
-    </footer>
-
-    <div id="edit-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span>Edit Profile</span>
-                <span style="cursor: pointer;" onclick="closeModal('edit-modal')">✕</span>
-            </div>
-            <div class="modal-body">
-                <div id="edit-error" class="error-msg"></div>
-                <form onsubmit="saveProfile(event)">
-                    <div class="form-row">
-                        <label>Username:</label>
-                        <input type="text" id="edit-username" required>
+function showConfirmDialog(title, message, confirmLabel, onConfirm) {
+    let overlay = document.getElementById('ugc-confirm-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'ugc-confirm-overlay';
+        overlay.className = 'ugc-overlay';
+        overlay.innerHTML = `
+            <div class="ugc-dialog-box">
+                <div class="ugc-dialog-head">
+                    <span id="ugc-confirm-title">Confirm</span>
+                    <span style="cursor:pointer;" onclick="document.getElementById('ugc-confirm-overlay').style.display='none'">✕</span>
+                </div>
+                <div class="ugc-dialog-body">
+                    <p id="ugc-confirm-msg" style="line-height:1.4;"></p>
+                    <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                        <div id="ugc-confirm-cancel" class="ugc-btn ugc-btn-cancel">Cancel</div>
+                        <div id="ugc-confirm-yes" class="ugc-btn ugc-btn-danger">Confirm</div>
                     </div>
-                    <div class="form-row">
-                        <label>Bio:</label>
-                        <textarea id="edit-bio"></textarea>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById('ugc-confirm-cancel').addEventListener('click', () => { overlay.style.display = 'none'; });
+    }
+    document.getElementById('ugc-confirm-title').innerText = title;
+    document.getElementById('ugc-confirm-msg').innerText = message;
+    const yesBtn = document.getElementById('ugc-confirm-yes');
+    yesBtn.innerText = confirmLabel || 'Confirm';
+    yesBtn.onclick = () => {
+        overlay.style.display = 'none';
+        if (typeof onConfirm === 'function') onConfirm();
+    };
+    overlay.style.display = 'flex';
+}
+
+(function initApp() {
+    const style = document.createElement('style');
+    style.textContent = THEME_CSS;
+    document.head.appendChild(style);
+    let saved = 'light';
+    try { saved = localStorage.getItem('Nvaritia_theme') || 'light'; } catch (e) {}
+    applyTheme(saved);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const banner = document.createElement('div');
+        banner.id = 'offline-banner';
+        banner.innerText = 'You are offline — showing cached interface.';
+        document.body.appendChild(banner);
+
+        function updateOnlineStatus() {
+            banner.style.display = navigator.onLine ? 'none' : 'block';
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    });
+})();
+
+// ===== SESSION =====
+function getSessionUser() {
+    const stored = localStorage.getItem('Nvaritia_session');
+    if (!stored) return null;
+    try { return JSON.parse(stored); } catch (e) {
+        localStorage.removeItem('Nvaritia_session');
+        return null;
+    }
+}
+
+function setSessionUser(user) {
+    if (user && user.theme) applyTheme(user.theme);
+    localStorage.setItem('Nvaritia_session', JSON.stringify(user));
+}
+
+// Re-fetch the logged-in user from the server so cached fields (like `verified`) never go stale.
+// Call `await refreshSession()` at the start of any page that shows the badge (e.g. profile.html).
+async function refreshSession() {
+    const u = getSessionUser();
+    if (!u) return null;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(u.email)}`);
+        if (!res.ok) return u;
+        const data = await res.json();
+        if (data.user) {
+            setSessionUser({ ...u, ...data.user });
+            return getSessionUser();
+        }
+    } catch (e) {}
+    return u;
+}
+
+function requireAuth() {
+    const user = getSessionUser();
+    const path = window.location.pathname;
+    if (!user && !path.endsWith('index.html') && path !== '/' && !path.endsWith('/')) {
+        window.location.href = 'index.html';
+    }
+    if (user && user.theme) applyTheme(user.theme);
+    return user;
+}
+
+function logout() {
+    localStorage.removeItem('Nvaritia_session');
+    localStorage.removeItem('Nvaritia_theme');
+    window.location.href = 'index.html';
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (match) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[match];
+    });
+}
+
+// ===== UGC REPORT MODAL & SAFETY HELPERS =====
+function reportPost(postId) {
+    const user = getSessionUser();
+    if (!user) return;
+
+    let overlay = document.getElementById('ugc-report-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'ugc-report-overlay';
+        overlay.className = 'ugc-overlay';
+        overlay.innerHTML = `
+            <div class="ugc-dialog-box">
+                <div class="ugc-dialog-head">
+                    <span>Report Post</span>
+                    <span style="cursor:pointer;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">✕</span>
+                </div>
+                <form id="ugc-report-form" class="ugc-dialog-body">
+                    <p style="font-size:12px; color:#666;">Select a violation category:</p>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Spam or Misleading" required> Spam or Misleading</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Sexual or Explicit Content"> Sexual or Explicit Content</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Harassment or Bullying"> Harassment or Bullying</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Hate Speech or Violence"> Hate Speech or Violence</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Copyright Violation"> Copyright Violation</label>
+                    <label class="report-option"><input type="radio" name="report_reason" value="Something else" id="radio-something-else"> Something else</label>
+                    
+                    <div id="custom-reason-container" style="display:none; flex-direction:column; gap:4px; margin-top:4px;">
+                        <label style="font-size:11px; font-weight:600; color:#555;">Please specify:</label>
+                        <input type="text" id="ugc-custom-reason-input" placeholder="Type custom reason here..." style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
                     </div>
-                    <div class="form-row">
-                        <label>PFP Image (Max 25MB):</label>
-                        <input type="file" id="edit-pfp" accept="image/*">
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="submit" class="btn-app-secondary" style="flex: 1; background: #000; color: #fff;">Save</button>
-                        <button type="button" class="btn-app-secondary" onclick="closeModal('edit-modal')">Cancel</button>
+
+                    <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                        <div id="ugc-report-cancel" class="ugc-btn ugc-btn-cancel">Cancel</div>
+                        <div id="ugc-report-submit" class="ugc-btn ugc-btn-danger">Submit Report</div>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById('ugc-report-cancel').addEventListener('click', () => { overlay.style.display = 'none'; });
+    }
 
-    <script src="app.js"></script>
-    <script>
-        const loggedUser = requireAuth();
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
-        let activeProfileUser = null;
-        let activePostId = null;
-        let replyingToId = null;
-        let replyingToUsername = null;
+    const form = document.getElementById('ugc-report-form');
+    form.reset();
+    document.getElementById('custom-reason-container').style.display = 'none';
 
-        function showToast(message) {
-            const toast = document.getElementById('app-toast');
-            toast.innerText = message;
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    form.querySelectorAll('input[name="report_reason"]').forEach(radio => {
+        radio.onchange = (e) => {
+            const isSomethingElse = e.target.value === 'Something else';
+            document.getElementById('custom-reason-container').style.display = isSomethingElse ? 'flex' : 'none';
+            if (isSomethingElse) document.getElementById('ugc-custom-reason-input').focus();
+        };
+    });
+
+    const submitBtn = document.getElementById('ugc-report-submit');
+    function setSubmitBusy(busy) {
+        submitBtn.style.pointerEvents = busy ? 'none' : 'auto';
+        submitBtn.style.opacity = busy ? '0.6' : '1';
+        submitBtn.innerText = busy ? 'Submitting...' : 'Submit Report';
+    }
+    setSubmitBusy(false);
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const selected = form.querySelector('input[name="report_reason"]:checked');
+        if (!selected) {
+            showToast("Please select a violation type.");
+            return;
         }
 
-        function showCustomConfirm(message, onConfirm, isDanger = false) {
-            const overlay = document.getElementById('custom-dialog');
-            const msgEl = document.getElementById('custom-dialog-message');
-            const actionsEl = document.getElementById('custom-dialog-actions');
-
-            msgEl.innerText = message;
-            actionsEl.innerHTML = `
-                <button class="custom-dialog-btn" onclick="closeCustomDialog()">Cancel</button>
-                <button class="custom-dialog-btn ${isDanger ? 'danger' : 'primary'}" id="custom-dialog-confirm-btn">Confirm</button>
-            `;
-            document.getElementById('custom-dialog-confirm-btn').onclick = () => {
-                closeCustomDialog();
-                onConfirm();
-            };
-            overlay.style.display = 'flex';
-        }
-
-        function closeCustomDialog() {
-            document.getElementById('custom-dialog').style.display = 'none';
-        }
-
-        const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
-        const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
-        const COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-        const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
-        const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
-
-        async function loadProfile() {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}?viewer=${encodeURIComponent(loggedUser.email)}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                activeProfileUser = data.user;
-                document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
-                document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
-                if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
-
-                const isOwner = activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
-                const verificationBtnContainer = document.getElementById('verification-btn-container');
-                const controlsEl = document.getElementById('owner-controls');
-                controlsEl.style.display = 'flex';
-
-                if (isOwner) {
-                    applyTheme(activeProfileUser.theme);
-                    
-                    // Show Get Verified button under username only if not verified
-                    if (!activeProfileUser.verified) {
-                        verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
-                    } else {
-                        verificationBtnContainer.innerHTML = '';
-                    }
-
-                    // Side-by-side buttons under bio for owner
-                    controlsEl.innerHTML = `
-                        <button class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
-                        <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
-                    `;
-                    document.getElementById('edit-username').value = activeProfileUser.username || '';
-                    document.getElementById('edit-bio').value = activeProfileUser.bio || '';
-                } else {
-                    verificationBtnContainer.innerHTML = '';
-                    if (data.isBlocked) {
-                        controlsEl.innerHTML = `
-                            <button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>
-                        `;
-                        document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
-                        return;
-                    } else {
-                        // Side-by-side buttons under bio for visitor
-                        controlsEl.innerHTML = `
-                            <button class="btn-app" style="flex: 1; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
-                            <button class="btn-app-secondary" style="flex: 1; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
-                        `;
-                    }
-                }
-
-                document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${activeProfileUser.username || 'User'}'s Posts`;
-
-                const container = document.getElementById('posts-container');
-                if (!data.posts.length) {
-                    container.innerHTML = '<p style="color: #666; padding: 10px;">No posts recorded.</p>';
-                    return;
-                }
-
-                container.innerHTML = '';
-                for (const p of data.posts) {
-                    const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${p.id}&email=${encodeURIComponent(loggedUser.email)}`);
-                    const rxData = await rxRes.json();
-
-                    const postEl = document.createElement('div');
-                    postEl.className = 'post-box';
-                    postEl.id = `post-${p.id}`;
-                    
-                    const formattedContent = escapeHtml(p.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
-
-                    const actionControl = isOwner
-                        ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>`
-                        : `<button onclick="reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
-
-                    postEl.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color:#666; font-size: 10px;">${new Date(p.created_at).toLocaleString()}</span>
-                            ${actionControl}
-                        </div>
-                        ${p.content ? `<div style="font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word;">${formattedContent}</div>` : ''}
-                        ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
-                        <div class="post-actions">
-                            <div class="reaction-group">
-                                <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${p.id}', 'like')">
-                                    ${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span>
-                                </button>
-                                <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${p.id}', 'dislike')">
-                                    ${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span>
-                                </button>
-                            </div>
-                            <button class="reaction-btn" onclick="openCommentsDrawer('${p.id}')">
-                                ${COMMENT_SVG} Comments
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(postEl);
-                }
-            } catch (e) {
-                document.getElementById('username-display').innerText = 'User not found or offline';
-                document.getElementById('posts-container').innerHTML = '';
+        let finalReason = selected.value;
+        if (selected.value === 'Something else') {
+            const customText = document.getElementById('ugc-custom-reason-input').value.trim();
+            if (!customText) {
+                showToast("Please specify your reason.");
+                document.getElementById('ugc-custom-reason-input').focus();
+                return;
             }
+            finalReason = `Something else: ${customText}`;
         }
 
-        async function unblockUser(targetEmail) {
+        setSubmitBusy(true);
+
+        try {
+            const res = await fetch(`${WORKER_ORIGIN}/api/reports/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId, email: user.email, reason: finalReason })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to submit report');
+            overlay.style.display = 'none';
+            showToast("Report received. Our moderation team will review this post within 24 hours.");
+        } catch (err) {
+            showToast(err.message);
+            setSubmitBusy(false);
+        }
+    };
+
+    submitBtn.onclick = () => form.onsubmit({ preventDefault() {} });
+    document.getElementById('ugc-custom-reason-input').onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); form.onsubmit({ preventDefault() {} }); }
+    };
+
+    overlay.style.display = 'flex';
+}
+
+function blockUser(targetEmail, targetUsername, onSuccess) {
+    const user = getSessionUser();
+    if (!user) return;
+
+    showConfirmDialog(
+        "Block User",
+        `Block @${targetUsername || targetEmail}? You will no longer see their posts, comments, or messages.`,
+        "Block User",
+        async () => {
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/block`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ blockerEmail: loggedUser.email, blockedEmail: targetEmail })
+                    body: JSON.stringify({ blockerEmail: user.email, blockedEmail: targetEmail })
                 });
-                if (!res.ok) throw new Error('Failed to unblock');
-                showToast("User unblocked");
-                loadProfile();
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to block user');
+                showToast(`Blocked @${targetUsername || targetEmail}`);
+                if (typeof onSuccess === 'function') onSuccess();
             } catch (err) {
                 showToast(err.message);
             }
         }
-
-        async function openCommentsDrawer(postId) {
-            activePostId = postId;
-            cancelReply();
-            document.getElementById('comments-drawer').classList.add('open');
-            loadComments();
-        }
-
-        function closeCommentsDrawer() {
-            document.getElementById('comments-drawer').classList.remove('open');
-            activePostId = null;
-            cancelReply();
-        }
-
-        async function loadComments() {
-            const listEl = document.getElementById('comments-list');
-            listEl.innerHTML = 'Loading comments...';
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email)}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                if (!data.comments.length) {
-                    listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>';
-                    return;
-                }
-
-                const commentMap = new Map();
-                const rootComments = [];
-
-                data.comments.forEach(c => {
-                    c.replies = [];
-                    commentMap.set(c.id, c);
-                });
-
-                data.comments.forEach(c => {
-                    if (c.parent_id && commentMap.has(c.parent_id)) {
-                        commentMap.get(c.parent_id).replies.push(c);
-                    } else if (!c.parent_id) {
-                        rootComments.push(c);
-                    }
-                });
-
-                function renderCommentNode(c, isReply = false) {
-                    const isMe = c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
-                    return `
-                        <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
-                            <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                            <div style="flex-grow: 1;">
-                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</span>
-                                <div class="comment-content">${escapeHtml(c.content)}</div>
-                                <div class="comment-actions">
-                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
-                                        ${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span>
-                                    </button>
-                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
-                                        ${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span>
-                                    </button>
-                                    <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
-                                    ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${c.replies.map(r => renderCommentNode(r, true)).join('')}
-                    `;
-                }
-
-                listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
-                listEl.scrollTop = listEl.scrollHeight;
-            } catch (err) {
-                listEl.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load comments.</p>';
-            }
-        }
-
-        function setReplyingTo(commentId, username) {
-            replyingToId = commentId;
-            replyingToUsername = username;
-            document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
-            document.getElementById('replying-banner').style.display = 'flex';
-            document.getElementById('comment-input').focus();
-        }
-
-        function cancelReply() {
-            replyingToId = null;
-            replyingToUsername = null;
-            document.getElementById('replying-banner').style.display = 'none';
-        }
-
-        async function submitComment(e) {
-            e.preventDefault();
-            const input = document.getElementById('comment-input');
-            const content = input.value.trim();
-            if (!content || !activePostId) return;
-
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId: activePostId, email: loggedUser.email, content, parentId: replyingToId })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                input.value = '';
-                cancelReply();
-                loadComments();
-            } catch (err) {
-                showToast(err.message);
-            }
-        }
-
-        async function toggleCommentReaction(commentId, reactionType) {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ commentId, email: loggedUser.email, reaction: reactionType })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                document.getElementById(`c-likes-${commentId}`).innerText = data.likes;
-                document.getElementById(`c-dislikes-${commentId}`).innerText = data.dislikes;
-
-                const parent = document.getElementById(`comment-${commentId}`);
-                const buttons = parent.querySelectorAll('.comment-reaction-btn');
-                buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
-                buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
-            } catch (err) {
-                showToast(err.message);
-            }
-        }
-
-        async function toggleReaction(postId, reactionType) {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, email: loggedUser.email, reaction: reactionType })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                document.getElementById(`likes-${postId}`).innerText = data.likes;
-                document.getElementById(`dislikes-${postId}`).innerText = data.dislikes;
-
-                const parent = document.getElementById(`post-${postId}`);
-                const buttons = parent.querySelectorAll('.reaction-btn');
-                buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
-                buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
-            } catch (err) {
-                showToast(err.message);
-            }
-        }
-
-        async function saveProfile(e) {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('email', loggedUser.email);
-            formData.append('username', document.getElementById('edit-username').value.trim());
-            formData.append('bio', document.getElementById('edit-bio').value.trim());
-            const file = document.getElementById('edit-pfp').files[0];
-            if (file) formData.append('pfp', file);
-
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { method: 'POST', body: formData });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                setSessionUser(data.user);
-                closeModal('edit-modal');
-                window.location.href = `profile.html?user=${encodeURIComponent(data.user.username || data.user.email)}`;
-            } catch (err) {
-                const el = document.getElementById('edit-error');
-                el.innerText = err.message;
-                el.style.display = 'block';
-            }
-        }
-
-        async function deletePost(postId) {
-            showCustomConfirm("Are you sure you want to delete this post?", async () => {
-                try {
-                    const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ postId, email: loggedUser.email })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed to delete');
-                    document.getElementById(`post-${postId}`)?.remove();
-                    showToast("Post deleted");
-                } catch (err) {
-                    showToast(err.message);
-                }
-            }, true);
-        }
-
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        loadProfile();
-    </script>
-</body>
-</html>
+    );
+}
