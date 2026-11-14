@@ -23,6 +23,40 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
 
+        /* Dark Mode Compatibility for Profile Header */
+        body.dark .profile-header-card,
+        body.dark-mode .profile-header-card,
+        [data-theme="dark"] .profile-header-card {
+            background: #18181b;
+            border-color: #27272a;
+            color: #f4f4f5;
+        }
+        body.dark .profile-pfp,
+        body.dark-mode .profile-pfp,
+        [data-theme="dark"] .profile-pfp {
+            border-color: #27272a;
+            background: #27272a;
+        }
+        body.dark .profile-name,
+        body.dark-mode .profile-name,
+        [data-theme="dark"] .profile-name {
+            color: #f4f4f5;
+        }
+        @media (prefers-color-scheme: dark) {
+            body:not(.light) .profile-header-card {
+                background: #18181b;
+                border-color: #27272a;
+                color: #f4f4f5;
+            }
+            body:not(.light) .profile-pfp {
+                border-color: #27272a;
+                background: #27272a;
+            }
+            body:not(.light) .profile-name {
+                color: #f4f4f5;
+            }
+        }
+
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
@@ -94,7 +128,7 @@
     <div class="wrapper">
         <!-- Top Profile Header: PFP on left, Username & verification button on right -->
         <div class="profile-header-card">
-            <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>">
+            <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
             <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
                 <div id="verification-btn-container"></div>
