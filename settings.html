@@ -21,12 +21,20 @@
         .settings-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; }
         .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 12px; cursor: pointer; text-align: center; font-weight: 600; width: 100%; font-size: 13px; }
         .btn-app-secondary:hover { background: #fafafa; }
+        .btn-app-secondary:disabled { opacity: 0.6; cursor: default; }
         
         /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
         .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; gap: 12px; }
+
+        /* Cancel Subscription Elements */
+        #subscription-section { display: none; flex-direction: column; gap: 8px; }
+        #cancel-note { font-size: 12px; color: #555; line-height: 1.4; display: none; }
+        #manage-link { display: none; text-align: center; font-weight: 600; color: #3b82f6; font-size: 12px; text-decoration: none; }
+        .dialog-input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; }
+        #dialog-error { color: #dc2626; font-weight: 600; font-size: 12px; min-height: 14px; }
     </style>
 </head>
 <body>
@@ -37,6 +45,15 @@
         <button id="theme-btn" class="btn-app-secondary" onclick="toggleTheme()">🌙 Switch to Dark Mode</button>
         <button class="btn-app-secondary" onclick="openBlockedUsersModal()">Manage Blocked Users</button>
         <button class="btn-app-secondary" onclick="logout()">Logout</button>
+
+        <!-- SUBSCRIPTION MANAGEMENT (visible when verified) -->
+        <div id="subscription-section">
+            <hr style="border:none; border-top:1px solid #e5e5e5; margin: 4px 0;">
+            <p id="cancel-note"></p>
+            <button id="cancel-sub-btn" class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="openCancelDialog()">Cancel Subscription</button>
+            <a id="manage-link" href="#" target="_blank" rel="noopener">Manage on Whop</a>
+        </div>
+
         <hr style="border:none; border-top:1px solid #e5e5e5; margin: 8px 0;">
         <button class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="openDeleteModal()">Delete Account & Data</button>
     </div>
@@ -49,6 +66,25 @@
                 <span style="cursor: pointer;" onclick="closeBlockedModal()">✕</span>
             </div>
             <div class="modal-body" id="blocked-list">Loading...</div>
+        </div>
+    </div>
+
+    <!-- CANCEL SUBSCRIPTION MODAL -->
+    <div id="cancel-modal" class="modal">
+        <div class="modal-window" style="max-width: 360px;">
+            <div class="modal-header">
+                <span>Cancel subscription?</span>
+                <span style="cursor: pointer;" onclick="closeCancelDialog()">✕</span>
+            </div>
+            <div class="modal-body">
+                <p style="color: #555; line-height: 1.4;">You won't be charged again. Your badge stays until the current trial or billing period ends. Enter your password to confirm.</p>
+                <input type="password" id="cancel-password" class="dialog-input" placeholder="Your password" autocomplete="current-password">
+                <div id="dialog-error"></div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button class="btn-app-secondary" style="width: auto; padding: 8px 14px;" onclick="closeCancelDialog()">Keep it</button>
+                    <button id="confirm-cancel-btn" class="btn-app-secondary" style="width: auto; padding: 8px 14px; background: #ef4444; color: #fff; border-color: #ef4444;" onclick="confirmCancel()">Cancel subscription</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -91,6 +127,81 @@
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth();
+
+        // Check Whop verification status to show the Cancel Subscription button
+        (async function initSubscriptionSection() {
+            if (loggedUser.verified) {
+                document.getElementById('subscription-section').style.display = 'flex';
+            }
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/check-whop-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedUser.email })
+                });
+                const data = await res.json();
+                if (res.ok && data.verified) {
+                    const u = getSessionUser();
+                    if (u) { u.verified = 1; setSessionUser(u); }
+                    document.getElementById('subscription-section').style.display = 'flex';
+                } else if (res.ok && !data.verified) {
+                    document.getElementById('subscription-section').style.display = 'none';
+                }
+            } catch (e) {}
+        })();
+
+        function openCancelDialog() {
+            document.getElementById('cancel-password').value = '';
+            document.getElementById('dialog-error').innerText = '';
+            document.getElementById('cancel-modal').style.display = 'flex';
+            document.getElementById('cancel-password').focus();
+        }
+
+        function closeCancelDialog() {
+            document.getElementById('cancel-modal').style.display = 'none';
+        }
+
+        async function confirmCancel() {
+            const password = document.getElementById('cancel-password').value;
+            const errEl = document.getElementById('dialog-error');
+            const btn = document.getElementById('confirm-cancel-btn');
+            if (!password) { errEl.innerText = 'Enter your password.'; return; }
+
+            btn.disabled = true;
+            errEl.innerText = '';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/whop/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedUser.email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.cancelled) {
+                    closeCancelDialog();
+                    const ends = data.endsAt ? new Date(data.endsAt).toLocaleDateString() : null;
+                    const noteEl = document.getElementById('cancel-note');
+                    noteEl.innerText = ends
+                        ? `Subscription cancelled. You won't be charged again, and your badge stays until ${ends}.`
+                        : `Subscription cancelled. You won't be charged again, and your badge stays until the current period ends.`;
+                    noteEl.style.display = 'block';
+                    document.getElementById('cancel-sub-btn').style.display = 'none';
+                    showToast('Subscription cancelled');
+                } else {
+                    errEl.innerText = data.error || 'Could not cancel.';
+                    if (data.manage_url) {
+                        const link = document.getElementById('manage-link');
+                        link.href = data.manage_url;
+                        link.style.display = 'block';
+                        closeCancelDialog();
+                        showToast('Automatic cancel failed. Use Manage on Whop.');
+                    }
+                }
+            } catch (e) {
+                errEl.innerText = 'Error connecting to the server.';
+            }
+            btn.disabled = false;
+        }
 
         async function toggleTheme() {
             const isDark = document.documentElement.classList.contains('dark');
