@@ -36,6 +36,8 @@
         .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-word; }
         .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
         .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
+        .receipt { align-self: flex-end; font-size: 10px; color: #888; margin-top: -2px; }
+        .receipt.seen { color: #2563eb; font-weight: 600; }
 
         /* Custom In-App Toast Notification */
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -97,6 +99,7 @@
     <script>
         const currentUser = requireAuth();
         let activePeer = null;
+        let threadTimer = null;
 
         // Custom In-App Toast Helper
         function showToast(message) {
@@ -182,10 +185,13 @@
             activePeer = peer;
             document.getElementById('drawer-title').innerHTML = `Chat with @${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
             document.getElementById('chat-drawer').classList.add('open');
-            loadThread();
+            await loadThread(true);
+            clearInterval(threadTimer);
+            threadTimer = setInterval(loadThread, 5000);
         }
 
         function closeDrawer() {
+            clearInterval(threadTimer);
             document.getElementById('chat-drawer').classList.remove('open');
             activePeer = null;
             loadInbox();
@@ -198,23 +204,55 @@
             });
         }
 
-        async function loadThread() {
+        async function markRead() {
+            if (!activePeer) return;
+            try {
+                await fetch(`${WORKER_ORIGIN}/api/messages/read`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ readerEmail: currentUser.email, peerEmail: activePeer.email })
+                });
+            } catch (e) {}
+        }
+
+        async function loadThread(forceScroll) {
+            if (!activePeer) return;
+            const peerAtRequest = activePeer;
             const chatContainer = document.getElementById('chat-messages');
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(currentUser.email)}&user2=${encodeURIComponent(activePeer.email)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(currentUser.email)}&user2=${encodeURIComponent(peerAtRequest.email)}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
+                if (activePeer !== peerAtRequest) return; // drawer was closed or switched
 
                 if (!data.messages.length) {
                     chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No messages yet.</p>';
                     return;
                 }
 
-                chatContainer.innerHTML = data.messages.map(m => {
-                    const isSent = m.sender_email.toLowerCase() === currentUser.email.toLowerCase();
-                    return `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                const me = currentUser.email.toLowerCase();
+                const nearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
+                const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && !m.read_at);
+
+                let lastSentIdx = -1;
+                data.messages.forEach((m, i) => { if (m.sender_email.toLowerCase() === me) lastSentIdx = i; });
+
+                chatContainer.innerHTML = data.messages.map((m, i) => {
+                    const isSent = m.sender_email.toLowerCase() === me;
+                    let html = `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                    if (isSent && i === lastSentIdx) {
+                        if (m.read_at) {
+                            const t = new Date(m.read_at.replace(' ', 'T') + 'Z').toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                            html += `<div class="receipt seen">Seen ${t}</div>`;
+                        } else {
+                            html += `<div class="receipt">Delivered</div>`;
+                        }
+                    }
+                    return html;
                 }).join('');
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                if (forceScroll === true || nearBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
+                if (hasUnread) markRead();
             } catch (err) {
                 chatContainer.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load thread.</p>';
             }
@@ -236,7 +274,7 @@
                 if (!res.ok) throw new Error(data.error);
 
                 input.value = '';
-                loadThread();
+                loadThread(true);
             } catch (err) {
                 showToast(err.message);
             }
