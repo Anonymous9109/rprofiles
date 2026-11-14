@@ -287,7 +287,7 @@
                         uEl.innerHTML = `
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                                <a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>
+                                <span><a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
                             </div>
                         `;
                         container.appendChild(uEl);
@@ -344,7 +344,7 @@
                     <div class="post-header-line">
                         <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         <div style="flex-grow: 1;">
-                            <a href="profile.html?user=${encodeURIComponent(post.username || post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>
+                            <a href="profile.html?user=${encodeURIComponent(post.username || post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>${renderVerifiedBadge(post.verified)}
                             <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
                         </div>
                         ${ownerOrSafetyControls}
@@ -429,7 +429,7 @@
                         <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
                             <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                             <div style="flex-grow: 1;">
-                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}</span>
+                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</span>
                                 <div class="comment-content">${escapeHtml(c.content)}</div>
                                 <div class="comment-actions">
                                     <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
