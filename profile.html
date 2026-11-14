@@ -209,8 +209,12 @@
 
     <script src="app.js"></script>
     <script>
-        const loggedUser = requireAuth();
+        // Guests can view other people's profiles; loggedUser.guest is true for them
+        const loggedUser = requireAuth(true);
         const urlParams = new URLSearchParams(window.location.search);
+        // A guest has no profile of their own, so "Profile" with no ?user= sends them to sign up
+        const guestNoTarget = loggedUser.guest && !urlParams.get('user');
+        if (guestNoTarget) promptSignup('view your profile');
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
         let activeProfileUser = null;
         let activePostId = null;
@@ -293,9 +297,12 @@
                         document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
                         return;
                     } else {
-                        // Side-by-side buttons under bio for visitor
+                        // Side-by-side buttons under bio for visitor (guests are sent to sign up)
+                        const messageAction = loggedUser.guest
+                            ? `promptSignup('send messages')`
+                            : `location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'`;
                         controlsEl.innerHTML = `
-                            <button class="btn-app" style="flex: 1; padding: 8px;" onclick="location.href='messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}'">Message</button>
+                            <button class="btn-app" style="flex: 1; padding: 8px;" onclick="${messageAction}">Message</button>
                             <button class="btn-app-secondary" style="flex: 1; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
                         `;
                     }
@@ -442,6 +449,7 @@
         }
 
         function setReplyingTo(commentId, username) {
+            if (loggedUser.guest) return promptSignup('reply to comments');
             replyingToId = commentId;
             replyingToUsername = username;
             document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
@@ -457,6 +465,7 @@
 
         async function submitComment(e) {
             e.preventDefault();
+            if (loggedUser.guest) return promptSignup('comment');
             const input = document.getElementById('comment-input');
             const content = input.value.trim();
             if (!content || !activePostId) return;
@@ -479,6 +488,7 @@
         }
 
         async function toggleCommentReaction(commentId, reactionType) {
+            if (loggedUser.guest) return promptSignup('like or dislike comments');
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
                     method: 'POST',
@@ -501,6 +511,7 @@
         }
 
         async function toggleReaction(postId, reactionType) {
+            if (loggedUser.guest) return promptSignup('like or dislike posts');
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
                     method: 'POST',
@@ -566,7 +577,7 @@
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        loadProfile();
+        if (!guestNoTarget) loadProfile();
     </script>
 </body>
 </html>
