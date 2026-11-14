@@ -146,7 +146,8 @@
 
     <script src="app.js"></script>
     <script>
-        const currentUser = requireAuth();
+        // Guests (no account) can browse; currentUser.guest is true for them
+        const currentUser = requireAuth(true);
         let activePostId = null;
         let replyingToId = null;
         let replyingToUsername = null;
@@ -455,6 +456,7 @@
         }
 
         function setReplyingTo(commentId, username) {
+            if (currentUser.guest) return promptSignup('reply to comments');
             replyingToId = commentId;
             replyingToUsername = username;
             document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
@@ -470,6 +472,7 @@
 
         async function submitComment(e) {
             e.preventDefault();
+            if (currentUser.guest) return promptSignup('comment');
             const input = document.getElementById('comment-input');
             const content = input.value.trim();
             if (!content || !activePostId) return;
@@ -497,6 +500,7 @@
         }
 
         async function toggleCommentReaction(commentId, reactionType) {
+            if (currentUser.guest) return promptSignup('like or dislike comments');
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
                     method: 'POST',
@@ -519,6 +523,7 @@
         }
 
         async function toggleReaction(postId, reactionType) {
+            if (currentUser.guest) return promptSignup('like or dislike posts');
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
                     method: 'POST',
