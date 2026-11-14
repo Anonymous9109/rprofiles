@@ -344,3 +344,20 @@ function blockUser(targetEmail, targetUsername, onSuccess) {
         }
     );
 }
+// ===== IMAGE COMPRESSION (client-side, before upload) =====
+async function compressImage(file, maxDim = 2048, quality = 0.88) {
+    if (!file || !file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+    try {
+        const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const s = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+        const w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(bmp, 0, 0, w, h);
+        const blob = await new Promise(r => c.toBlob(r, 'image/webp', quality));
+        if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
+        return new File([blob], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
+    } catch (e) { return file; }
+}
