@@ -3,8 +3,9 @@ const WORKER_ORIGIN = "https://icy-glitter-5cd3.socials-73a.workers.dev";
 // Verified Badge SVG HTML helper
 const VERIFIED_BADGE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-left:3px;color:#3b82f6;" title="Verified Account"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
 
+// Accepts 1, true, "1" etc.
 function renderVerifiedBadge(isVerified) {
-    return isVerified ? VERIFIED_BADGE_SVG : '';
+    return (isVerified === true || Number(isVerified) === 1) ? VERIFIED_BADGE_SVG : '';
 }
 
 // ===== THEME, TOAST & CUSTOM DIALOGS =====
@@ -72,7 +73,7 @@ html.dark .ugc-btn-cancel { background: #2a2a2a; color: #eee; border-color: #444
 function applyTheme(theme) {
     const t = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.classList.toggle('dark', t === 'dark');
-    try { localStorage.setItem('rprofiles_theme', t); } catch (e) {}
+    try { localStorage.setItem('Nvaritia_theme', t); } catch (e) {}
     const btn = document.getElementById('theme-btn');
     if (btn) btn.innerText = t === 'dark' ? 'Switch to Light Mode' : ' Switch to Dark Mode';
 }
@@ -171,6 +172,23 @@ function getSessionUser() {
 function setSessionUser(user) {
     if (user && user.theme) applyTheme(user.theme);
     localStorage.setItem('Nvaritia_session', JSON.stringify(user));
+}
+
+// Re-fetch the logged-in user from the server so cached fields (like `verified`) never go stale.
+// Call `await refreshSession()` at the start of any page that shows the badge (e.g. profile.html).
+async function refreshSession() {
+    const u = getSessionUser();
+    if (!u) return null;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(u.email)}`);
+        if (!res.ok) return u;
+        const data = await res.json();
+        if (data.user) {
+            setSessionUser({ ...u, ...data.user });
+            return getSessionUser();
+        }
+    } catch (e) {}
+    return u;
 }
 
 function requireAuth() {
