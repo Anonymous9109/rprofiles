@@ -191,14 +191,29 @@ async function refreshSession() {
     return u;
 }
 
-function requireAuth() {
+// requireAuth(true) lets guests (no account) through and returns an empty placeholder user:
+//   { email: '', username: '', guest: true }
+// requireAuth() (default) sends guests to index.html with a "please sign up" notice.
+function requireAuth(allowGuest = false) {
     const user = getSessionUser();
     const path = window.location.pathname;
-    if (!user && !path.endsWith('index.html') && path !== '/' && !path.endsWith('/')) {
-        window.location.href = 'index.html';
+    const onIndex = path.endsWith('index.html') || path === '/' || path.endsWith('/');
+    if (!user) {
+        if (allowGuest) return { email: '', username: '', guest: true };
+        if (!onIndex) {
+            try { sessionStorage.setItem('Nvaritia_notice', 'Please sign up or log in to continue.'); } catch (e) {}
+            window.location.href = 'index.html';
+        }
+        return null;
     }
-    if (user && user.theme) applyTheme(user.theme);
+    if (user.theme) applyTheme(user.theme);
     return user;
+}
+
+// Send a guest to index.html with a "sign up to ..." message
+function promptSignup(action) {
+    try { sessionStorage.setItem('Nvaritia_notice', `Sign up for a free account to ${action}.`); } catch (e) {}
+    window.location.href = 'index.html';
 }
 
 function logout() {
@@ -216,7 +231,7 @@ function escapeHtml(str) {
 // ===== UGC REPORT MODAL & SAFETY HELPERS =====
 function reportPost(postId) {
     const user = getSessionUser();
-    if (!user) return;
+    if (!user) { promptSignup('report posts'); return; }
 
     let overlay = document.getElementById('ugc-report-overlay');
     if (!overlay) {
@@ -321,7 +336,7 @@ function reportPost(postId) {
 
 function blockUser(targetEmail, targetUsername, onSuccess) {
     const user = getSessionUser();
-    if (!user) return;
+    if (!user) { promptSignup('block users'); return; }
 
     showConfirmDialog(
         "Block User",
