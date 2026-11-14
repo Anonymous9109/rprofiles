@@ -39,6 +39,14 @@
         .receipt { align-self: flex-end; font-size: 10px; color: #888; margin-top: -2px; }
         .receipt.seen { color: #2563eb; font-weight: 600; }
 
+        /* Friend request actions */
+        .fr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .fr-btn { border: 1px solid #ccc; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: #111; }
+        .fr-btn.fr-accept { background: #000; color: #fff; border-color: #000; }
+        .fr-btn:disabled { opacity: 0.6; cursor: default; }
+        html.dark .fr-btn { background: #2a2a2a; color: #eee; border-color: #444; }
+        html.dark .fr-btn.fr-accept { background: #fff; color: #000; border-color: #fff; }
+
         /* Custom In-App Toast Notification */
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -111,19 +119,84 @@
             }, 3000);
         }
 
-        async function loadActivity() {
+        const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+        function showActivityEmptyIfNeeded() {
             const container = document.getElementById('activity-container');
+            if (!container.children.length) {
+                container.innerHTML = '<p style="color: #666; padding: 8px 0; font-size: 12px;">No new activity.</p>';
+            }
+        }
+
+        async function respondToFriendRequest(requestId, action, el) {
+            el.querySelectorAll('.fr-btn').forEach(b => b.disabled = true);
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/notifications?email=${encodeURIComponent(currentUser.email)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/respond`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId, email: currentUser.email, action })
+                });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                if (!data.notifications.length) {
+                // Either decision removes the notification
+                el.remove();
+                showToast(action === 'accept' ? 'Friend request accepted' : 'Friend request declined');
+                showActivityEmptyIfNeeded();
+            } catch (err) {
+                el.querySelectorAll('.fr-btn').forEach(b => b.disabled = false);
+                showToast(err.message);
+            }
+        }
+
+        async function loadActivity() {
+            const container = document.getElementById('activity-container');
+            try {
+                const [notifRes, reqRes] = await Promise.all([
+                    fetch(`${WORKER_ORIGIN}/api/notifications?email=${encodeURIComponent(currentUser.email)}`),
+                    fetch(`${WORKER_ORIGIN}/api/friends/requests?email=${encodeURIComponent(currentUser.email)}`)
+                ]);
+                const data = await notifRes.json();
+                if (!notifRes.ok) throw new Error(data.error);
+
+                let friendRequests = [];
+                try {
+                    if (reqRes.ok) friendRequests = (await reqRes.json()).requests || [];
+                } catch (e) {}
+
+                if (!data.notifications.length && !friendRequests.length) {
                     container.innerHTML = '<p style="color: #666; padding: 8px 0; font-size: 12px;">No new activity.</p>';
                     return;
                 }
 
                 container.innerHTML = '';
+
+                // Friend requests first, with Accept / Deny
+                for (const r of friendRequests) {
+                    const el = document.createElement('div');
+                    el.className = 'activity-item';
+                    el.style.cursor = 'default';
+                    el.innerHTML = `
+                        <img class="avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}">
+                        <div class="info">
+                            <div class="name">@${escapeHtml(r.username)}${renderVerifiedBadge(r.verified)}</div>
+                            <div class="preview">sent you a friend request</div>
+                        </div>
+                        <div class="fr-actions">
+                            <button type="button" class="fr-btn fr-accept">Accept</button>
+                            <button type="button" class="fr-btn fr-deny">Deny</button>
+                        </div>
+                    `;
+                    el.querySelector('.fr-accept').addEventListener('click', () => respondToFriendRequest(r.id, 'accept', el));
+                    el.querySelector('.fr-deny').addEventListener('click', () => respondToFriendRequest(r.id, 'deny', el));
+                    el.querySelector('.avatar').style.cursor = 'pointer';
+                    el.querySelector('.info').style.cursor = 'pointer';
+                    const goProfile = () => { window.location.href = `profile.html?user=${encodeURIComponent(r.username)}`; };
+                    el.querySelector('.avatar').addEventListener('click', goProfile);
+                    el.querySelector('.info').addEventListener('click', goProfile);
+                    container.appendChild(el);
+                }
+
                 for (const n of data.notifications) {
                     const el = document.createElement('div');
                     el.className = 'activity-item';
@@ -136,7 +209,7 @@
                     else if (n.type === 'comment_reply') actionText = 'replied to your comment';
 
                     el.innerHTML = `
-                        <img class="avatar" src="${n.actor_pfp || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        <img class="avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}">
                         <div class="info">
                             <div class="name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
                             <div class="preview">${actionText} • ${new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
