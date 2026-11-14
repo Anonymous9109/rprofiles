@@ -21,40 +21,20 @@
         .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
         .profile-pfp { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
-        .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
         /* Dark Mode Compatibility for Profile Header */
-        body.dark .profile-header-card,
-        body.dark-mode .profile-header-card,
-        [data-theme="dark"] .profile-header-card {
-            background: #18181b;
-            border-color: #27272a;
-            color: #f4f4f5;
+        html.dark .profile-header-card {
+            background: #181818;
+            border-color: #2a2a2a;
+            color: #eee;
         }
-        body.dark .profile-pfp,
-        body.dark-mode .profile-pfp,
-        [data-theme="dark"] .profile-pfp {
-            border-color: #27272a;
-            background: #27272a;
+        html.dark .profile-pfp {
+            border-color: #333;
+            background: #1c1c1c;
         }
-        body.dark .profile-name,
-        body.dark-mode .profile-name,
-        [data-theme="dark"] .profile-name {
-            color: #f4f4f5;
-        }
-        @media (prefers-color-scheme: dark) {
-            body:not(.light) .profile-header-card {
-                background: #18181b;
-                border-color: #27272a;
-                color: #f4f4f5;
-            }
-            body:not(.light) .profile-pfp {
-                border-color: #27272a;
-                background: #27272a;
-            }
-            body:not(.light) .profile-name {
-                color: #f4f4f5;
-            }
+        html.dark .profile-name {
+            color: #eee;
         }
 
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
