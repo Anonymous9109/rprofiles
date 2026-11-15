@@ -23,13 +23,11 @@
         .btn-app-secondary:hover { background: #fafafa; }
         .btn-app-secondary:disabled { opacity: 0.6; cursor: default; }
         
-        /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
         .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
         .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; overflow-y: auto; gap: 12px; }
 
-        /* Cancel Subscription Elements */
         #subscription-section { display: none; flex-direction: column; gap: 8px; }
         #cancel-note { font-size: 12px; color: #555; line-height: 1.4; display: none; }
         #manage-link { display: none; text-align: center; font-weight: 600; color: #3b82f6; font-size: 12px; text-decoration: none; }
@@ -46,7 +44,6 @@
         <button class="btn-app-secondary" onclick="openBlockedUsersModal()">Manage Blocked Users</button>
         <button class="btn-app-secondary" onclick="logout()">Logout</button>
 
-        <!-- SUBSCRIPTION MANAGEMENT (visible when verified) -->
         <div id="subscription-section">
             <hr style="border:none; border-top:1px solid #e5e5e5; margin: 4px 0;">
             <p id="cancel-note"></p>
@@ -58,7 +55,6 @@
         <button class="btn-app-secondary" style="background: #ef4444; color: #fff; border-color: #ef4444;" onclick="openDeleteModal()">Delete Account & Data</button>
     </div>
 
-    <!-- BLOCKED USERS MODAL -->
     <div id="blocked-modal" class="modal">
         <div class="modal-window">
             <div class="modal-header">
@@ -69,7 +65,6 @@
         </div>
     </div>
 
-    <!-- CANCEL SUBSCRIPTION MODAL -->
     <div id="cancel-modal" class="modal">
         <div class="modal-window" style="max-width: 360px;">
             <div class="modal-header">
@@ -88,7 +83,6 @@
         </div>
     </div>
 
-    <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
     <div id="delete-modal" class="modal">
         <div class="modal-window">
             <div class="modal-header">
@@ -128,7 +122,6 @@
     <script>
         const loggedUser = requireAuth();
 
-        // Check Whop verification status to show the Cancel Subscription button
         (async function initSubscriptionSection() {
             if (loggedUser.verified) {
                 document.getElementById('subscription-section').style.display = 'flex';
@@ -207,7 +200,7 @@
             const isDark = document.documentElement.classList.contains('dark');
             const next = isDark ? 'light' : 'dark';
             try {
-                await saveTheme(loggedUser.email, next);
+                await saveTheme(next);
                 loggedUser.theme = next;
                 setSessionUser({ ...loggedUser, theme: next });
             } catch (err) {
@@ -221,7 +214,7 @@
             const list = document.getElementById('blocked-list');
             list.innerHTML = 'Loading...';
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/users/blocked?email=${encodeURIComponent(loggedUser.email)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/blocked`, { headers: authHeaders() });
                 const data = await res.json();
                 if (!data.blocked.length) {
                     list.innerHTML = '<p style="color:#666;">No blocked users.</p>';
@@ -246,8 +239,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ blockerEmail: loggedUser.email, blockedEmail: targetEmail })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ blockedEmail: targetEmail })
                 });
                 if (!res.ok) throw new Error('Failed to unblock');
                 showToast("User unblocked");
@@ -270,8 +263,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedUser.email })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({})
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to delete account');
