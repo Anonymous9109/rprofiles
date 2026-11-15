@@ -78,12 +78,12 @@ function applyTheme(theme) {
     if (btn) btn.innerText = t === 'dark' ? 'Switch to Light Mode' : ' Switch to Dark Mode';
 }
 
-async function saveTheme(email, theme) {
+async function saveTheme(theme) {
     applyTheme(theme);
     const res = await fetch(`${WORKER_ORIGIN}/api/profile/theme`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, theme })
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ theme })
     });
     if (!res.ok) throw new Error('Failed to save theme');
 }
@@ -159,23 +159,42 @@ function showConfirmDialog(title, message, confirmLabel, onConfirm) {
     });
 })();
 
-// ===== SESSION =====
+// ===== SESSION & TOKEN MANAGEMENT =====
+function getSessionToken() {
+    return localStorage.getItem('Nvaritia_token') || '';
+}
+
+function setSessionToken(token) {
+    if (token) localStorage.setItem('Nvaritia_token', token);
+    else localStorage.removeItem('Nvaritia_token');
+}
+
+function authHeaders(additionalHeaders = {}) {
+    const token = getSessionToken();
+    const headers = { ...additionalHeaders };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 function getSessionUser() {
     const stored = localStorage.getItem('Nvaritia_session');
     if (!stored) return null;
     try { return JSON.parse(stored); } catch (e) {
         localStorage.removeItem('Nvaritia_session');
+        localStorage.removeItem('Nvaritia_token');
         return null;
     }
 }
 
-function setSessionUser(user) {
+function setSessionUser(user, token) {
     if (user && user.theme) applyTheme(user.theme);
     localStorage.setItem('Nvaritia_session', JSON.stringify(user));
+    if (token) setSessionToken(token);
 }
 
 // Re-fetch the logged-in user from the server so cached fields (like `verified`) never go stale.
-// Call `await refreshSession()` at the start of any page that shows the badge (e.g. profile.html).
 async function refreshSession() {
     const u = getSessionUser();
     if (!u) return null;
@@ -191,9 +210,6 @@ async function refreshSession() {
     return u;
 }
 
-// requireAuth(true) lets guests (no account) through and returns an empty placeholder user:
-//   { email: '', username: '', guest: true }
-// requireAuth() (default) sends guests to index.html with a "please sign up" notice.
 function requireAuth(allowGuest = false) {
     const user = getSessionUser();
     const path = window.location.pathname;
@@ -210,7 +226,6 @@ function requireAuth(allowGuest = false) {
     return user;
 }
 
-// Send a guest to index.html with a "sign up to ..." message
 function promptSignup(action) {
     try { sessionStorage.setItem('Nvaritia_notice', `Sign up for a free account to ${action}.`); } catch (e) {}
     window.location.href = 'index.html';
@@ -218,6 +233,7 @@ function promptSignup(action) {
 
 function logout() {
     localStorage.removeItem('Nvaritia_session');
+    localStorage.removeItem('Nvaritia_token');
     localStorage.removeItem('Nvaritia_theme');
     window.location.href = 'index.html';
 }
@@ -313,8 +329,8 @@ function reportPost(postId) {
         try {
             const res = await fetch(`${WORKER_ORIGIN}/api/reports/create`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, email: user.email, reason: finalReason })
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ postId, reason: finalReason })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to submit report');
@@ -346,8 +362,8 @@ function blockUser(targetEmail, targetUsername, onSuccess) {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/block`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ blockerEmail: user.email, blockedEmail: targetEmail })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ blockedEmail: targetEmail })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to block user');
@@ -359,6 +375,7 @@ function blockUser(targetEmail, targetUsername, onSuccess) {
         }
     );
 }
+
 // ===== IMAGE COMPRESSION (client-side, before upload) =====
 async function compressImage(file, maxDim = 2048, quality = 0.88) {
     if (!file || !file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
