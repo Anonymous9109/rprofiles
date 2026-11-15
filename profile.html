@@ -23,19 +23,9 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
-        /* Dark Mode Compatibility for Profile Header */
-        html.dark .profile-header-card {
-            background: #181818;
-            border-color: #2a2a2a;
-            color: #eee;
-        }
-        html.dark .profile-pfp {
-            border-color: #333;
-            background: #1c1c1c;
-        }
-        html.dark .profile-name {
-            color: #eee;
-        }
+        html.dark .profile-header-card { background: #181818; border-color: #2a2a2a; color: #eee; }
+        html.dark .profile-pfp { border-color: #333; background: #1c1c1c; }
+        html.dark .profile-name { color: #eee; }
 
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
@@ -93,14 +83,12 @@
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
 
-        /* Mutual friends row */
         .mutual-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
         .mutual-item { display: flex; flex-direction: column; align-items: center; width: 58px; flex-shrink: 0; text-decoration: none; color: inherit; }
         .mutual-pfp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; }
         .mutual-name { font-size: 10px; font-weight: 600; margin-top: 4px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
         html.dark .mutual-pfp { border-color: #333; background: #1c1c1c; }
 
-        /* Choose Image button (PFP picker) */
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
         html.dark .pfp-pick-btn { border-color: #444; }
@@ -118,7 +106,6 @@
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
-        <!-- Top Profile Header: PFP on left, Username & verification button on right -->
         <div class="profile-header-card">
             <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
             <div class="profile-info">
@@ -127,19 +114,15 @@
             </div>
         </div>
 
-        <!-- Bio Container -->
         <div class="panel">
             <div class="panel-header">Bio</div>
             <div class="panel-content" id="bio-display">No bio provided.</div>
         </div>
 
-        <!-- Owner / Action Buttons Side-by-Side (Edit & Settings or Message & Block) -->
         <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
 
-        <!-- Mutual friends (shown on other people's profiles) -->
         <div id="mutual-friends" style="display: none;"></div>
 
-        <!-- Posts Container -->
         <div class="panel">
             <div class="panel-header" id="posts-header">Posts</div>
             <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
@@ -219,10 +202,8 @@
 
     <script src="app.js"></script>
     <script>
-        // Guests can view other people's profiles; loggedUser.guest is true for them
         const loggedUser = requireAuth(true);
         const urlParams = new URLSearchParams(window.location.search);
-        // A guest has no profile of their own, so "Profile" with no ?user= sends them to sign up
         const guestNoTarget = loggedUser.guest && !urlParams.get('user');
         if (guestNoTarget) promptSignup('view your profile');
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
@@ -268,7 +249,8 @@
         async function loadProfile() {
             document.getElementById('mutual-friends').style.display = 'none';
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}?viewer=${encodeURIComponent(loggedUser.email)}`);
+                const viewerParam = loggedUser && !loggedUser.guest ? `?viewer=${encodeURIComponent(loggedUser.email)}` : '';
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}${viewerParam}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
@@ -277,7 +259,7 @@
                 document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
                 if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
 
-                const isOwner = activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
+                const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
                 const verificationBtnContainer = document.getElementById('verification-btn-container');
                 const controlsEl = document.getElementById('owner-controls');
                 controlsEl.style.display = 'flex';
@@ -285,14 +267,12 @@
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
                     
-                    // Show Get Verified button under username only if not verified
                     if (!activeProfileUser.verified) {
                         verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
                     } else {
                         verificationBtnContainer.innerHTML = '';
                     }
 
-                    // Side-by-side buttons under bio for owner
                     controlsEl.innerHTML = `
                         <button class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
                         <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
@@ -308,7 +288,6 @@
                         document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
                         return;
                     } else {
-                        // Friend request / Message button + Block (guests are sent to sign up)
                         let fStatus = 'none';
                         if (!loggedUser.guest) {
                             try {
@@ -335,7 +314,7 @@
 
                 container.innerHTML = '';
                 for (const p of data.posts) {
-                    const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${p.id}&email=${encodeURIComponent(loggedUser.email)}`);
+                    const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${p.id}&email=${encodeURIComponent(loggedUser.email || '')}`);
                     const rxData = await rxRes.json();
 
                     const postEl = document.createElement('div');
@@ -377,7 +356,6 @@
             }
         }
 
-        // status: none | sent | received | friends
         function setFriendButton(status) {
             const btn = document.getElementById('friend-btn');
             if (!btn || !activeProfileUser) return;
@@ -408,8 +386,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/friends/request`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ requesterEmail: loggedUser.email, addresseeEmail: activeProfileUser.email })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ addresseeEmail: activeProfileUser.email })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -452,8 +430,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ blockerEmail: loggedUser.email, blockedEmail: targetEmail })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ blockedEmail: targetEmail })
                 });
                 if (!res.ok) throw new Error('Failed to unblock');
                 showToast("User unblocked");
@@ -480,7 +458,7 @@
             const listEl = document.getElementById('comments-list');
             listEl.innerHTML = 'Loading comments...';
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email || '')}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
@@ -506,7 +484,7 @@
                 });
 
                 function renderCommentNode(c, isReply = false) {
-                    const isMe = c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
+                    const isMe = !loggedUser.guest && c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
                     return `
                         <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
                             <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
@@ -561,8 +539,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId: activePostId, email: loggedUser.email, content, parentId: replyingToId })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ postId: activePostId, content, parentId: replyingToId })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -580,8 +558,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ commentId, email: loggedUser.email, reaction: reactionType })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ commentId, reaction: reactionType })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -603,8 +581,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, email: loggedUser.email, reaction: reactionType })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ postId, reaction: reactionType })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -624,18 +602,21 @@
         async function saveProfile(e) {
             e.preventDefault();
             const formData = new FormData();
-            formData.append('email', loggedUser.email);
             formData.append('username', document.getElementById('edit-username').value.trim());
             formData.append('bio', document.getElementById('edit-bio').value.trim());
             const file = document.getElementById('edit-pfp').files[0];
             if (file) formData.append('pfp', typeof compressImage === 'function' ? await compressImage(file, 512) : file);
 
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { method: 'POST', body: formData });
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { 
+                    method: 'POST', 
+                    headers: authHeaders(),
+                    body: formData 
+                });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                setSessionUser(data.user);
+                setSessionUser(data.user, data.token);
                 closeModal('edit-modal');
                 window.location.href = `profile.html?user=${encodeURIComponent(data.user.username || data.user.email)}`;
             } catch (err) {
@@ -650,8 +631,8 @@
                 try {
                     const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ postId, email: loggedUser.email })
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({ postId })
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed to delete');
