@@ -43,7 +43,6 @@
         .safety-btn { background: none; border: none; color: #777; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; user-select: none; }
         .safety-btn:hover { color: #ef4444; text-decoration: underline; }
 
-        /* Sliding Comments Drawer */
         .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
         .comments-drawer.open { bottom: 0; }
         .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
@@ -64,7 +63,6 @@
         .comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; }
         .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; user-select: none; }
 
-        /* Custom In-App Toast & Dialog Overlays */
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -73,7 +71,6 @@
         .custom-dialog-msg { font-size: 13px; color: #111; line-height: 1.4; word-break: break-word; }
         .custom-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
         
-        /* Dialog button divs */
         .custom-dialog-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #000; background: #000; color: #fff; text-align: center; user-select: none; }
         .custom-dialog-btn.secondary { background: #fff; color: #111; border: 1px solid #ccc; }
         .custom-dialog-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
@@ -83,10 +80,8 @@
     </style>
 </head>
 <body>
-    <!-- Toast Notification Element -->
     <div id="app-toast"></div>
 
-    <!-- Custom Dialog Modal Element -->
     <div id="custom-dialog" class="custom-dialog-overlay">
         <div class="custom-dialog-card">
             <div id="custom-dialog-message" class="custom-dialog-msg"></div>
@@ -106,7 +101,6 @@
         <div id="feed-container"><div class="loading-spinner">Loading posts...</div></div>
     </div>
 
-    <!-- SLIDING COMMENTS DRAWER -->
     <div id="comments-drawer" class="comments-drawer">
         <div class="drawer-header">
             <span>Comments</span>
@@ -146,13 +140,11 @@
 
     <script src="app.js"></script>
     <script>
-        // Guests (no account) can browse; currentUser.guest is true for them
         const currentUser = requireAuth(true);
         let activePostId = null;
         let replyingToId = null;
         let replyingToUsername = null;
 
-        // Custom In-App UI helpers (replacing native alert/confirm)
         function showToast(message) {
             const toast = document.getElementById('app-toast');
             toast.innerText = message;
@@ -318,7 +310,7 @@
             const highlightPostId = urlParams.get('highlight');
 
             for (const post of posts) {
-                const isOwner = post.user_email.toLowerCase() === currentUser.email.toLowerCase();
+                const isOwner = currentUser && !currentUser.guest && post.user_email.toLowerCase() === currentUser.email.toLowerCase();
                 let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
                 try {
                     const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${post.id}&email=${encodeURIComponent(currentUser.email)}`);
@@ -425,7 +417,7 @@
                 });
 
                 function renderCommentNode(c, isReply = false) {
-                    const isMe = c.user_email.toLowerCase() === currentUser.email.toLowerCase();
+                    const isMe = !currentUser.guest && c.user_email.toLowerCase() === currentUser.email.toLowerCase();
                     return `
                         <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
                             <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
@@ -480,10 +472,9 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ 
                         postId: activePostId, 
-                        email: currentUser.email, 
                         content, 
                         parentId: replyingToId 
                     })
@@ -504,8 +495,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ commentId, email: currentUser.email, reaction: reactionType })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ commentId, reaction: reactionType })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -527,8 +518,8 @@
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, email: currentUser.email, reaction: reactionType })
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ postId, reaction: reactionType })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
@@ -550,8 +541,8 @@
                 try {
                     const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ postId, email: currentUser.email })
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({ postId })
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed to delete');
