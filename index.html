@@ -185,7 +185,6 @@
     <script>
         if (getSessionUser()) window.location.href = 'feed.html';
 
-        // Show a "sign up to ..." notice when a guest was sent here after trying to interact
         try {
             const n = sessionStorage.getItem('Nvaritia_notice');
             if (n) {
@@ -247,10 +246,10 @@
                     const loginData = await loginRes.json();
                     if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
 
-                    setSessionUser(loginData.user);
+                    setSessionUser(loginData.user, loginData.token);
                     window.location.href = 'feed.html';
                 } else {
-                    setSessionUser(data.user);
+                    setSessionUser(data.user, data.token);
                     window.location.href = 'feed.html';
                 }
             } catch (err) {
