@@ -393,3 +393,79 @@ async function compressImage(file, maxDim = 2048, quality = 0.88) {
         return new File([blob], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
     } catch (e) { return file; }
 }
+
+// ===== VIDEO COMPRESSION (client-side, before story upload) =====
+async function compressVideo(file, maxDim = 720, targetBitrate = 1000000) {
+    if (!file || !file.type.startsWith('video/')) return file;
+    try {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.src = url;
+        video.muted = true;
+        video.playsInline = true;
+        await new Promise((resolve, reject) => {
+            video.onloadedmetadata = () => resolve();
+            video.onerror = (e) => reject(e);
+        });
+
+        const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+        const width = Math.round(video.videoWidth * scale);
+        const height = Math.round(video.videoHeight * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const stream = canvas.captureStream(30);
+        let mimeType = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/webm';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = '';
+            }
+        }
+
+        const recorderOptions = mimeType ? { mimeType, videoBitsPerSecond: targetBitrate } : { videoBitsPerSecond: targetBitrate };
+        const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        const stopped = new Promise((resolve, reject) => {
+            mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+            mediaRecorder.onerror = (e) => reject(e);
+        });
+
+        mediaRecorder.start();
+        await video.play();
+
+        const draw = () => {
+            if (video.paused || video.ended) {
+                if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+                return;
+            }
+            ctx.drawImage(video, 0, 0, width, height);
+            requestAnimationFrame(draw);
+        };
+        draw();
+
+        video.onended = () => {
+            if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+        };
+
+        const compressedBlob = await stopped;
+        video.pause();
+        URL.revokeObjectURL(url);
+
+        if (compressedBlob.size < file.size) {
+            return new File([compressedBlob], file.name.replace(/\.\w+$/, '') + '.webm', { type: 'video/webm' });
+        }
+        return file;
+    } catch (err) {
+        console.error("Video compression fallback to original:", err);
+        return file;
+    }
+}
