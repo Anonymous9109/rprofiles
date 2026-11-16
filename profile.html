@@ -31,11 +31,11 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
-        /* Upload Progress Bar Styles */
+        /* Upload & Compression Progress Bar Styles */
         .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
         .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
         .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
-        .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.1s ease; }
+        .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.15s ease; }
 
         html.dark .profile-header-card, html.dark .upload-progress-panel { background: #181818; border-color: #2a2a2a; color: #eee; }
         html.dark .upload-progress-text { color: #eee; }
@@ -121,9 +121,9 @@
             </div>
         </div>
 
-        <!-- Story Upload Progress Bar Component -->
+        <!-- Story Upload & Compression Progress Bar Component -->
         <div id="story-upload-progress" class="upload-progress-panel">
-            <div id="story-upload-status-text" class="upload-progress-text">Story is being uploaded...</div>
+            <div id="story-upload-status-text" class="upload-progress-text">Compressing video...</div>
             <div class="upload-progress-track">
                 <div id="story-upload-bar" class="upload-progress-fill"></div>
             </div>
@@ -420,21 +420,26 @@
                     return;
                 }
 
-                showToast("Compressing video...");
-                if (typeof compressVideo === 'function') {
-                    file = await compressVideo(file, 720, 1200000);
-                }
-
-                // Show progress bar container above bio
+                // Show progress bar container above bio during compression
                 const progressBox = document.getElementById('story-upload-progress');
                 const progressBar = document.getElementById('story-upload-bar');
                 const progressText = document.getElementById('story-upload-status-text');
                 
                 progressBox.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressText.innerText = 'Story is being uploaded... (0%)';
+                progressBar.style.width = '40%';
+                progressText.innerText = 'Compressing video...';
+
+                if (typeof compressVideo === 'function') {
+                    file = await compressVideo(file, 720, 1200000);
+                }
+
+                progressBar.style.width = '100%';
+                progressText.innerText = 'Compression complete. Preparing upload...';
 
                 try {
+                    progressBar.style.width = '0%';
+                    progressText.innerText = 'Story is being uploaded... (0%)';
+
                     await uploadStoryWithProgress(file, (percent) => {
                         progressBar.style.width = percent + '%';
                         progressText.innerText = `Story is being uploaded... (${percent}%)`;
