@@ -168,7 +168,6 @@
         }
 
         function notifyUser(title, body, icon) {
-            // If the browser tab is hidden/in the background, display a native desktop push notification
             if (document.hidden && "Notification" in window && Notification.permission === "granted") {
                 try {
                     const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
@@ -183,7 +182,6 @@
                     console.error("Notification error:", e);
                 }
             } else {
-                // If the user is actively on the page, show the in-app toast notification banner instead
                 showToast(`${title}: ${body}`);
             }
         }
@@ -389,7 +387,7 @@
 
                 const me = currentUser.email.toLowerCase();
                 const nearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
-                const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && !m.read_at);
+                const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && (!m.read_at || m.read_at === ""));
 
                 if (!activeThreadLoadedOnce) {
                     data.messages.forEach(m => {
@@ -414,10 +412,20 @@
                 chatContainer.innerHTML = data.messages.map((m, i) => {
                     const isSent = m.sender_email.toLowerCase() === me;
                     let html = `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                    
                     if (isSent && i === lastSentIdx) {
-                        if (m.read_at) {
-                            const t = new Date(m.read_at.replace(' ', 'T') + 'Z').toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                            html += `<div class="receipt seen">Seen ${t}</div>`;
+                        if (m.read_at && m.read_at !== "") {
+                            let d = new Date(m.read_at);
+                            if (isNaN(d.getTime())) {
+                                d = new Date(m.read_at.replace(' ', 'T') + 'Z');
+                            }
+                            
+                            if (!isNaN(d.getTime())) {
+                                const t = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                html += `<div class="receipt seen">Seen ${t}</div>`;
+                            } else {
+                                html += `<div class="receipt seen">Seen</div>`;
+                            }
                         } else {
                             html += `<div class="receipt">Delivered</div>`;
                         }
@@ -449,7 +457,7 @@
 
                 input.value = '';
                 loadThread(true);
-                loadInbox(); // Immediate refresh of inbox
+                loadInbox();
             } catch (err) {
                 showToast(err.message);
             }
@@ -460,7 +468,6 @@
             loadActivity();
             loadInbox();
 
-            // Background polling for inbox every 5 seconds so notifications trigger even when drawer is closed
             if (inboxTimer) clearInterval(inboxTimer);
             inboxTimer = setInterval(() => {
                 if (!activePeer) {
