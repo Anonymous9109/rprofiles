@@ -23,7 +23,12 @@
         .post-box, .user-result-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
         .post-box.highlighted { background: #fafafa; border: 1px solid #ccc; border-radius: 6px; padding: 12px; }
         .post-header-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; }
+        
+        /* Story Ring in Feed */
+        .feed-avatar-container { position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
+        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
+        
         .post-meta { font-weight: 600; color: #111; text-decoration: none; }
         .post-meta:hover { text-decoration: underline; }
         .post-timestamp { color: #666; font-size: 10px; }
@@ -77,6 +82,12 @@
 
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
+
+        /* Story Modal Viewer */
+        .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
+        .story-modal-content { position: relative; width: 100%; max-width: 400px; height: 85vh; max-height: 700px; background: #000; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .story-video { width: 100%; height: 100%; object-fit: contain; }
+        .story-close { position: absolute; top: 16px; right: 16px; color: #fff; font-size: 22px; cursor: pointer; z-index: 10; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -86,6 +97,14 @@
         <div class="custom-dialog-card">
             <div id="custom-dialog-message" class="custom-dialog-msg"></div>
             <div class="custom-dialog-actions" id="custom-dialog-actions"></div>
+        </div>
+    </div>
+
+    <!-- Story Viewer Modal -->
+    <div id="story-viewer-modal" class="story-modal" onclick="closeStoryModal(event)">
+        <div class="story-modal-content" onclick="event.stopPropagation()">
+            <div class="story-close" onclick="closeStoryModal()">✕</div>
+            <video id="story-player" class="story-video" controls autoplay playsinline></video>
         </div>
     </div>
 
@@ -333,9 +352,14 @@
                         <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(post.user_email)}', '${escapeHtml(post.username || '')}')">Block</div>
                        </div>`;
 
+                const hasStoryClass = post.has_story ? 'has-story' : '';
+                const storyClickAttr = post.has_story ? `onclick="viewUserStory('${escapeHtml(post.user_email)}')"` : '';
+
                 postEl.innerHTML = `
                     <div class="post-header-line">
-                        <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        <div class="feed-avatar-container ${hasStoryClass}" ${storyClickAttr} title="${post.has_story ? 'View Story' : ''}">
+                            <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        </div>
                         <div style="flex-grow: 1;">
                             <a href="profile.html?user=${encodeURIComponent(post.username || post.user_email)}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>${renderVerifiedBadge(post.verified)}
                             <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
@@ -366,6 +390,33 @@
                 const target = document.getElementById(`post-${highlightPostId}`);
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+        }
+
+        async function viewUserStory(email) {
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
+                if (res.ok && data.story) {
+                    const modal = document.getElementById('story-viewer-modal');
+                    const player = document.getElementById('story-player');
+                    player.src = data.story.media_url;
+                    modal.style.display = 'flex';
+                    player.play().catch(() => {});
+                } else {
+                    showToast("No active story found.");
+                }
+            } catch (err) {
+                showToast("Failed to load story.");
+            }
+        }
+
+        function closeStoryModal(e) {
+            if (e && e.target !== document.getElementById('story-viewer-modal') && e.target.className !== 'story-close') return;
+            const modal = document.getElementById('story-viewer-modal');
+            const player = document.getElementById('story-player');
+            player.pause();
+            player.src = '';
+            modal.style.display = 'none';
         }
 
         function blockAuthorFromFeed(authorEmail, authorUsername) {
