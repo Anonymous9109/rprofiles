@@ -20,13 +20,11 @@
 
         .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
         
-        /* Story Ring & PFP Container */
         .pfp-container { position: relative; width: 86px; height: 86px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .story-ring-wrapper { position: relative; width: 82px; height: 82px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; }
         .profile-pfp { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; }
         
-        /* Plus sign on bottom left of PFP */
         .add-story-badge { position: absolute; bottom: 0px; left: 0px; width: 26px; height: 26px; background: #000; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .add-story-badge:hover { transform: scale(1.08); }
 
@@ -104,11 +102,19 @@
         .pfp-pick-btn input[type="file"] { display: none; }
         html.dark .pfp-pick-btn { border-color: #444; }
 
-        /* Story Modal Viewer */
-        .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
-        .story-modal-content { position: relative; width: 100%; max-width: 400px; height: 85vh; max-height: 700px; background: #000; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        /* Story Modal Viewer - Slide from Right & Fullscreen */
+        .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .story-modal.open { opacity: 1; pointer-events: auto; }
+        .story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .story-modal.open .story-modal-content { transform: translateX(0); }
         .story-video { width: 100%; height: 100%; object-fit: contain; }
-        .story-close { position: absolute; top: 16px; right: 16px; color: #fff; font-size: 22px; cursor: pointer; z-index: 10; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        
+        /* Top Left X Close Button */
+        .story-close-top-left { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
+        
+        /* Progress Line */
+        .story-progress-container { position: absolute; top: 12px; left: 16px; right: 16px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
+        .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
     </style>
 </head>
 <body>
@@ -123,8 +129,9 @@
     <!-- Story Viewer Modal -->
     <div id="story-viewer-modal" class="story-modal" onclick="closeStoryModal(event)">
         <div class="story-modal-content" onclick="event.stopPropagation()">
-            <div class="story-close" onclick="closeStoryModal()">✕</div>
-            <video id="story-player" class="story-video" controls autoplay playsinline></video>
+            <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
+            <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
+            <video id="story-player" class="story-video" autoplay playsinline></video>
         </div>
     </div>
 
@@ -297,10 +304,8 @@
 
                 const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
                 
-                // Show/hide plus add story button (only for owner)
                 document.getElementById('add-story-btn').style.display = isOwner ? 'flex' : 'none';
 
-                // Render story ring indicator
                 const ringContainer = document.getElementById('story-ring-container');
                 if (activeStory) {
                     ringContainer.classList.add('has-story');
@@ -404,14 +409,14 @@
             }
         }
 
-        // Story functionality
+        // Story Upload & Compression
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
             document.getElementById('story-file-input').click();
         }
 
         async function handleStoryUpload(input) {
-            const file = input.files[0];
+            let file = input.files[0];
             if (!file) return;
 
             if (!file.type.startsWith('video/')) {
@@ -420,7 +425,6 @@
                 return;
             }
 
-            // Check 30 seconds limit
             const video = document.createElement('video');
             video.preload = 'metadata';
             video.onloadedmetadata = async function() {
@@ -431,7 +435,12 @@
                     return;
                 }
 
-                showToast("Compressing and uploading story...");
+                showToast("Compressing video...");
+                if (typeof compressVideo === 'function') {
+                    file = await compressVideo(file, 720, 1200000);
+                }
+
+                showToast("Uploading story...");
                 const formData = new FormData();
                 formData.append('media', file);
 
@@ -453,6 +462,20 @@
             video.src = URL.createObjectURL(file);
         }
 
+        const player = document.getElementById('story-player');
+        const progressFill = document.getElementById('story-progress-fill');
+
+        player.ontimeupdate = () => {
+            if (player.duration) {
+                const pct = (player.currentTime / player.duration) * 100;
+                progressFill.style.width = pct + '%';
+            }
+        };
+
+        player.onended = () => {
+            closeStoryModal();
+        };
+
         function openProfileStory() {
             if (!activeStory) {
                 if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) {
@@ -461,19 +484,19 @@
                 return;
             }
             const modal = document.getElementById('story-viewer-modal');
-            const player = document.getElementById('story-player');
             player.src = activeStory.media_url;
-            modal.style.display = 'flex';
+            progressFill.style.width = '0%';
+            modal.classList.add('open');
             player.play().catch(() => {});
         }
 
         function closeStoryModal(e) {
-            if (e && e.target !== document.getElementById('story-viewer-modal') && e.target.className !== 'story-close') return;
+            if (e && e.target !== document.getElementById('story-viewer-modal') && e.target.className !== 'story-close-top-left') return;
             const modal = document.getElementById('story-viewer-modal');
-            const player = document.getElementById('story-player');
             player.pause();
             player.src = '';
-            modal.style.display = 'none';
+            progressFill.style.width = '0%';
+            modal.classList.remove('open');
         }
 
         function setFriendButton(status) {
