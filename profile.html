@@ -32,7 +32,19 @@
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
         .profile-stats { display: flex; gap: 16px; font-size: 13px; color: #333; margin: 2px 0; }
+        .profile-stats div { cursor: pointer; }
+        .profile-stats div:hover { opacity: 0.7; }
         .profile-stats strong { font-weight: bold; color: #111; }
+
+        /* Slide-out Drawer Styles for Followers/Following */
+        .users-drawer { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100dvh; background: #fff; border-left: 1px solid #e5e5e5; box-shadow: -4px 0 16px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
+        .users-drawer.open { right: 0; }
+        .users-drawer-header { height: 48px; padding: 0 16px; background: #fafafa; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 15px; }
+        .users-drawer-body { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .user-row-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; text-decoration: none; color: inherit; border-bottom: 1px solid #eee; }
+        .user-row-item:hover { background: #fafafa; }
+        .user-row-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
+        .user-row-name { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 4px; }
 
         /* Upload Progress Bar Styles */
         .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
@@ -40,7 +52,10 @@
         .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
         .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.15s ease; }
 
-        html.dark .profile-header-card, html.dark .upload-progress-panel { background: #181818; border-color: #2a2a2a; color: #eee; }
+        html.dark .profile-header-card, html.dark .upload-progress-panel, html.dark .users-drawer { background: #181818; border-color: #2a2a2a; color: #eee; }
+        html.dark .users-drawer-header { background: #1f1f1f; border-color: #2a2a2a; }
+        html.dark .user-row-item { border-color: #2a2a2a; }
+        html.dark .user-row-item:hover { background: #222; }
         html.dark .profile-stats { color: #aaa; }
         html.dark .profile-stats strong { color: #eee; }
         html.dark .upload-progress-text { color: #eee; }
@@ -124,8 +139,8 @@
             <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
                 <div class="profile-stats">
-                    <div><strong id="followers-count">0</strong> followers</div>
-                    <div><strong id="following-count">0</strong> following</div>
+                    <div onclick="openUsersDrawer('followers')"><strong id="followers-count">0</strong> followers</div>
+                    <div onclick="openUsersDrawer('following')"><strong id="following-count">0</strong> following</div>
                 </div>
                 <div id="verification-btn-container"></div>
             </div>
@@ -151,6 +166,17 @@
         <div class="panel">
             <div class="panel-header" id="posts-header">Posts</div>
             <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
+        </div>
+    </div>
+
+    <!-- Slide-out Drawer for Followers / Following -->
+    <div id="users-drawer" class="users-drawer">
+        <div class="users-drawer-header">
+            <span id="users-drawer-title">Users</span>
+            <span style="cursor: pointer; font-size: 18px;" onclick="closeUsersDrawer()">✕</span>
+        </div>
+        <div class="users-drawer-body" id="users-drawer-list">
+            <div class="loading-spinner">Loading...</div>
         </div>
     </div>
 
@@ -238,6 +264,7 @@
         let replyingToUsername = null;
         let activeStory = null;
         let isFollowingActiveUser = false;
+        let profileFollowData = { followers: [], following: [] };
 
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
@@ -256,6 +283,10 @@
                 activeProfileUser = data.user;
                 activeStory = data.story || null;
                 isFollowingActiveUser = data.is_following;
+                profileFollowData = {
+                    followers: data.followers || [],
+                    following: data.following || []
+                };
 
                 document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
                 document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
@@ -378,6 +409,49 @@
             }
         }
 
+        // --- Slide-out Drawers for Followers and Following ---
+        async function openUsersDrawer(type) {
+            const drawer = document.getElementById('users-drawer');
+            const titleEl = document.getElementById('users-drawer-title');
+            const listEl = document.getElementById('users-drawer-list');
+
+            titleEl.innerText = type === 'followers' ? 'Followers' : 'Following';
+            drawer.classList.add('open');
+            listEl.innerHTML = '<div class="loading-spinner">Loading...</div>';
+
+            const emailArray = profileFollowData[type] || [];
+            if (!emailArray.length) {
+                listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} yet.</p>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/list?emails=${encodeURIComponent(emailArray.join(','))}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                const users = data.users || [];
+                if (!users.length) {
+                    listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} found.</p>`;
+                    return;
+                }
+
+                const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+                listEl.innerHTML = users.map(u => `
+                    <a class="user-row-item" href="profile.html?user=${encodeURIComponent(u.username)}">
+                        <img class="user-row-avatar" src="${u.pfp_url || placeholder}">
+                        <div class="user-row-name">@${escapeHtml(u.username)}${renderVerifiedBadge(u.verified)}</div>
+                    </a>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = '<p style="color: red; text-align: center; padding: 20px; font-size: 13px;">Failed to load list.</p>';
+            }
+        }
+
+        function closeUsersDrawer() {
+            document.getElementById('users-drawer').classList.remove('open');
+        }
+
         async function toggleFollow() {
             if (loggedUser.guest) return promptSignup('follow users');
             const endpoint = isFollowingActiveUser ? '/api/users/unfollow' : '/api/users/follow';
@@ -397,11 +471,15 @@
                     btn.style.background = '#fff';
                     btn.style.color = '#111';
                     btn.style.border = '1px solid #ccc';
+                    if (!profileFollowData.followers.includes(loggedUser.email.toLowerCase())) {
+                        profileFollowData.followers.push(loggedUser.email.toLowerCase());
+                    }
                 } else {
                     btn.innerText = 'Follow';
                     btn.style.background = '#000';
                     btn.style.color = '#fff';
                     btn.style.border = '1px solid #000';
+                    profileFollowData.followers = profileFollowData.followers.filter(e => e !== loggedUser.email.toLowerCase());
                 }
 
                 const countElem = document.getElementById('followers-count');
