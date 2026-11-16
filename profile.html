@@ -31,7 +31,7 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
-        /* Upload & Compression Progress Bar Styles */
+        /* Upload Progress Bar Styles */
         .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
         .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
         .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
@@ -121,9 +121,9 @@
             </div>
         </div>
 
-        <!-- Story Upload & Compression Progress Bar Component -->
+        <!-- Story Upload Progress Bar Component -->
         <div id="story-upload-progress" class="upload-progress-panel">
-            <div id="story-upload-status-text" class="upload-progress-text">Compressing video...</div>
+            <div id="story-upload-status-text" class="upload-progress-text">Uploading story... (0%)</div>
             <div class="upload-progress-track">
                 <div id="story-upload-bar" class="upload-progress-fill"></div>
             </div>
@@ -356,7 +356,7 @@
             }
         }
 
-        // Story Upload & Compression with Progress Tracking
+        // Story Upload with Real-time Progress Tracking
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
             document.getElementById('story-file-input').click();
@@ -410,8 +410,12 @@
                 return;
             }
 
+            // Safe metadata loader (muted and offscreen, no playback/audio leak)
             const video = document.createElement('video');
             video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+
             video.onloadedmetadata = async function() {
                 window.URL.revokeObjectURL(video.src);
                 if (video.duration > 30.5) {
@@ -420,29 +424,18 @@
                     return;
                 }
 
-                // Show progress bar container above bio during compression
                 const progressBox = document.getElementById('story-upload-progress');
                 const progressBar = document.getElementById('story-upload-bar');
                 const progressText = document.getElementById('story-upload-status-text');
                 
                 progressBox.style.display = 'block';
-                progressBar.style.width = '40%';
-                progressText.innerText = 'Compressing video...';
-
-                if (typeof compressVideo === 'function') {
-                    file = await compressVideo(file, 720, 1200000);
-                }
-
-                progressBar.style.width = '100%';
-                progressText.innerText = 'Compression complete. Preparing upload...';
+                progressBar.style.width = '0%';
+                progressText.innerText = 'Uploading story... (0%)';
 
                 try {
-                    progressBar.style.width = '0%';
-                    progressText.innerText = 'Story is being uploaded... (0%)';
-
-                    await uploadStoryWithProgress(file, (percent) => {
-                        progressBar.style.width = percent + '%';
-                        progressText.innerText = `Story is being uploaded... (${percent}%)`;
+                    await uploadStoryWithProgress(file, (uploadPercent) => {
+                        progressBar.style.width = uploadPercent + '%';
+                        progressText.innerText = `Uploading story... (${uploadPercent}%)`;
                     });
 
                     showToast("Story posted successfully!");
@@ -454,10 +447,16 @@
                     input.value = '';
                 }
             };
+
+            video.onerror = function() {
+                window.URL.revokeObjectURL(video.src);
+                showToast("Could not read video file.");
+                input.value = '';
+            };
+
             video.src = URL.createObjectURL(file);
         }
 
-        // Story playback using app.js's shared openStory handler
         function openProfileStory() {
             if (!activeStory) {
                 if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) {
