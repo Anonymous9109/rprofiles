@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nvaritia- Home Feed</title>
+    <title>Nvaritia - Home Feed</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 96px; padding-bottom: 54px; }
@@ -67,18 +67,6 @@
         .comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; }
         .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; user-select: none; }
 
-        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        .custom-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9998; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .custom-dialog-card { background: #fff; border: 1px solid #ccc; border-radius: 8px; width: 90%; max-width: 320px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
-        .custom-dialog-msg { font-size: 13px; color: #111; line-height: 1.4; word-break: break-word; }
-        .custom-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
-        
-        .custom-dialog-btn { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #000; background: #000; color: #fff; text-align: center; user-select: none; }
-        .custom-dialog-btn.secondary { background: #fff; color: #111; border: 1px solid #ccc; }
-        .custom-dialog-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
 
@@ -90,23 +78,14 @@
         .story-video { width: 100%; height: 100%; object-fit: contain; }
         
         /* Top Left X Close Button */
-        .story-close-top-left { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
+        .story-close-top-left { position: absolute; top: 32px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
         
         /* Progress Line */
-        .story-progress-container { position: absolute; top: 12px; left: 16px; right: 16px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
+        .story-progress-container { position: absolute; top: 20px; left: 24px; right: 24px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
         .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
     </style>
 </head>
 <body>
-    <div id="app-toast"></div>
-
-    <div id="custom-dialog" class="custom-dialog-overlay">
-        <div class="custom-dialog-card">
-            <div id="custom-dialog-message" class="custom-dialog-msg"></div>
-            <div class="custom-dialog-actions" id="custom-dialog-actions"></div>
-        </div>
-    </div>
-
     <!-- Story Viewer Modal -->
     <div id="story-viewer-modal" class="story-modal" onclick="closeStoryModal(event)">
         <div class="story-modal-content" onclick="event.stopPropagation()">
@@ -172,38 +151,6 @@
         let replyingToId = null;
         let replyingToUsername = null;
 
-        function showToast(message) {
-            const toast = document.getElementById('app-toast');
-            toast.innerText = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
-        function showCustomConfirm(message, onConfirm, isDanger = false) {
-            const overlay = document.getElementById('custom-dialog');
-            const msgEl = document.getElementById('custom-dialog-message');
-            const actionsEl = document.getElementById('custom-dialog-actions');
-
-            msgEl.innerText = message;
-            actionsEl.innerHTML = `
-                <div class="custom-dialog-btn secondary" onclick="closeCustomDialog()">Cancel</div>
-                <div class="custom-dialog-btn ${isDanger ? 'danger' : 'primary'}" id="custom-dialog-confirm-btn">Confirm</div>
-            `;
-
-            document.getElementById('custom-dialog-confirm-btn').onclick = () => {
-                closeCustomDialog();
-                onConfirm();
-            };
-
-            overlay.style.display = 'flex';
-        }
-
-        function closeCustomDialog() {
-            document.getElementById('custom-dialog').style.display = 'none';
-        }
-
         const activeViewTimers = new Map();
         const postObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -252,7 +199,6 @@
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
         const COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-
         const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 
@@ -612,7 +558,7 @@
         }
 
         async function deletePost(postId) {
-            showCustomConfirm("Delete this post?", async () => {
+            showConfirmDialog("Delete Post", "Delete this post?", "Delete", async () => {
                 try {
                     const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
                         method: 'POST',
@@ -626,7 +572,7 @@
                 } catch (err) {
                     showToast(err.message);
                 }
-            }, true);
+            });
         }
 
         loadFeed();
