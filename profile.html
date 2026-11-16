@@ -31,6 +31,9 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
+        .profile-stats { display: flex; gap: 16px; font-size: 13px; color: #333; margin: 2px 0; }
+        .profile-stats strong { font-weight: bold; color: #111; }
+
         /* Upload Progress Bar Styles */
         .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
         .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
@@ -38,6 +41,8 @@
         .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.15s ease; }
 
         html.dark .profile-header-card, html.dark .upload-progress-panel { background: #181818; border-color: #2a2a2a; color: #eee; }
+        html.dark .profile-stats { color: #aaa; }
+        html.dark .profile-stats strong { color: #eee; }
         html.dark .upload-progress-text { color: #eee; }
         html.dark .upload-progress-track { background: #333; }
         html.dark .upload-progress-fill { background: #fff; }
@@ -49,7 +54,8 @@
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; color: #111; }
+        html.dark .btn-app-secondary { background: #222; border-color: #444; color: #eee; }
         
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
@@ -117,6 +123,10 @@
             </div>
             <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
+                <div class="profile-stats">
+                    <div><strong id="followers-count">0</strong> followers</div>
+                    <div><strong id="following-count">0</strong> following</div>
+                </div>
                 <div id="verification-btn-container"></div>
             </div>
         </div>
@@ -227,6 +237,7 @@
         let replyingToId = null;
         let replyingToUsername = null;
         let activeStory = null;
+        let isFollowingActiveUser = false;
 
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
@@ -244,10 +255,14 @@
 
                 activeProfileUser = data.user;
                 activeStory = data.story || null;
+                isFollowingActiveUser = data.is_following;
 
                 document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
                 document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
                 if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
+
+                document.getElementById('followers-count').innerText = data.followers_count;
+                document.getElementById('following-count').innerText = data.following_count;
 
                 const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
                 
@@ -295,9 +310,16 @@
                                 if (fr.ok) fStatus = (await fr.json()).status;
                             } catch (e) {}
                         }
+                        
+                        const followBtnText = isFollowingActiveUser ? 'Unfollow' : 'Follow';
+                        const followBtnStyle = isFollowingActiveUser 
+                            ? 'background: #fff; color: #111; border: 1px solid #ccc;' 
+                            : 'background: #000; color: #fff; border: 1px solid #000;';
+
                         controlsEl.innerHTML = `
                             <button id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
-                            <button class="btn-app-secondary" style="flex: 1; padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block User</button>
+                            <button id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
+                            <button class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
                         `;
                         setFriendButton(fStatus);
                         if (!loggedUser.guest) loadMutualFriends();
@@ -356,6 +378,40 @@
             }
         }
 
+        async function toggleFollow() {
+            if (loggedUser.guest) return promptSignup('follow users');
+            const endpoint = isFollowingActiveUser ? '/api/users/unfollow' : '/api/users/follow';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ targetEmail: activeProfileUser.email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                isFollowingActiveUser = data.is_following;
+                const btn = document.getElementById('follow-btn');
+                if (isFollowingActiveUser) {
+                    btn.innerText = 'Unfollow';
+                    btn.style.background = '#fff';
+                    btn.style.color = '#111';
+                    btn.style.border = '1px solid #ccc';
+                } else {
+                    btn.innerText = 'Follow';
+                    btn.style.background = '#000';
+                    btn.style.color = '#fff';
+                    btn.style.border = '1px solid #000';
+                }
+
+                const countElem = document.getElementById('followers-count');
+                let current = parseInt(countElem.innerText, 10) || 0;
+                countElem.innerText = isFollowingActiveUser ? current + 1 : Math.max(0, current - 1);
+            } catch (err) {
+                showToast(err.message);
+            }
+        }
+
         // Story Upload with Real-time Progress Tracking
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
@@ -410,7 +466,6 @@
                 return;
             }
 
-            // Safe metadata loader (muted and offscreen, no playback/audio leak)
             const video = document.createElement('video');
             video.preload = 'metadata';
             video.muted = true;
