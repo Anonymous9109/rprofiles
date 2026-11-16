@@ -394,107 +394,114 @@ async function compressImage(file, maxDim = 2048, quality = 0.88) {
     } catch (e) { return file; }
 }
 
-// ===== VIDEO COMPRESSION (client-side, duration-aware, audio preserved) =====
-async function compressVideo(file, maxDim = 720, targetBitrate = 800000) {
+// ===== VIDEO COMPRESSION (Web Audio API for sound, 480p/20fps for true file size reduction) =====
+async function compressVideo(file, onProgress) {
     if (!file || !file.type.startsWith('video/')) return file;
 
-    const url = URL.createObjectURL(file);
-    const video = document.createElement('video');
-    video.src = url;
-    video.muted = true;
-    video.playsInline = true;
+    return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.src = url;
+        video.muted = false;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
 
-    try {
-        await new Promise((resolve, reject) => {
-            video.onloadedmetadata = () => resolve();
-            video.onerror = (e) => reject(e);
-        });
-    } catch (e) {
-        URL.revokeObjectURL(url);
-        return file;
-    }
-
-    const timeoutMs = Math.max(15000, (video.duration || 10) * 1000 + 5000);
-    const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Compression timeout')), timeoutMs)
-    );
-
-    const compressionTask = async () => {
-        const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
-        const width = Math.round(video.videoWidth * scale);
-        const height = Math.round(video.videoHeight * scale);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        const canvasStream = canvas.captureStream(30);
-        if (typeof video.captureStream === 'function') {
+        video.onloadedmetadata = async () => {
             try {
-                const videoStream = video.captureStream();
-                const audioTracks = videoStream.getAudioTracks();
-                audioTracks.forEach(track => canvasStream.addTrack(track));
+                const maxDim = 480;
+                const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+                const width = Math.round(video.videoWidth * scale);
+                const height = Math.round(video.videoHeight * scale);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                let audioTrack = null;
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        const audioCtx = new AudioContextClass();
+                        if (audioCtx.state === 'suspended') await audioCtx.resume();
+                        const source = audioCtx.createMediaElementSource(video);
+                        const destination = audioCtx.createMediaStreamDestination();
+                        source.connect(destination);
+                        source.connect(audioCtx.destination);
+                        audioTrack = destination.stream.getAudioTracks()[0];
+                    }
+                } catch (err) {
+                    console.warn("AudioContext capture warning:", err);
+                }
+
+                const canvasStream = canvas.captureStream(20);
+                if (audioTrack) canvasStream.addTrack(audioTrack);
+
+                let mimeType = 'video/webm;codecs=vp8,opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+                }
+
+                const mediaRecorder = new MediaRecorder(canvasStream, {
+                    mimeType: mimeType || undefined,
+                    videoBitsPerSecond: 600000
+                });
+
+                const chunks = [];
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    URL.revokeObjectURL(url);
+                    const compressedBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+                    if (compressedBlob && compressedBlob.size > 0 && compressedBlob.size < file.size) {
+                        resolve(new File([compressedBlob], file.name.replace(/\.\w+$/, '') + '.webm', { type: 'video/webm' }));
+                    } else {
+                        resolve(file);
+                    }
+                };
+
+                mediaRecorder.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(file);
+                };
+
+                mediaRecorder.start(100);
+                video.currentTime = 0;
+                await video.play();
+
+                const duration = video.duration || 1;
+                const drawInterval = setInterval(() => {
+                    if (video.paused || video.ended) {
+                        clearInterval(drawInterval);
+                        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+                        return;
+                    }
+                    ctx.drawImage(video, 0, 0, width, height);
+                    if (typeof onProgress === 'function') {
+                        const pct = Math.min(50, Math.round((video.currentTime / duration) * 50));
+                        onProgress(pct);
+                    }
+                }, 50);
+
+                video.onended = () => {
+                    clearInterval(drawInterval);
+                    if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+                };
+
             } catch (e) {
-                console.warn("Audio capture warning:", e);
+                URL.revokeObjectURL(url);
+                resolve(file);
             }
-        }
-
-        let mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'video/webm';
-            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
-        }
-
-        const mediaRecorder = new MediaRecorder(canvasStream, {
-            mimeType: mimeType || undefined,
-            videoBitsPerSecond: targetBitrate
-        });
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = e => {
-            if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const stopped = new Promise((resolve, reject) => {
-            mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
-            mediaRecorder.onerror = (e) => reject(e);
-        });
-
-        mediaRecorder.start();
-        await video.play();
-
-        const draw = () => {
-            if (video.paused || video.ended) {
-                if (mediaRecorder.state === 'recording') mediaRecorder.stop();
-                return;
-            }
-            ctx.drawImage(video, 0, 0, width, height);
-            requestAnimationFrame(draw);
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(file);
         };
-        draw();
-
-        video.onended = () => {
-            if (mediaRecorder.state === 'recording') mediaRecorder.stop();
-        };
-
-        const compressedBlob = await stopped;
-        video.pause();
-        URL.revokeObjectURL(url);
-
-        if (compressedBlob && compressedBlob.size > 0) {
-            return new File([compressedBlob], file.name.replace(/\.\w+$/, '') + '.webm', { type: 'video/webm' });
-        }
-        return file;
-    };
-
-    try {
-        return await Promise.race([compressionTask(), timeoutPromise]);
-    } catch (err) {
-        console.warn("Video compression timed out or failed, using original file:", err);
-        URL.revokeObjectURL(url);
-        return file;
-    }
+    });
 }
 
 // ===== SHARED STORY PLAYER =====
@@ -515,7 +522,6 @@ const STORY_CSS = `
 let _storyReady = false;
 let _storyOnDeleted = null;
 
-// SQLite CURRENT_TIMESTAMP is UTC without a "Z", so normalise before parsing
 function storyAgeLabel(createdAt) {
     if (!createdAt) return '';
     let s = String(createdAt).trim();
@@ -559,7 +565,6 @@ function ensureStoryPlayer() {
     _storyReady = true;
 }
 
-// openStory({ mediaUrl, createdAt, ownerEmail, onDeleted })
 function openStory({ mediaUrl, createdAt, ownerEmail, onDeleted }) {
     if (!mediaUrl) return;
     ensureStoryPlayer();
@@ -609,6 +614,5 @@ function deleteOwnStory() {
     });
 }
 
-// Expose shared story function globally
 window.openStory = openStory;
 window.closeStoryModal = closeStoryModal;
