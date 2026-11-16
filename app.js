@@ -469,3 +469,115 @@ async function compressVideo(file, maxDim = 720, targetBitrate = 1000000) {
         return file;
     }
 }
+
+// ===== SHARED STORY PLAYER =====
+const STORY_CSS = `
+.story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.story-modal.open { opacity: 1; pointer-events: auto; }
+.story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.story-modal.open .story-modal-content { transform: translateX(0); }
+.story-video { width: 100%; height: 100%; object-fit: contain; }
+.story-progress-container { position: absolute; top: 20px; left: 24px; right: 24px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
+.story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
+.story-close-top-left { position: absolute; top: 32px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
+.story-age { position: absolute; top: 32px; left: 66px; height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; z-index: 20; background: rgba(0,0,0,0.5); border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-delete-btn { position: absolute; top: 32px; right: 24px; height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 20; background: #ef4444; border-radius: 17px; display: none; align-items: center; user-select: none; }
+#ugc-confirm-overlay { z-index: 10001; }
+`;
+
+let _storyReady = false;
+let _storyOnDeleted = null;
+
+// SQLite CURRENT_TIMESTAMP is UTC without a "Z", so normalise before parsing
+function storyAgeLabel(createdAt) {
+    if (!createdAt) return '';
+    let s = String(createdAt).trim();
+    if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+    const t = Date.parse(s);
+    if (isNaN(t)) return '';
+    const h = Math.floor((Date.now() - t) / 3600000);
+    return h < 1 ? '<1h' : h + 'h';
+}
+
+function ensureStoryPlayer() {
+    if (_storyReady) return;
+    const style = document.createElement('style');
+    style.textContent = STORY_CSS;
+    document.head.appendChild(style);
+
+    const modal = document.createElement('div');
+    modal.id = 'story-viewer-modal';
+    modal.className = 'story-modal';
+    modal.innerHTML = `
+        <div class="story-modal-content">
+            <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
+            <div id="story-close-btn" class="story-close-top-left">✕</div>
+            <div id="story-age" class="story-age"></div>
+            <div id="story-delete-btn" class="story-delete-btn">Delete</div>
+            <video id="story-player" class="story-video" autoplay playsinline></video>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const player = document.getElementById('story-player');
+    const fill = document.getElementById('story-progress-fill');
+
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeStoryModal(); });
+    document.getElementById('story-close-btn').addEventListener('click', closeStoryModal);
+    document.getElementById('story-delete-btn').addEventListener('click', deleteOwnStory);
+    player.addEventListener('timeupdate', () => {
+        if (player.duration) fill.style.width = (player.currentTime / player.duration * 100) + '%';
+    });
+    player.addEventListener('ended', closeStoryModal);
+    _storyReady = true;
+}
+
+// openStory({ mediaUrl, createdAt, ownerEmail, onDeleted })
+function openStory({ mediaUrl, createdAt, ownerEmail, onDeleted }) {
+    if (!mediaUrl) return;
+    ensureStoryPlayer();
+    _storyOnDeleted = typeof onDeleted === 'function' ? onDeleted : null;
+
+    const me = getSessionUser();
+    const isOwner = !!(me && me.email && ownerEmail && me.email.toLowerCase() === String(ownerEmail).toLowerCase());
+    document.getElementById('story-delete-btn').style.display = isOwner ? 'flex' : 'none';
+
+    const label = storyAgeLabel(createdAt);
+    const ageEl = document.getElementById('story-age');
+    ageEl.innerText = label;
+    ageEl.style.display = label ? 'flex' : 'none';
+
+    const player = document.getElementById('story-player');
+    document.getElementById('story-progress-fill').style.width = '0%';
+    player.src = mediaUrl;
+    document.getElementById('story-viewer-modal').classList.add('open');
+    player.play().catch(() => {});
+}
+
+function closeStoryModal() {
+    if (!_storyReady) return;
+    const player = document.getElementById('story-player');
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+    document.getElementById('story-progress-fill').style.width = '0%';
+    document.getElementById('story-viewer-modal').classList.remove('open');
+}
+
+function deleteOwnStory() {
+    showConfirmDialog("Delete Story", "Delete your story? This can't be undone.", "Delete", async () => {
+        try {
+            const res = await fetch(`${WORKER_ORIGIN}/api/stories/delete`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete story');
+            closeStoryModal();
+            showToast("Story deleted");
+            if (_storyOnDeleted) _storyOnDeleted();
+        } catch (err) {
+            showToast(err.message);
+        }
+    });
+}
