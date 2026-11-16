@@ -69,32 +69,9 @@
 
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
-
-        /* Story Modal Viewer - Slide from Right & Fullscreen */
-        .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .story-modal.open { opacity: 1; pointer-events: auto; }
-        .story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .story-modal.open .story-modal-content { transform: translateX(0); }
-        .story-video { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* Top Left X Close Button */
-        .story-close-top-left { position: absolute; top: 32px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
-        
-        /* Progress Line */
-        .story-progress-container { position: absolute; top: 20px; left: 24px; right: 24px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
-        .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
     </style>
 </head>
 <body>
-    <!-- Story Viewer Modal -->
-    <div id="story-viewer-modal" class="story-modal" onclick="closeStoryModal(event)">
-        <div class="story-modal-content" onclick="event.stopPropagation()">
-            <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
-            <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
-            <video id="story-player" class="story-video" autoplay playsinline></video>
-        </div>
-    </div>
-
     <header>
         <div class="header-top">
             <a href="feed.html" class="brand">Nvaritia</a>
@@ -252,7 +229,7 @@
                         uEl.className = 'user-result-box';
                         uEl.innerHTML = `
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="feed-avatar-container ${u.has_story ? 'has-story' : ''}" ${u.has_story ? `onclick="viewUserStory('${escapeHtml(u.email)}' )"` : ''}>
+                                <div class="feed-avatar-container ${u.has_story ? 'has-story' : ''}" ${u.has_story ? `onclick="viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"` : ''}>
                                     <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                                 </div>
                                 <span><a href="profile.html?user=${encodeURIComponent(u.username)}" class="post-meta">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
@@ -309,7 +286,7 @@
                        </div>`;
 
                 const hasStoryClass = post.has_story ? 'has-story' : '';
-                const storyClickAttr = post.has_story ? `onclick="viewUserStory('${escapeHtml(post.user_email)}' )"` : '';
+                const storyClickAttr = post.has_story ? `onclick="viewUserStory('${escapeHtml(post.user_email)}', '${escapeHtml(post.story_created_at || '')}')"` : '';
 
                 postEl.innerHTML = `
                     <div class="post-header-line">
@@ -348,45 +325,23 @@
             }
         }
 
-        const feedPlayer = document.getElementById('story-player');
-        const feedProgressFill = document.getElementById('story-progress-fill');
-
-        feedPlayer.ontimeupdate = () => {
-            if (feedPlayer.duration) {
-                const pct = (feedPlayer.currentTime / feedPlayer.duration) * 100;
-                feedProgressFill.style.width = pct + '%';
-            }
-        };
-
-        feedPlayer.onended = () => {
-            closeStoryModal();
-        };
-
-        async function viewUserStory(email) {
+        async function viewUserStory(email, createdAt) {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
                 const data = await res.json();
                 if (res.ok && data.story) {
-                    const modal = document.getElementById('story-viewer-modal');
-                    feedPlayer.src = data.story.media_url;
-                    feedProgressFill.style.width = '0%';
-                    modal.classList.add('open');
-                    feedPlayer.play().catch(() => {});
+                    openStory({
+                        mediaUrl: data.story.media_url,
+                        createdAt: data.story.created_at || createdAt,
+                        ownerEmail: email,
+                        onDeleted: loadFeed
+                    });
                 } else {
                     showToast("No active story found.");
                 }
             } catch (err) {
                 showToast("Failed to load story.");
             }
-        }
-
-        function closeStoryModal(e) {
-            if (e && e.target !== document.getElementById('story-viewer-modal') && e.target.className !== 'story-close-top-left') return;
-            const modal = document.getElementById('story-viewer-modal');
-            feedPlayer.pause();
-            feedPlayer.src = '';
-            feedProgressFill.style.width = '0%';
-            modal.classList.remove('open');
         }
 
         function blockAuthorFromFeed(authorEmail, authorUsername) {
