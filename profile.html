@@ -19,13 +19,24 @@
         .footer-tab.active .footer-icon { stroke: #000; }
 
         .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
-        .profile-pfp { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
+        
+        /* Story Ring & PFP Container */
+        .pfp-container { position: relative; width: 86px; height: 86px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .story-ring-wrapper { position: relative; width: 82px; height: 82px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; }
+        .profile-pfp { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; }
+        
+        /* Plus sign on bottom left of PFP */
+        .add-story-badge { position: absolute; bottom: 0px; left: 0px; width: 26px; height: 26px; background: #000; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .add-story-badge:hover { transform: scale(1.08); }
+
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
         html.dark .profile-header-card { background: #181818; border-color: #2a2a2a; color: #eee; }
         html.dark .profile-pfp { border-color: #333; background: #1c1c1c; }
         html.dark .profile-name { color: #eee; }
+        html.dark .add-story-badge { background: #fff; color: #000; border-color: #181818; }
 
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
@@ -92,6 +103,12 @@
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
         html.dark .pfp-pick-btn { border-color: #444; }
+
+        /* Story Modal Viewer */
+        .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
+        .story-modal-content { position: relative; width: 100%; max-width: 400px; height: 85vh; max-height: 700px; background: #000; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .story-video { width: 100%; height: 100%; object-fit: contain; }
+        .story-close { position: absolute; top: 16px; right: 16px; color: #fff; font-size: 22px; cursor: pointer; z-index: 10; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -103,11 +120,27 @@
         </div>
     </div>
 
+    <!-- Story Viewer Modal -->
+    <div id="story-viewer-modal" class="story-modal" onclick="closeStoryModal(event)">
+        <div class="story-modal-content" onclick="event.stopPropagation()">
+            <div class="story-close" onclick="closeStoryModal()">✕</div>
+            <video id="story-player" class="story-video" controls autoplay playsinline></video>
+        </div>
+    </div>
+
+    <!-- Hidden file input for uploading a story -->
+    <input type="file" id="story-file-input" accept="video/*" style="display: none;" onchange="handleStoryUpload(this)">
+
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
         <div class="profile-header-card">
-            <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
+            <div class="pfp-container">
+                <div id="story-ring-container" class="story-ring-wrapper" onclick="openProfileStory()">
+                    <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
+                </div>
+                <div id="add-story-btn" class="add-story-badge" title="Post a Story" onclick="triggerStoryUpload()">+</div>
+            </div>
             <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
                 <div id="verification-btn-container"></div>
@@ -211,6 +244,7 @@
         let activePostId = null;
         let replyingToId = null;
         let replyingToUsername = null;
+        let activeStory = null;
 
         function showToast(message) {
             const toast = document.getElementById('app-toast');
@@ -255,11 +289,25 @@
                 if (!res.ok) throw new Error(data.error);
 
                 activeProfileUser = data.user;
+                activeStory = data.story || null;
+
                 document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
                 document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
                 if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
 
                 const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
+                
+                // Show/hide plus add story button (only for owner)
+                document.getElementById('add-story-btn').style.display = isOwner ? 'flex' : 'none';
+
+                // Render story ring indicator
+                const ringContainer = document.getElementById('story-ring-container');
+                if (activeStory) {
+                    ringContainer.classList.add('has-story');
+                } else {
+                    ringContainer.classList.remove('has-story');
+                }
+
                 const verificationBtnContainer = document.getElementById('verification-btn-container');
                 const controlsEl = document.getElementById('owner-controls');
                 controlsEl.style.display = 'flex';
@@ -354,6 +402,78 @@
                 document.getElementById('username-display').innerText = 'User not found or offline';
                 document.getElementById('posts-container').innerHTML = '';
             }
+        }
+
+        // Story functionality
+        function triggerStoryUpload() {
+            if (loggedUser.guest) return promptSignup('post a story');
+            document.getElementById('story-file-input').click();
+        }
+
+        async function handleStoryUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('video/')) {
+                showToast("Stories must be video files.");
+                input.value = '';
+                return;
+            }
+
+            // Check 30 seconds limit
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = async function() {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 30.5) {
+                    showToast("Story video cannot exceed 30 seconds.");
+                    input.value = '';
+                    return;
+                }
+
+                showToast("Compressing and uploading story...");
+                const formData = new FormData();
+                formData.append('media', file);
+
+                try {
+                    const res = await fetch(`${WORKER_ORIGIN}/api/stories/create`, {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed to post story');
+                    showToast("Story posted successfully!");
+                    loadProfile();
+                } catch (err) {
+                    showToast(err.message);
+                }
+                input.value = '';
+            };
+            video.src = URL.createObjectURL(file);
+        }
+
+        function openProfileStory() {
+            if (!activeStory) {
+                if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) {
+                    triggerStoryUpload();
+                }
+                return;
+            }
+            const modal = document.getElementById('story-viewer-modal');
+            const player = document.getElementById('story-player');
+            player.src = activeStory.media_url;
+            modal.style.display = 'flex';
+            player.play().catch(() => {});
+        }
+
+        function closeStoryModal(e) {
+            if (e && e.target !== document.getElementById('story-viewer-modal') && e.target.className !== 'story-close') return;
+            const modal = document.getElementById('story-viewer-modal');
+            const player = document.getElementById('story-player');
+            player.pause();
+            player.src = '';
+            modal.style.display = 'none';
         }
 
         function setFriendButton(status) {
