@@ -167,11 +167,16 @@
         }
 
         function notifyUser(title, body, icon) {
+            // Also trigger in-app toast notification so user sees it even when browser suppresses foreground notifications
+            showToast(`${title}: ${body}`);
+
             if ("Notification" in window && Notification.permission === "granted") {
                 try {
+                    // Browsers reject data URIs or SVGs as notification icons; ensure valid HTTP URL or omit
+                    const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
                     new Notification(title, {
                         body: body,
-                        icon: icon || AVATAR_PLACEHOLDER
+                        icon: validIcon
                     });
                 } catch (e) {
                     console.error("Notification error:", e);
