@@ -72,6 +72,12 @@
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
+        <!-- Notification Permission Banner -->
+        <div id="notification-banner" style="display: none; background: #f4f4f5; border: 1px solid #e4e4e7; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; align-items: center; justify-content: space-between; font-size: 12px;">
+            <span>Enable browser push notifications for new messages</span>
+            <button onclick="requestNotificationPermissionPrompt()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">Enable</button>
+        </div>
+
         <div class="section-title">Activity & Notifications</div>
         <div id="activity-container"><div class="loading-spinner">Loading activity...</div></div>
 
@@ -121,6 +127,10 @@
         const currentUser = requireAuth();
         let activePeer = null;
         let threadTimer = null;
+        let notifiedMessageKeys = new Set();
+        let activeThreadLoadedOnce = false;
+        let inboxLoadedOnce = false;
+        let inboxLastMessages = {};
 
         function showToast(message) {
             const toast = document.getElementById('app-toast');
@@ -132,6 +142,43 @@
         }
 
         const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+        // --- Push Notification Functions ---
+        function checkNotificationBanner() {
+            const banner = document.getElementById('notification-banner');
+            if (!banner) return;
+            if ("Notification" in window && Notification.permission === "default") {
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        async function requestNotificationPermissionPrompt() {
+            if ("Notification" in window) {
+                const permission = await Notification.requestPermission();
+                checkNotificationBanner();
+                if (permission === 'granted') {
+                    showToast('Notifications enabled!');
+                } else {
+                    showToast('Notification permission denied.');
+                }
+            }
+        }
+
+        function notifyUser(title, body, icon) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(title, {
+                        body: body,
+                        icon: icon || AVATAR_PLACEHOLDER
+                    });
+                } catch (e) {
+                    console.error("Notification error:", e);
+                }
+            }
+        }
+        // -----------------------------------
 
         function showActivityEmptyIfNeeded() {
             const container = document.getElementById('activity-container');
@@ -247,18 +294,33 @@
                 container.innerHTML = '';
                 for (const conv of data.conversations) {
                     const peer = conv.peer;
+                    const peerEmail = peer.email.toLowerCase();
+                    const lastMsg = conv.last_message;
+
+                    if (!inboxLoadedOnce) {
+                        inboxLastMessages[peerEmail] = lastMsg;
+                    } else {
+                        if (inboxLastMessages[peerEmail] !== lastMsg) {
+                            inboxLastMessages[peerEmail] = lastMsg;
+                            if (!activePeer || activePeer.email.toLowerCase() !== peerEmail) {
+                                notifyUser(`@${peer.username}`, lastMsg, peer.pfp_url);
+                            }
+                        }
+                    }
+
                     const el = document.createElement('div');
                     el.className = 'inbox-item';
                     el.onclick = () => openDrawer(peer);
                     el.innerHTML = `
-                        <img class="avatar" src="${peer.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
+                        <img class="avatar" src="${peer.pfp_url || AVATAR_PLACEHOLDER}">
                         <div class="info">
                             <div class="name">@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}</div>
-                            <div class="preview">${escapeHtml(conv.last_message)}</div>
+                            <div class="preview">${escapeHtml(lastMsg)}</div>
                         </div>
                     `;
                     container.appendChild(el);
                 }
+                inboxLoadedOnce = true;
             } catch (err) {
                 container.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load inbox.</p>';
             }
@@ -266,6 +328,7 @@
 
         async function openDrawer(peer) {
             activePeer = peer;
+            activeThreadLoadedOnce = false;
             document.getElementById('drawer-avatar').src = peer.pfp_url || AVATAR_PLACEHOLDER;
             document.getElementById('drawer-title').innerHTML = `@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
             document.getElementById('chat-messages').innerHTML = 'Loading...';
@@ -319,6 +382,23 @@
                 const nearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
                 const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && !m.read_at);
 
+                if (!activeThreadLoadedOnce) {
+                    data.messages.forEach(m => {
+                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
+                        notifiedMessageKeys.add(msgKey);
+                    });
+                    activeThreadLoadedOnce = true;
+                } else {
+                    data.messages.forEach(m => {
+                        const isSent = m.sender_email.toLowerCase() === me;
+                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
+                        if (!isSent && !notifiedMessageKeys.has(msgKey)) {
+                            notifiedMessageKeys.add(msgKey);
+                            notifyUser(`@${peerAtRequest.username}`, m.content, peerAtRequest.pfp_url);
+                        }
+                    });
+                }
+
                 let lastSentIdx = -1;
                 data.messages.forEach((m, i) => { if (m.sender_email.toLowerCase() === me) lastSentIdx = i; });
 
@@ -366,6 +446,7 @@
         }
 
         async function init() {
+            checkNotificationBanner();
             loadActivity();
             loadInbox();
 
