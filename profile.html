@@ -123,7 +123,7 @@
 
         <!-- Story Upload & Compression Progress Bar Component -->
         <div id="story-upload-progress" class="upload-progress-panel">
-            <div id="story-upload-status-text" class="upload-progress-text">Compressing video... (0%)</div>
+            <div id="story-upload-status-text" class="upload-progress-text">Compressing video...</div>
             <div class="upload-progress-track">
                 <div id="story-upload-bar" class="upload-progress-fill"></div>
             </div>
@@ -356,7 +356,7 @@
             }
         }
 
-        // Story Upload & Compression with Dual Progress Tracking
+        // Story Upload & Compression with Progress Tracking
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
             document.getElementById('story-file-input').click();
@@ -420,31 +420,29 @@
                     return;
                 }
 
+                // Show progress bar container above bio during compression
                 const progressBox = document.getElementById('story-upload-progress');
                 const progressBar = document.getElementById('story-upload-bar');
                 const progressText = document.getElementById('story-upload-status-text');
                 
                 progressBox.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressText.innerText = 'Compressing video... (0%)';
+                progressBar.style.width = '40%';
+                progressText.innerText = 'Compressing video...';
+
+                if (typeof compressVideo === 'function') {
+                    file = await compressVideo(file, 720, 1200000);
+                }
+
+                progressBar.style.width = '100%';
+                progressText.innerText = 'Compression complete. Preparing upload...';
 
                 try {
-                    // Compress video (0% to 50%)
-                    if (typeof compressVideo === 'function') {
-                        file = await compressVideo(file, (percent) => {
-                            progressBar.style.width = percent + '%';
-                            progressText.innerText = `Compressing video... (${percent}%)`;
-                        });
-                    }
+                    progressBar.style.width = '0%';
+                    progressText.innerText = 'Story is being uploaded... (0%)';
 
-                    progressBar.style.width = '50%';
-                    progressText.innerText = 'Story is being uploaded... (50%)';
-
-                    // Upload compressed video (50% to 100%)
-                    await uploadStoryWithProgress(file, (uploadPercent) => {
-                        const totalPercent = 50 + Math.round(uploadPercent / 2);
-                        progressBar.style.width = totalPercent + '%';
-                        progressText.innerText = `Story is being uploaded... (${totalPercent}%)`;
+                    await uploadStoryWithProgress(file, (percent) => {
+                        progressBar.style.width = percent + '%';
+                        progressText.innerText = `Story is being uploaded... (${percent}%)`;
                     });
 
                     showToast("Story posted successfully!");
@@ -459,6 +457,7 @@
             video.src = URL.createObjectURL(file);
         }
 
+        // Story playback using app.js's shared openStory handler
         function openProfileStory() {
             if (!activeStory) {
                 if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) {
