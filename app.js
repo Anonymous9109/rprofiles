@@ -480,8 +480,8 @@ const STORY_CSS = `
 .story-progress-container { position: absolute; top: 40px; left: 24px; right: 24px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
 .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
 .story-close-top-left { position: absolute; top: 52px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
-.story-age { position: absolute; top: 32px; left: 66px; height: 54px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; z-index: 20; background: rgba(0,0,0,0.5); border-radius: 17px; display: none; align-items: center; user-select: none; }
-.story-delete-btn { position: absolute; top: 32px; right: 24px; height: 54px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 20; background: #ef4444; border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-age { position: absolute; top: 52px; left: 66px; height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; z-index: 20; background: rgba(0,0,0,0.5); border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-delete-btn { position: absolute; top: 52px; right: 24px; height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 20; background: #ef4444; border-radius: 17px; display: none; align-items: center; user-select: none; }
 #ugc-confirm-overlay { z-index: 10001; }
 `;
 
