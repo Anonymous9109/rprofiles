@@ -394,20 +394,32 @@ async function compressImage(file, maxDim = 2048, quality = 0.88) {
     } catch (e) { return file; }
 }
 
-// ===== VIDEO COMPRESSION (client-side, before story upload) =====
-async function compressVideo(file, maxDim = 720, targetBitrate = 1000000) {
+// ===== VIDEO COMPRESSION (client-side, duration-aware, audio preserved) =====
+async function compressVideo(file, maxDim = 720, targetBitrate = 800000) {
     if (!file || !file.type.startsWith('video/')) return file;
+
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+
     try {
-        const url = URL.createObjectURL(file);
-        const video = document.createElement('video');
-        video.src = url;
-        video.muted = true;
-        video.playsInline = true;
         await new Promise((resolve, reject) => {
             video.onloadedmetadata = () => resolve();
             video.onerror = (e) => reject(e);
         });
+    } catch (e) {
+        URL.revokeObjectURL(url);
+        return file;
+    }
 
+    const timeoutMs = Math.max(15000, (video.duration || 10) * 1000 + 5000);
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Compression timeout')), timeoutMs)
+    );
+
+    const compressionTask = async () => {
         const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
         const width = Math.round(video.videoWidth * scale);
         const height = Math.round(video.videoHeight * scale);
@@ -417,17 +429,27 @@ async function compressVideo(file, maxDim = 720, targetBitrate = 1000000) {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
 
-        const stream = canvas.captureStream(30);
-        let mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'video/webm';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = '';
+        const canvasStream = canvas.captureStream(30);
+        if (typeof video.captureStream === 'function') {
+            try {
+                const videoStream = video.captureStream();
+                const audioTracks = videoStream.getAudioTracks();
+                audioTracks.forEach(track => canvasStream.addTrack(track));
+            } catch (e) {
+                console.warn("Audio capture warning:", e);
             }
         }
 
-        const recorderOptions = mimeType ? { mimeType, videoBitsPerSecond: targetBitrate } : { videoBitsPerSecond: targetBitrate };
-        const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+        let mimeType = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/webm';
+            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+        }
+
+        const mediaRecorder = new MediaRecorder(canvasStream, {
+            mimeType: mimeType || undefined,
+            videoBitsPerSecond: targetBitrate
+        });
         const chunks = [];
 
         mediaRecorder.ondataavailable = e => {
@@ -460,12 +482,17 @@ async function compressVideo(file, maxDim = 720, targetBitrate = 1000000) {
         video.pause();
         URL.revokeObjectURL(url);
 
-        if (compressedBlob.size < file.size) {
+        if (compressedBlob && compressedBlob.size > 0) {
             return new File([compressedBlob], file.name.replace(/\.\w+$/, '') + '.webm', { type: 'video/webm' });
         }
         return file;
+    };
+
+    try {
+        return await Promise.race([compressionTask(), timeoutPromise]);
     } catch (err) {
-        console.error("Video compression fallback to original:", err);
+        console.warn("Video compression timed out or failed, using original file:", err);
+        URL.revokeObjectURL(url);
         return file;
     }
 }
