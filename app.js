@@ -581,3 +581,7 @@ function deleteOwnStory() {
         }
     });
 }
+
+// Expose shared story function globally
+window.openStory = openStory;
+window.closeStoryModal = closeStoryModal;
