@@ -168,19 +168,23 @@
         }
 
         function notifyUser(title, body, icon) {
-            // Immediate in-app toast banner alert
-            showToast(`${title}: ${body}`);
-
-            if ("Notification" in window && Notification.permission === "granted") {
+            // If the browser tab is hidden/in the background, display a native desktop push notification
+            if (document.hidden && "Notification" in window && Notification.permission === "granted") {
                 try {
                     const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
-                    new Notification(title, {
-                        body: body,
-                        icon: validIcon
-                    });
+                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification(title, { body, icon: validIcon });
+                        });
+                    } else {
+                        new Notification(title, { body, icon: validIcon });
+                    }
                 } catch (e) {
                     console.error("Notification error:", e);
                 }
+            } else {
+                // If the user is actively on the page, show the in-app toast notification banner instead
+                showToast(`${title}: ${body}`);
             }
         }
         // -----------------------------------
