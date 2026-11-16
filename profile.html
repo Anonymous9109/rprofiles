@@ -31,7 +31,16 @@
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
 
-        html.dark .profile-header-card { background: #181818; border-color: #2a2a2a; color: #eee; }
+        /* Upload Progress Bar Styles */
+        .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
+        .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
+        .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
+        .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.1s ease; }
+
+        html.dark .profile-header-card, html.dark .upload-progress-panel { background: #181818; border-color: #2a2a2a; color: #eee; }
+        html.dark .upload-progress-text { color: #eee; }
+        html.dark .upload-progress-track { background: #333; }
+        html.dark .upload-progress-fill { background: #fff; }
         html.dark .profile-pfp { border-color: #333; background: #1c1c1c; }
         html.dark .profile-name { color: #eee; }
         html.dark .add-story-badge { background: #fff; color: #000; border-color: #181818; }
@@ -109,6 +118,14 @@
             <div class="profile-info">
                 <div class="profile-name" id="username-display">Loading profile...</div>
                 <div id="verification-btn-container"></div>
+            </div>
+        </div>
+
+        <!-- Story Upload Progress Bar Component -->
+        <div id="story-upload-progress" class="upload-progress-panel">
+            <div id="story-upload-status-text" class="upload-progress-text">Story is being uploaded...</div>
+            <div class="upload-progress-track">
+                <div id="story-upload-bar" class="upload-progress-fill"></div>
             </div>
         </div>
 
@@ -339,10 +356,48 @@
             }
         }
 
-        // Story Upload & Compression
+        // Story Upload & Compression with Progress Tracking
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
             document.getElementById('story-file-input').click();
+        }
+
+        function uploadStoryWithProgress(file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${WORKER_ORIGIN}/api/stories/create`);
+                
+                const headers = authHeaders();
+                for (const key in headers) {
+                    xhr.setRequestHeader(key, headers[key]);
+                }
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        onProgress(percent);
+                    }
+                };
+
+                xhr.onload = () => {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(data);
+                        } else {
+                            reject(new Error(data.error || 'Failed to post story'));
+                        }
+                    } catch (err) {
+                        reject(new Error('Invalid response from server'));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('Network error during upload'));
+
+                const formData = new FormData();
+                formData.append('media', file);
+                xhr.send(formData);
+            });
         }
 
         async function handleStoryUpload(input) {
@@ -370,24 +425,29 @@
                     file = await compressVideo(file, 720, 1200000);
                 }
 
-                showToast("Uploading story...");
-                const formData = new FormData();
-                formData.append('media', file);
+                // Show progress bar container above bio
+                const progressBox = document.getElementById('story-upload-progress');
+                const progressBar = document.getElementById('story-upload-bar');
+                const progressText = document.getElementById('story-upload-status-text');
+                
+                progressBox.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressText.innerText = 'Story is being uploaded... (0%)';
 
                 try {
-                    const res = await fetch(`${WORKER_ORIGIN}/api/stories/create`, {
-                        method: 'POST',
-                        headers: authHeaders(),
-                        body: formData
+                    await uploadStoryWithProgress(file, (percent) => {
+                        progressBar.style.width = percent + '%';
+                        progressText.innerText = `Story is being uploaded... (${percent}%)`;
                     });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed to post story');
+
                     showToast("Story posted successfully!");
                     loadProfile();
                 } catch (err) {
                     showToast(err.message);
+                } finally {
+                    progressBox.style.display = 'none';
+                    input.value = '';
                 }
-                input.value = '';
             };
             video.src = URL.createObjectURL(file);
         }
