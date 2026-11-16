@@ -127,6 +127,7 @@
         const currentUser = requireAuth();
         let activePeer = null;
         let threadTimer = null;
+        let inboxTimer = null;
         let notifiedMessageKeys = new Set();
         let activeThreadLoadedOnce = false;
         let inboxLoadedOnce = false;
@@ -167,12 +168,11 @@
         }
 
         function notifyUser(title, body, icon) {
-            // Also trigger in-app toast notification so user sees it even when browser suppresses foreground notifications
+            // Immediate in-app toast banner alert
             showToast(`${title}: ${body}`);
 
             if ("Notification" in window && Notification.permission === "granted") {
                 try {
-                    // Browsers reject data URIs or SVGs as notification icons; ensure valid HTTP URL or omit
                     const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
                     new Notification(title, {
                         body: body,
@@ -445,6 +445,7 @@
 
                 input.value = '';
                 loadThread(true);
+                loadInbox(); // Immediate refresh of inbox
             } catch (err) {
                 showToast(err.message);
             }
@@ -454,6 +455,14 @@
             checkNotificationBanner();
             loadActivity();
             loadInbox();
+
+            // Background polling for inbox every 5 seconds so notifications trigger even when drawer is closed
+            if (inboxTimer) clearInterval(inboxTimer);
+            inboxTimer = setInterval(() => {
+                if (!activePeer) {
+                    loadInbox();
+                }
+            }, 5000);
 
             const urlParams = new URLSearchParams(window.location.search);
             const targetUser = urlParams.get('user');
