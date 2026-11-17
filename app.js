@@ -512,7 +512,7 @@ function deleteOwnStory() {
 window.openStory = openStory;
 window.closeStoryModal = closeStoryModal;
 
-// ===== AUTOMATIC FCM TOKEN REGISTRATION ON PAGE LOAD =====
+// ===== AUTOMATIC FCM TOKEN REGISTRATION & DEBUGGING =====
 window.addEventListener('DOMContentLoaded', () => {
     const user = getSessionUser();
     const token = getSessionToken();
@@ -521,25 +521,31 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Auto-retry helper in case Firebase takes a couple of seconds to respond on cold boot
 function tryRegisterFcmWithRetry(authToken, retries = 5) {
     try {
         if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
             const fcmToken = window.AndroidBridge.getFcmToken();
-            if (fcmToken) {
-                onFcmTokenReady(fcmToken);
+            console.log("FCM Token from Bridge:", fcmToken);
+            
+            if (fcmToken && fcmToken.trim() !== "") {
+                onFcmTokenReady(fcmToken, authToken);
                 return;
             }
+        } else {
+            console.warn("AndroidBridge is not available!");
         }
+
         if (retries > 0) {
-            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 1500);
+            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 2000);
+        } else {
+            alert("FCM Error: AndroidBridge returned empty token after retries.");
         }
-    } catch (e) {}
+    } catch (e) {
+        alert("FCM Exception: " + e.message);
+    }
 }
 
-// Sends the token to your Cloudflare Worker
-function onFcmTokenReady(fcmToken) {
-    const authToken = getSessionToken();
+function onFcmTokenReady(fcmToken, authToken) {
     if (fcmToken && authToken) {
         fetch(`${WORKER_ORIGIN}/api/devices/register`, {
             method: 'POST',
@@ -550,8 +556,16 @@ function onFcmTokenReady(fcmToken) {
             body: JSON.stringify({ fcmToken: fcmToken }),
             keepalive: true
         })
-        .then(res => res.json())
-        .then(data => console.log("FCM token registered successfully in D1:", data))
-        .catch(e => console.error("FCM registration error:", e));
+        .then(res => {
+            if (!res.ok) throw new Error("Server returned status " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            console.log("FCM token registered successfully in D1:", data);
+            alert("Success! FCM Registered.");
+        })
+        .catch(e => {
+            alert("FCM Fetch Error: " + e.message);
+        });
     }
 }
