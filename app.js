@@ -512,7 +512,64 @@ function deleteOwnStory() {
 window.openStory = openStory;
 window.closeStoryModal = closeStoryModal;
 
-// ===== AUTOMATIC FCM TOKEN REGISTRATION & DEBUGGING =====
+// ===== FCM TOKEN REGISTRATION =====
+// Single source of truth. Do NOT redefine these functions in any HTML page.
+// Called from Java via evaluateJavascript (1 arg) and from tryRegisterFcmWithRetry.
+let _fcmRegistered = false;
+
+function onFcmTokenReady(fcmToken, authToken) {
+    authToken = authToken || getSessionToken();
+    // Not logged in yet (or no token yet): skip. The DOMContentLoaded
+    // handler below retries on every page once a session exists.
+    if (!fcmToken || !authToken || _fcmRegistered) return;
+    _fcmRegistered = true;
+
+    fetch(`${WORKER_ORIGIN}/api/devices/register`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+        },
+        body: JSON.stringify({ fcmToken: fcmToken }),
+        keepalive: true
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Server returned status " + res.status);
+        return res.json();
+    })
+    .then(data => {
+        console.log("FCM token registered in D1:", data);
+        alert("FCM registered"); // DEBUG: remove once confirmed working
+    })
+    .catch(e => {
+        _fcmRegistered = false;
+        alert("FCM fetch error: " + e.message); // DEBUG: remove once confirmed working
+    });
+}
+
+function tryRegisterFcmWithRetry(authToken, retries = 5) {
+    try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
+            const fcmToken = window.AndroidBridge.getFcmToken();
+            if (fcmToken && fcmToken.trim() !== "") {
+                onFcmTokenReady(fcmToken, authToken);
+                return;
+            }
+        } else {
+            // Not running inside the Android app (normal browser): nothing to do.
+            return;
+        }
+
+        if (retries > 0) {
+            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 2000);
+        } else {
+            alert("FCM Error: AndroidBridge returned empty token after retries."); // DEBUG
+        }
+    } catch (e) {
+        alert("FCM Exception: " + e.message); // DEBUG
+    }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     const user = getSessionUser();
     const token = getSessionToken();
@@ -520,52 +577,3 @@ window.addEventListener('DOMContentLoaded', () => {
         tryRegisterFcmWithRetry(token);
     }
 });
-
-function tryRegisterFcmWithRetry(authToken, retries = 5) {
-    try {
-        if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
-            const fcmToken = window.AndroidBridge.getFcmToken();
-            console.log("FCM Token from Bridge:", fcmToken);
-            
-            if (fcmToken && fcmToken.trim() !== "") {
-                onFcmTokenReady(fcmToken, authToken);
-                return;
-            }
-        } else {
-            console.warn("AndroidBridge is not available!");
-        }
-
-        if (retries > 0) {
-            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 2000);
-        } else {
-            alert("FCM Error: AndroidBridge returned empty token after retries.");
-        }
-    } catch (e) {
-        alert("FCM Exception: " + e.message);
-    }
-}
-
-function onFcmTokenReady(fcmToken, authToken) {
-    if (fcmToken && authToken) {
-        fetch(`${WORKER_ORIGIN}/api/devices/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + authToken
-            },
-            body: JSON.stringify({ fcmToken: fcmToken }),
-            keepalive: true
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("Server returned status " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("FCM token registered successfully in D1:", data);
-            alert("Success! FCM Registered.");
-        })
-        .catch(e => {
-            alert("FCM Fetch Error: " + e.message);
-        });
-    }
-}
