@@ -213,37 +213,8 @@
             document.getElementById('auth-error').style.display = 'none';
         }
 
-        // Called automatically by Java the moment Firebase finishes fetching the token
-        function onFcmTokenReady(fcmToken) {
-            const authToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-            if (fcmToken && authToken) {
-                fetch(`${WORKER_ORIGIN}/api/devices/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ fcmToken: fcmToken }),
-                    keepalive: true
-                }).catch(e => {});
-            }
-        }
-
-        // Auto-retry helper in case Firebase takes a couple of seconds to respond
-        function tryRegisterFcmWithRetry(authToken, retries = 5) {
-            try {
-                if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
-                    const fcmToken = window.AndroidBridge.getFcmToken();
-                    if (fcmToken) {
-                        onFcmTokenReady(fcmToken);
-                        return;
-                    }
-                }
-                if (retries > 0) {
-                    setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 1000);
-                }
-            } catch (e) {}
-        }
+        // NOTE: FCM functions (onFcmTokenReady, tryRegisterFcmWithRetry) live in app.js only.
+        // Do not redefine them here.
 
         async function handleAuth(event) {
             event.preventDefault();
@@ -279,13 +250,12 @@
                     if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
 
                     setSessionUser(loginData.user, loginData.token);
-                    tryRegisterFcmWithRetry(loginData.token);
-                    window.location.href = 'feed.html';
                 } else {
                     setSessionUser(data.user, data.token);
-                    tryRegisterFcmWithRetry(data.token);
-                    window.location.href = 'feed.html';
                 }
+                // Registration happens on feed.html's DOMContentLoaded (app.js),
+                // so no need to fire it here right before navigating away.
+                window.location.href = 'feed.html';
             } catch (err) {
                 const el = document.getElementById('auth-error');
                 el.innerText = err.message;
