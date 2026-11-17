@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Nvaritia</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #f5f5f7;
+            color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+        }
+        .auth-shell { width: 100%; max-width: 380px; }
+
+        .hero { text-align: center; margin-bottom: 24px; }
+        .logo {
+            width: 56px; height: 56px; border-radius: 16px;
+            background: #000; color: #fff;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 800; margin-bottom: 14px;
+        }
+        .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        .hero p { color: #6b6b72; margin-top: 6px; font-size: 14px; }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e8e8ec;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0f0f3;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b6b72;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab.active { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+
+        .error-msg {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            display: none;
+        }
+
+        .notice-msg {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            display: none;
+        }
+
+        .form-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .form-row label { font-weight: 600; color: #444; font-size: 12px; }
+        .form-row input[type="text"],
+        .form-row input[type="email"],
+        .form-row input[type="password"] {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #dcdce1;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fafafb;
+            outline: none;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .form-row input:focus { border-color: #000; background: #fff; }
+
+        .terms-check { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px; font-size: 12px; color: #555; line-height: 1.4; }
+        .terms-check input { margin-top: 3px; }
+        .terms-link { color: #000; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+        .btn-app {
+            width: 100%;
+            margin-top: 6px;
+            background: #000;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            padding: 14px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .btn-app:disabled { opacity: 0.6; cursor: default; }
+
+        .guest-link { display: block; text-align: center; margin-top: 14px; color: #6b6b72; font-weight: 600; font-size: 13px; text-decoration: underline; }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+        .modal-box { background: #fff; border-radius: 12px; max-width: 440px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-head { padding: 14px 16px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .modal-content { padding: 16px; overflow-y: auto; font-size: 12px; line-height: 1.6; color: #333; display: flex; flex-direction: column; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="auth-shell">
+        <div class="hero">
+            <div class="logo">r</div>
+            <h1>Nvaritia</h1>
+            <p id="auth-title">Create your account to get started</p>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <button type="button" class="tab active" id="tab-register" onclick="setMode(true)">Register</button>
+                <button type="button" class="tab" id="tab-login" onclick="setMode(false)">Login</button>
+            </div>
+
+            <div id="auth-notice" class="notice-msg"></div>
+            <div id="auth-error" class="error-msg"></div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)">
+                <div class="form-row" id="username-row">
+                    <label for="auth-username">Username</label>
+                    <input type="text" id="auth-username" placeholder="yourname" autocomplete="username" autocapitalize="none" required>
+                </div>
+                <div class="form-row">
+                    <label for="auth-email">Email</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" required>
+                </div>
+                <div class="form-row">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+                <div class="terms-check" id="terms-row">
+                    <input type="checkbox" id="auth-terms" required>
+                    <label for="auth-terms">I agree to the <span class="terms-link" onclick="openTerms()">Terms of Service & Community Guidelines</span>. Zero tolerance for objectionable content or abusive users.</label>
+                </div>
+                <button type="submit" class="btn-app" id="auth-submit-btn">Create account</button>
+            </form>
+
+            <a class="guest-link" href="feed.html">Continue without an account</a>
+        </div>
+    </div>
+
+    <div id="terms-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <span>Terms of Service & Safety Policy</span>
+                <span style="cursor:pointer;" onclick="closeTerms()">✕</span>
+            </div>
+            <div class="modal-content">
+                <p><strong>1. Zero Tolerance Policy:</strong> rprofiles has zero tolerance for objectionable content, hate speech, harassment, sexually explicit material, illegal acts, or copyrighted material you do not own.</p>
+                <p><strong>2. User Content Ownership:</strong> You retain ownership of original articles and photos you publish, and grant Nvaritia permission to display them to other users.</p>
+                <p><strong>3. Moderation & Enforcement:</strong> Users can report posts and block abusive accounts at any time. Reported content is reviewed within 24 hours and violating accounts are permanently terminated.</p>
+                <p><strong>4. Account & Data Deletion:</strong> You may permanently delete your account and all uploaded media at any time from Profile → Settings → Delete Account.</p>
+                <button type="button" class="btn-app" onclick="closeTerms()">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+   <script src="app.js"></script>
+    <script>
+        if (getSessionUser()) window.location.href = 'feed.html';
+
+        try {
+            const n = sessionStorage.getItem('Nvaritia_notice');
+            if (n) {
+                const el = document.getElementById('auth-notice');
+                el.innerText = n;
+                el.style.display = 'block';
+                sessionStorage.removeItem('Nvaritia_notice');
+            }
+        } catch (e) {}
+
+        let isRegister = true;
+
+        function openTerms() { document.getElementById('terms-modal').style.display = 'flex'; }
+        function closeTerms() { document.getElementById('terms-modal').style.display = 'none'; }
+
+        function setMode(register) {
+            isRegister = register;
+            document.getElementById('tab-register').classList.toggle('active', register);
+            document.getElementById('tab-login').classList.toggle('active', !register);
+            document.getElementById('auth-title').innerText = register ? 'Create your account to get started' : 'Welcome back';
+            document.getElementById('auth-submit-btn').innerText = register ? 'Create account' : 'Log in';
+            document.getElementById('username-row').style.display = register ? 'flex' : 'none';
+            document.getElementById('terms-row').style.display = register ? 'flex' : 'none';
+            document.getElementById('auth-username').required = register;
+            document.getElementById('auth-terms').required = register;
+            document.getElementById('auth-error').style.display = 'none';
+        }
+
+        // NOTE: FCM functions (onFcmTokenReady, tryRegisterFcmWithRetry) live in app.js only.
+        // Do not redefine them here.
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            const idleText = btn.innerText;
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            const username = isRegister ? document.getElementById('auth-username').value.trim() : '';
+            const agreedTerms = isRegister ? document.getElementById('auth-terms').checked : true;
+            const endpoint = isRegister ? '/api/signup' : '/api/login';
+
+            btn.disabled = true;
+            btn.innerText = 'Please wait...';
+            document.getElementById('auth-error').style.display = 'none';
+
+            try {
+                const bodyData = isRegister ? { email, password, username, agreedTerms } : { email, password };
+                const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Auth failed');
+
+                if (isRegister) {
+                    const loginRes = await fetch(`${WORKER_ORIGIN}/api/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const loginData = await loginRes.json();
+                    if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
+
+                    setSessionUser(loginData.user, loginData.token);
+                } else {
+                    setSessionUser(data.user, data.token);
+                }
+                // Registration happens on feed.html's DOMContentLoaded (app.js),
+                // so no need to fire it here right before navigating away.
+                window.location.href = 'feed.html';
+            } catch (err) {
+                const el = document.getElementById('auth-error');
+                el.innerText = err.message;
+                el.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = idleText;
+            }
+        }
+    </script>
+</body>
+</html>

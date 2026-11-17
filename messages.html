@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nvaritia - Messages & Activity</title>
+   <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
+        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
+        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
+        
+        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
+        .footer-tab.active { color: #000; }
+        .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .footer-tab.active .footer-icon { stroke: #000; }
+
+        .section-title { font-size: 14px; font-weight: bold; margin: 16px 0 8px 0; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; color: #333; }
+        .inbox-item, .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee; cursor: pointer; text-decoration: none; color: inherit; }
+        .inbox-item:hover, .activity-item:hover { background: #fafafa; }
+        .avatar { width: clamp(50px, 14.5vw, 64px); height: clamp(50px, 14.5vw, 64px); flex-shrink: 0; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; }
+        .inbox-item, .activity-item { gap: 14px; padding: 12px 0; }
+        .name { font-size: clamp(14px, 4vw, 17px); }
+        .preview { font-size: clamp(13px, 3.7vw, 16px); margin-top: 2px; }
+        .info { flex-grow: 1; min-width: 0; }
+        .name { font-weight: bold; font-size: 13px; }
+        .preview { color: #666; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .loading-spinner { text-align: center; padding: 15px; color: #666; font-weight: 600; }
+
+        .chat-drawer { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #fff; z-index: 1000; display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform 0.3s ease, visibility 0s 0.3s; }
+        .chat-drawer.open { transform: translateX(0); visibility: visible; transition: transform 0.3s ease, visibility 0s; }
+        .drawer-header { height: 48px; flex-shrink: 0; padding: 0 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e5e5; background: #fff; }
+        .back-btn { background: none; border: none; padding: 6px; cursor: pointer; color: #111; display: flex; align-items: center; }
+        .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .drawer-header .avatar { width: clamp(30px, 8.5vw, 38px); height: clamp(30px, 8.5vw, 38px); }
+        #drawer-title { font-weight: bold; font-size: clamp(14px, 4vw, 17px); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .drawer-body { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; padding: 0; }
+        .chat-container { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
+        .drawer-body form { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e5e5e5; background: #fff; }
+
+        .chat-bubble { max-width: min(80%, 460px); padding: 9px 14px; border-radius: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.35; word-break: break-word; }
+        .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
+        .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
+        .receipt { align-self: flex-end; font-size: clamp(11px, 3vw, 12px); color: #888; margin-top: -2px; }
+        .receipt.seen { color: #2563eb; font-weight: 600; }
+
+        .fr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .fr-btn { border: 1px solid #ccc; border-radius: 6px; padding: 7px clamp(10px, 3vw, 14px); font-size: clamp(12px, 3.4vw, 14px); font-weight: 600; cursor: pointer; background: #fff; color: #111; }
+        .fr-btn.fr-accept { background: #000; color: #fff; border-color: #000; }
+        .fr-btn:disabled { opacity: 0.6; cursor: default; }
+        html.dark .fr-btn { background: #2a2a2a; color: #eee; border-color: #444; }
+        html.dark .fr-btn.fr-accept { background: #fff; color: #000; border-color: #fff; }
+
+        @media (min-width: 700px) {
+            .chat-drawer { left: calc(50% - 340px); width: 680px; border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; }
+        }
+        @media (max-width: 360px) {
+            .wrapper { padding: 12px; }
+            .fr-actions { gap: 4px; }
+        }
+
+        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div id="app-toast"></div>
+
+    <header><a href="feed.html" class="brand">Nvaritia</a></header>
+
+    <div class="wrapper">
+        <!-- Notification Permission Banner -->
+        <div id="notification-banner" style="display: none; background: #f4f4f5; border: 1px solid #e4e4e7; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; align-items: center; justify-content: space-between; font-size: 12px;">
+            <span>Enable browser push notifications for new messages</span>
+            <button onclick="requestNotificationPermissionPrompt()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">Enable</button>
+        </div>
+
+        <div class="section-title">Activity & Notifications</div>
+        <div id="activity-container"><div class="loading-spinner">Loading activity...</div></div>
+
+        <div class="section-title">Messages</div>
+        <div id="inbox-container"><div class="loading-spinner">Loading conversations...</div></div>
+    </div>
+
+    <div id="chat-drawer" class="chat-drawer">
+        <div class="drawer-header">
+            <button class="back-btn" onclick="closeDrawer()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <img id="drawer-avatar" class="avatar" src="" alt="">
+            <span id="drawer-title"></span>
+            <span id="block-peer-btn" style="cursor: pointer; color: #ef4444; font-size: 12px; font-weight: 600;" onclick="blockActivePeer()">Block</span>
+        </div>
+        <div class="drawer-body">
+            <div class="chat-container" id="chat-messages">Loading...</div>
+            <form onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
+                <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px;">
+                <button type="submit" style="background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: 600; cursor: pointer;">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <a href="feed.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="create-post.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Post
+        </a>
+        <a href="messages.html" class="footer-tab active">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Messages
+        </a>
+        <a href="profile.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        const currentUser = requireAuth();
+        let activePeer = null;
+        let threadTimer = null;
+        let inboxTimer = null;
+        let notifiedMessageKeys = new Set();
+        let activeThreadLoadedOnce = false;
+        let inboxLoadedOnce = false;
+        let inboxLastMessages = {};
+
+        function showToast(message) {
+            const toast = document.getElementById('app-toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+        // --- Push Notification Functions ---
+        function checkNotificationBanner() {
+            const banner = document.getElementById('notification-banner');
+            if (!banner) return;
+            if ("Notification" in window && Notification.permission === "default") {
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        async function requestNotificationPermissionPrompt() {
+            if ("Notification" in window) {
+                const permission = await Notification.requestPermission();
+                checkNotificationBanner();
+                if (permission === 'granted') {
+                    showToast('Notifications enabled!');
+                } else {
+                    showToast('Notification permission denied.');
+                }
+            }
+        }
+
+        function notifyUser(title, body, icon) {
+            if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+                try {
+                    const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
+                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification(title, { body, icon: validIcon });
+                        });
+                    } else {
+                        new Notification(title, { body, icon: validIcon });
+                    }
+                } catch (e) {
+                    console.error("Notification error:", e);
+                }
+            } else {
+                showToast(`${title}: ${body}`);
+            }
+        }
+        // -----------------------------------
+
+        function showActivityEmptyIfNeeded() {
+            const container = document.getElementById('activity-container');
+            if (!container.children.length) {
+                container.innerHTML = '<p style="color: #666; padding: 8px 0; font-size: 12px;">No new activity.</p>';
+            }
+        }
+
+        async function respondToFriendRequest(requestId, action, el) {
+            el.querySelectorAll('.fr-btn').forEach(b => b.disabled = true);
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/respond`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ requestId, action })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                el.remove();
+                showToast(action === 'accept' ? 'Friend request accepted' : 'Friend request declined');
+                showActivityEmptyIfNeeded();
+            } catch (err) {
+                el.querySelectorAll('.fr-btn').forEach(b => b.disabled = false);
+                showToast(err.message);
+            }
+        }
+
+        async function loadActivity() {
+            const container = document.getElementById('activity-container');
+            try {
+                const [notifRes, reqRes] = await Promise.all([
+                    fetch(`${WORKER_ORIGIN}/api/notifications`, { headers: authHeaders() }),
+                    fetch(`${WORKER_ORIGIN}/api/friends/requests`, { headers: authHeaders() })
+                ]);
+                const data = await notifRes.json();
+                if (!notifRes.ok) throw new Error(data.error);
+
+                let friendRequests = [];
+                try {
+                    if (reqRes.ok) friendRequests = (await reqRes.json()).requests || [];
+                } catch (e) {}
+
+                if (!data.notifications.length && !friendRequests.length) {
+                    container.innerHTML = '<p style="color: #666; padding: 8px 0; font-size: 12px;">No new activity.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                for (const r of friendRequests) {
+                    const el = document.createElement('div');
+                    el.className = 'activity-item';
+                    el.style.cursor = 'default';
+                    el.innerHTML = `
+                        <img class="avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}">
+                        <div class="info">
+                            <div class="name">@${escapeHtml(r.username)}${renderVerifiedBadge(r.verified)}</div>
+                            <div class="preview">sent you a friend request</div>
+                        </div>
+                        <div class="fr-actions">
+                            <button type="button" class="fr-btn fr-accept">Accept</button>
+                            <button type="button" class="fr-btn fr-deny">Deny</button>
+                        </div>
+                    `;
+                    el.querySelector('.fr-accept').addEventListener('click', () => respondToFriendRequest(r.id, 'accept', el));
+                    el.querySelector('.fr-deny').addEventListener('click', () => respondToFriendRequest(r.id, 'deny', el));
+                    el.querySelector('.avatar').style.cursor = 'pointer';
+                    el.querySelector('.info').style.cursor = 'pointer';
+                    const goProfile = () => { window.location.href = `profile.html?user=${encodeURIComponent(r.username)}`; };
+                    el.querySelector('.avatar').addEventListener('click', goProfile);
+                    el.querySelector('.info').addEventListener('click', goProfile);
+                    container.appendChild(el);
+                }
+
+                for (const n of data.notifications) {
+                    const el = document.createElement('div');
+                    el.className = 'activity-item';
+                    el.onclick = () => { window.location.href = `feed.html?highlight=${n.post_id}`; };
+                    
+                    let actionText = 'interacted with your post';
+                    if (n.type === 'tag') actionText = 'tagged you in a post';
+                    else if (n.type === 'like') actionText = 'liked your post';
+                    else if (n.type === 'comment') actionText = 'commented on your post';
+                    else if (n.type === 'comment_reply') actionText = 'replied to your comment';
+
+                    el.innerHTML = `
+                        <img class="avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}">
+                        <div class="info">
+                            <div class="name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
+                            <div class="preview">${actionText} • ${new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                }
+            } catch (err) {
+                container.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load activity.</p>';
+            }
+        }
+
+        async function loadInbox() {
+            const container = document.getElementById('inbox-container');
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/inbox`, { headers: authHeaders() });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                if (!data.conversations.length) {
+                    container.innerHTML = '<p style="color: #666; padding: 8px 0; font-size: 12px;">No conversations yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                for (const conv of data.conversations) {
+                    const peer = conv.peer;
+                    const peerEmail = peer.email.toLowerCase();
+                    const lastMsg = conv.last_message;
+
+                    if (!inboxLoadedOnce) {
+                        inboxLastMessages[peerEmail] = lastMsg;
+                    } else {
+                        if (inboxLastMessages[peerEmail] !== lastMsg) {
+                            inboxLastMessages[peerEmail] = lastMsg;
+                            if (!activePeer || activePeer.email.toLowerCase() !== peerEmail) {
+                                notifyUser(`@${peer.username}`, lastMsg, peer.pfp_url);
+                            }
+                        }
+                    }
+
+                    const el = document.createElement('div');
+                    el.className = 'inbox-item';
+                    el.onclick = () => openDrawer(peer);
+                    el.innerHTML = `
+                        <img class="avatar" src="${peer.pfp_url || AVATAR_PLACEHOLDER}">
+                        <div class="info">
+                            <div class="name">@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}</div>
+                            <div class="preview">${escapeHtml(lastMsg)}</div>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                }
+                inboxLoadedOnce = true;
+            } catch (err) {
+                container.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load inbox.</p>';
+            }
+        }
+
+        async function openDrawer(peer) {
+            activePeer = peer;
+            activeThreadLoadedOnce = false;
+            document.getElementById('drawer-avatar').src = peer.pfp_url || AVATAR_PLACEHOLDER;
+            document.getElementById('drawer-title').innerHTML = `@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
+            document.getElementById('chat-messages').innerHTML = 'Loading...';
+            document.getElementById('chat-drawer').classList.add('open');
+            await loadThread(true);
+            clearInterval(threadTimer);
+            threadTimer = setInterval(loadThread, 5000);
+        }
+
+        function closeDrawer() {
+            clearInterval(threadTimer);
+            document.getElementById('chat-drawer').classList.remove('open');
+            activePeer = null;
+            loadInbox();
+        }
+
+        function blockActivePeer() {
+            if (!activePeer) return;
+            blockUser(activePeer.email, activePeer.username, () => {
+                closeDrawer();
+            });
+        }
+
+        async function markRead() {
+            if (!activePeer) return;
+            try {
+                await fetch(`${WORKER_ORIGIN}/api/messages/read`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ peerEmail: activePeer.email })
+                });
+            } catch (e) {}
+        }
+
+        async function loadThread(forceScroll) {
+            if (!activePeer) return;
+            const peerAtRequest = activePeer;
+            const chatContainer = document.getElementById('chat-messages');
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(currentUser.email)}&user2=${encodeURIComponent(peerAtRequest.email)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                if (activePeer !== peerAtRequest) return;
+
+                if (!data.messages.length) {
+                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No messages yet.</p>';
+                    return;
+                }
+
+                const me = currentUser.email.toLowerCase();
+                const nearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
+                const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && (!m.read_at || m.read_at === ""));
+
+                if (!activeThreadLoadedOnce) {
+                    data.messages.forEach(m => {
+                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
+                        notifiedMessageKeys.add(msgKey);
+                    });
+                    activeThreadLoadedOnce = true;
+                } else {
+                    data.messages.forEach(m => {
+                        const isSent = m.sender_email.toLowerCase() === me;
+                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
+                        if (!isSent && !notifiedMessageKeys.has(msgKey)) {
+                            notifiedMessageKeys.add(msgKey);
+                            notifyUser(`@${peerAtRequest.username}`, m.content, peerAtRequest.pfp_url);
+                        }
+                    });
+                }
+
+                let lastSentIdx = -1;
+                data.messages.forEach((m, i) => { if (m.sender_email.toLowerCase() === me) lastSentIdx = i; });
+
+                chatContainer.innerHTML = data.messages.map((m, i) => {
+                    const isSent = m.sender_email.toLowerCase() === me;
+                    let html = `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                    
+                    if (isSent && i === lastSentIdx) {
+                        if (m.read_at && m.read_at !== "") {
+                            let d = new Date(m.read_at);
+                            if (isNaN(d.getTime())) {
+                                d = new Date(m.read_at.replace(' ', 'T') + 'Z');
+                            }
+                            
+                            if (!isNaN(d.getTime())) {
+                                const t = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                html += `<div class="receipt seen">Seen ${t}</div>`;
+                            } else {
+                                html += `<div class="receipt seen">Seen</div>`;
+                            }
+                        } else {
+                            html += `<div class="receipt">Delivered</div>`;
+                        }
+                    }
+                    return html;
+                }).join('');
+
+                if (forceScroll === true || nearBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
+                if (hasUnread) markRead();
+            } catch (err) {
+                chatContainer.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load thread.</p>';
+            }
+        }
+
+        async function sendDm(e) {
+            e.preventDefault();
+            const input = document.getElementById('dm-input');
+            const content = input.value.trim();
+            if (!content || !activePeer) return;
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/send`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ receiverEmail: activePeer.email, content })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                input.value = '';
+                loadThread(true);
+                loadInbox();
+            } catch (err) {
+                showToast(err.message);
+            }
+        }
+
+        async function init() {
+            checkNotificationBanner();
+            loadActivity();
+            loadInbox();
+
+            if (inboxTimer) clearInterval(inboxTimer);
+            inboxTimer = setInterval(() => {
+                if (!activePeer) {
+                    loadInbox();
+                }
+            }, 5000);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUser = urlParams.get('user');
+            if (targetUser) {
+                try {
+                    const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetUser)}`);
+                    const data = await res.json();
+                    if (res.ok && data.user) {
+                        openDrawer(data.user);
+                    }
+                } catch (e) {
+                    console.error("Could not open direct chat target", e);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
