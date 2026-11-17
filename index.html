@@ -213,6 +213,25 @@
             document.getElementById('auth-error').style.display = 'none';
         }
 
+        // Helper function to sync native Android FCM push token with Cloudflare backend
+        function registerFcmToken(authToken) {
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
+                    const fcmToken = window.AndroidBridge.getFcmToken();
+                    if (fcmToken) {
+                        fetch(`${WORKER_ORIGIN}/api/devices/register`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + authToken
+                            },
+                            body: JSON.stringify({ fcmToken: fcmToken })
+                        }).catch(e => console.error("FCM sync error:", e));
+                    }
+                }
+            } catch (e) {}
+        }
+
         async function handleAuth(event) {
             event.preventDefault();
             const btn = document.getElementById('auth-submit-btn');
@@ -247,9 +266,11 @@
                     if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
 
                     setSessionUser(loginData.user, loginData.token);
+                    registerFcmToken(loginData.token);
                     window.location.href = 'feed.html';
                 } else {
                     setSessionUser(data.user, data.token);
+                    registerFcmToken(data.token);
                     window.location.href = 'feed.html';
                 }
             } catch (err) {
