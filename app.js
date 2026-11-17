@@ -511,3 +511,47 @@ function deleteOwnStory() {
 
 window.openStory = openStory;
 window.closeStoryModal = closeStoryModal;
+
+// ===== AUTOMATIC FCM TOKEN REGISTRATION ON PAGE LOAD =====
+window.addEventListener('DOMContentLoaded', () => {
+    const user = getSessionUser();
+    const token = getSessionToken();
+    if (user && token) {
+        tryRegisterFcmWithRetry(token);
+    }
+});
+
+// Auto-retry helper in case Firebase takes a couple of seconds to respond on cold boot
+function tryRegisterFcmWithRetry(authToken, retries = 5) {
+    try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
+            const fcmToken = window.AndroidBridge.getFcmToken();
+            if (fcmToken) {
+                onFcmTokenReady(fcmToken);
+                return;
+            }
+        }
+        if (retries > 0) {
+            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 1500);
+        }
+    } catch (e) {}
+}
+
+// Sends the token to your Cloudflare Worker
+function onFcmTokenReady(fcmToken) {
+    const authToken = getSessionToken();
+    if (fcmToken && authToken) {
+        fetch(`${WORKER_ORIGIN}/api/devices/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + authToken
+            },
+            body: JSON.stringify({ fcmToken: fcmToken }),
+            keepalive: true
+        })
+        .then(res => res.json())
+        .then(data => console.log("FCM token registered successfully in D1:", data))
+        .catch(e => console.error("FCM registration error:", e));
+    }
+}
