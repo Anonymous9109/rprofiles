@@ -213,7 +213,7 @@
             document.getElementById('auth-error').style.display = 'none';
         }
 
-        // Helper function to sync native Android FCM push token with Cloudflare backend
+        // Helper function with keepalive to sync native Android FCM push token
         function registerFcmToken(authToken) {
             try {
                 if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
@@ -225,7 +225,8 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': 'Bearer ' + authToken
                             },
-                            body: JSON.stringify({ fcmToken: fcmToken })
+                            body: JSON.stringify({ fcmToken: fcmToken }),
+                            keepalive: true
                         }).catch(e => console.error("FCM sync error:", e));
                     }
                 }
