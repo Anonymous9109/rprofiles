@@ -213,22 +213,34 @@
             document.getElementById('auth-error').style.display = 'none';
         }
 
-        // Helper function with keepalive to sync native Android FCM push token
-        function registerFcmToken(authToken) {
+        // Called automatically by Java the moment Firebase finishes fetching the token
+        function onFcmTokenReady(fcmToken) {
+            const authToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+            if (fcmToken && authToken) {
+                fetch(`${WORKER_ORIGIN}/api/devices/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ fcmToken: fcmToken }),
+                    keepalive: true
+                }).catch(e => {});
+            }
+        }
+
+        // Auto-retry helper in case Firebase takes a couple of seconds to respond
+        function tryRegisterFcmWithRetry(authToken, retries = 5) {
             try {
                 if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
                     const fcmToken = window.AndroidBridge.getFcmToken();
                     if (fcmToken) {
-                        fetch(`${WORKER_ORIGIN}/api/devices/register`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + authToken
-                            },
-                            body: JSON.stringify({ fcmToken: fcmToken }),
-                            keepalive: true
-                        }).catch(e => console.error("FCM sync error:", e));
+                        onFcmTokenReady(fcmToken);
+                        return;
                     }
+                }
+                if (retries > 0) {
+                    setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 1000);
                 }
             } catch (e) {}
         }
@@ -267,11 +279,11 @@
                     if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
 
                     setSessionUser(loginData.user, loginData.token);
-                    registerFcmToken(loginData.token);
+                    tryRegisterFcmWithRetry(loginData.token);
                     window.location.href = 'feed.html';
                 } else {
                     setSessionUser(data.user, data.token);
-                    registerFcmToken(data.token);
+                    tryRegisterFcmWithRetry(data.token);
                     window.location.href = 'feed.html';
                 }
             } catch (err) {
