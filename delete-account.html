@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account - Nvaritia</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.6; padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+        header { border-bottom: 1px solid #e5e5e5; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-size: 20px; font-weight: 800; color: #000; text-decoration: none; }
+        h1 { font-size: 22px; margin-bottom: 10px; }
+        h2 { font-size: 16px; margin-top: 20px; margin-bottom: 8px; }
+        p, ul { margin-bottom: 12px; color: #333; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; }
+        .card { border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; margin-top: 16px; background: #fafafa; }
+        .form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .form-row label { font-weight: 600; font-size: 12px; color: #444; }
+        .form-row input { padding: 11px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; background: #fff; }
+        .btn-danger { width: 100%; background: #ef4444; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .btn-danger:disabled { opacity: 0.6; cursor: default; }
+        .status-msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; display: none; }
+        .status-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .status-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="brand">Nvaritia</a></header>
+    <h1>Delete Your Nvaritia Account</h1>
+    <p>You can permanently delete your <strong>Nvaritia</strong> account and all associated data either directly inside the Nvaritia app or by submitting the form below.</p>
+    <h2>Option 1: Delete Inside the Nvaritia App</h2>
+    <p>Open the app, log in, and go to <strong>Profile → Settings → Delete Account & Data</strong> to immediately erase your account.</p>
+    <h2>Option 2: Delete via Web Request</h2>
+    <div class="card">
+        <div id="del-status" class="status-msg"></div>
+        <form id="web-delete-form" onsubmit="handleWebDelete(event)">
+            <div class="form-row">
+                <label for="del-email">Account Email</label>
+                <input type="email" id="del-email" placeholder="you@example.com" required>
+            </div>
+            <div class="form-row">
+                <label for="del-password">Password</label>
+                <input type="password" id="del-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-danger" id="del-btn">Permanently Delete Account & Data</button>
+        </form>
+    </div>
+    <h2>What Gets Deleted</h2>
+    <ul>
+        <li>Your account credentials, email, username, bio, and profile picture.</li>
+        <li>All posts, comments, reactions, active stories, and uploaded media files.</li>
+        <li>All direct messages, friend connections, follower lists, and push notification tokens.</li>
+    </ul>
+    <script src="app.js"></script>
+    <script>
+        async function handleWebDelete(e) {
+            e.preventDefault();
+            const email = document.getElementById('del-email').value.trim();
+            const password = document.getElementById('del-password').value.trim();
+            const btn = document.getElementById('del-btn');
+            const status = document.getElementById('del-status');
+            btn.disabled = true; btn.innerText = 'Deleting account...'; status.style.display = 'none';
+            try {
+                const loginRes = await fetch(`${WORKER_ORIGIN}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const loginData = await loginRes.json();
+                if (!res.ok || !loginData.token) throw new Error(loginData.error || 'Invalid credentials');
+                const delRes = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.token}` },
+                    body: JSON.stringify({})
+                });
+                const delData = await delRes.json();
+                if (!delRes.ok) throw new Error(delData.error || 'Failed');
+                localStorage.removeItem('Nvaritia_session'); localStorage.removeItem('Nvaritia_token');
+                document.getElementById('web-delete-form').reset();
+                status.className = 'status-msg status-ok';
+                status.innerText = 'Your Nvaritia account and all associated data have been permanently deleted.';
+                status.style.display = 'block';
+            } catch (err) {
+                status.className = 'status-msg status-err';
+                status.innerText = err.message; status.style.display = 'block';
+            } finally { btn.disabled = false; btn.innerText = 'Permanently Delete Account & Data'; }
+        }
+    </script>
+</body>
+</html>
