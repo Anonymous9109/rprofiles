@@ -423,8 +423,11 @@ function storyAgeLabel(createdAt) {
     if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
     const t = Date.parse(s);
     if (isNaN(t)) return '';
-    const h = Math.floor((Date.now() - t) / 3600000);
-    return h < 1 ? '<1h' : h + 'h';
+    const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm';
+    return Math.floor(min / 60) + 'h';
 }
 
 function ensureStoryPlayer() {
