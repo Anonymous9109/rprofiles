@@ -60,31 +60,56 @@
             const password = document.getElementById('del-password').value.trim();
             const btn = document.getElementById('del-btn');
             const status = document.getElementById('del-status');
-            btn.disabled = true; btn.innerText = 'Deleting account...'; status.style.display = 'none';
+            
+            btn.disabled = true; 
+            btn.innerText = 'Deleting account...'; 
+            status.style.display = 'none';
+
             try {
-                const loginRes = await fetch(`${WORKER_ORIGIN}/api/login`, {
+                // Ensure WORKER_ORIGIN is available (falls back to current origin if not set in app.js)
+                const origin = typeof WORKER_ORIGIN !== 'undefined' ? WORKER_ORIGIN : window.location.origin;
+
+                const loginRes = await fetch(`${origin}/api/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 const loginData = await loginRes.json();
-                if (!res.ok || !loginData.token) throw new Error(loginData.error || 'Invalid credentials');
-                const delRes = await fetch(`${WORKER_ORIGIN}/api/account/delete`, {
+                
+                // Fixed: replaced undefined 'res' with 'loginRes'
+                if (!loginRes.ok || !loginData.token) {
+                    throw new Error(loginData.error || 'Invalid credentials');
+                }
+
+                const delRes = await fetch(`${origin}/api/account/delete`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.token}` },
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${loginData.token}` 
+                    },
                     body: JSON.stringify({})
                 });
                 const delData = await delRes.json();
-                if (!delRes.ok) throw new Error(delData.error || 'Failed');
-                localStorage.removeItem('Nvaritia_session'); localStorage.removeItem('Nvaritia_token');
+                
+                if (!delRes.ok) {
+                    throw new Error(delData.error || 'Failed to delete account');
+                }
+
+                localStorage.removeItem('Nvaritia_session'); 
+                localStorage.removeItem('Nvaritia_token');
+                
                 document.getElementById('web-delete-form').reset();
                 status.className = 'status-msg status-ok';
                 status.innerText = 'Your Nvaritia account and all associated data have been permanently deleted.';
                 status.style.display = 'block';
             } catch (err) {
                 status.className = 'status-msg status-err';
-                status.innerText = err.message; status.style.display = 'block';
-            } finally { btn.disabled = false; btn.innerText = 'Permanently Delete Account & Data'; }
+                status.innerText = err.message; 
+                status.style.display = 'block';
+            } finally { 
+                btn.disabled = false; 
+                btn.innerText = 'Permanently Delete Account & Data'; 
+            }
         }
     </script>
 </body>
