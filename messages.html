@@ -22,10 +22,10 @@
         .inbox-item, .activity-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; }
         .inbox-item:hover, .activity-item:hover { background: #fafafa; }
         
-        /* Story Ring Styles (matching profile.html) */
-        .story-ring-wrapper { position: relative; width: clamp(50px, 14.5vw, 64px); height: clamp(50px, 14.5vw, 64px); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; cursor: pointer; }
-        .avatar { width: 100%; height: 100%; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; display: block; }
+        /* Story Ring Styles (matching feed.html & profile.html) */
+        .story-ring-wrapper { position: relative; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; display: block; }
         
         .name { font-size: clamp(14px, 4vw, 17px); }
         .preview { font-size: clamp(13px, 3.7vw, 16px); margin-top: 2px; }
@@ -39,7 +39,8 @@
         .drawer-header { height: 48px; flex-shrink: 0; padding: 0 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e5e5; background: #fff; }
         .back-btn { background: none; border: none; padding: 6px; cursor: pointer; color: #111; display: flex; align-items: center; }
         .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-        .drawer-header .story-ring-wrapper { width: clamp(30px, 8.5vw, 38px); height: clamp(30px, 8.5vw, 38px); }
+        .drawer-header .story-ring-wrapper { width: 36px; height: 36px; }
+        .drawer-header .avatar { width: 32px; height: 32px; }
         #drawer-title { font-weight: bold; font-size: clamp(14px, 4vw, 17px); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .drawer-body { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; padding: 0; }
         .chat-container { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
@@ -191,21 +192,22 @@
             }
         }
 
-        async function openUserStory(userEmail) {
+        async function viewUserStory(email, createdAt) {
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(userEmail)}`);
+                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
                 const data = await res.json();
                 if (res.ok && data.story) {
                     openStory({
                         mediaUrl: data.story.media_url,
-                        createdAt: data.story.created_at,
-                        ownerEmail: data.user.email
+                        createdAt: data.story.created_at || createdAt,
+                        ownerEmail: email,
+                        onDeleted: () => { loadInbox(); loadActivity(); }
                     });
                 } else {
-                    showToast("No active story available.");
+                    showToast("No active story found.");
                 }
-            } catch (e) {
-                showToast("Could not load story.");
+            } catch (err) {
+                showToast("Failed to load story.");
             }
         }
 
@@ -255,8 +257,10 @@
                     const el = document.createElement('div');
                     el.className = 'activity-item';
                     const hasStoryClass = r.has_story ? 'story-ring-wrapper has-story' : 'story-ring-wrapper';
+                    const storyClickAttr = r.has_story ? `onclick="viewUserStory('${escapeHtml(r.email)}', '${escapeHtml(r.story_created_at || '')}')"` : '';
+                    
                     el.innerHTML = `
-                        <div class="${hasStoryClass}" ${r.has_story ? `onclick="openUserStory('${r.email}')"` : ''}>
+                        <div class="${hasStoryClass}" ${storyClickAttr} title="${r.has_story ? 'View Story' : ''}">
                             <img class="avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}">
                         </div>
                         <div class="info">
@@ -279,6 +283,7 @@
                     const el = document.createElement('div');
                     el.className = 'activity-item';
                     const hasStoryClass = n.actor_has_story ? 'story-ring-wrapper has-story' : 'story-ring-wrapper';
+                    const storyClickAttr = n.actor_has_story ? `onclick="viewUserStory('${escapeHtml(n.actor_email)}', '${escapeHtml(n.story_created_at || '')}')"` : '';
                     
                     let actionText = 'interacted with your post';
                     if (n.type === 'tag') actionText = 'tagged you in a post';
@@ -287,7 +292,7 @@
                     else if (n.type === 'comment_reply') actionText = 'replied to your comment';
 
                     el.innerHTML = `
-                        <div class="${hasStoryClass}" ${n.actor_has_story ? `onclick="openUserStory('${n.actor_email}')"` : ''}>
+                        <div class="${hasStoryClass}" ${storyClickAttr} title="${n.actor_has_story ? 'View Story' : ''}">
                             <img class="avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}">
                         </div>
                         <div class="info" onclick="window.location.href='feed.html?highlight=${n.post_id}'">
@@ -334,9 +339,10 @@
                     const el = document.createElement('div');
                     el.className = 'inbox-item';
                     const hasStoryClass = peer.has_story ? 'story-ring-wrapper has-story' : 'story-ring-wrapper';
+                    const storyClickAttr = peer.has_story ? `onclick="viewUserStory('${escapeHtml(peer.email)}', '${escapeHtml(peer.story_created_at || '')}')"` : '';
                     
                     el.innerHTML = `
-                        <div class="${hasStoryClass}" ${peer.has_story ? `onclick="event.stopPropagation(); openUserStory('${peer.email}')"` : ''}>
+                        <div class="${hasStoryClass}" ${storyClickAttr} title="${peer.has_story ? 'View Story' : ''}">
                             <img class="avatar" src="${peer.pfp_url || AVATAR_PLACEHOLDER}">
                         </div>
                         <div class="info" onclick='openDrawer(${JSON.stringify(peer)})'>
@@ -360,12 +366,14 @@
             
             if (peer.has_story) {
                 avatarContainer.className = 'story-ring-wrapper has-story';
-                avatarContainer.onclick = () => openUserStory(peer.email);
+                avatarContainer.onclick = () => viewUserStory(peer.email, peer.story_created_at);
                 avatarContainer.style.cursor = 'pointer';
+                avatarContainer.title = 'View Story';
             } else {
                 avatarContainer.className = 'story-ring-wrapper';
                 avatarContainer.onclick = null;
                 avatarContainer.style.cursor = 'default';
+                avatarContainer.title = '';
             }
 
             document.getElementById('drawer-title').innerHTML = `@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
