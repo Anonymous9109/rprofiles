@@ -411,11 +411,19 @@ const STORY_CSS = `
 .story-close-top-left { position: absolute; top: 52px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
 .story-age { position: absolute; top: 52px; left: 66px; height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; z-index: 20; background: rgba(0,0,0,0.5); border-radius: 17px; display: none; align-items: center; user-select: none; }
 .story-delete-btn { position: absolute; top: 52px; right: 24px; height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; z-index: 20; background: #ef4444; border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-reply-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 20; display: none; gap: 8px; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); }
+.story-reply-input { flex-grow: 1; min-width: 0; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.6); border-radius: 22px; background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; outline: none; }
+.story-reply-input::placeholder { color: rgba(255,255,255,0.7); }
+.story-reply-send { border: none; border-radius: 22px; padding: 10px 18px; background: #fff; color: #000; font-size: 14px; font-weight: 700; cursor: pointer; }
+.story-reply-send:disabled { opacity: 0.5; }
+html.dark .story-reply-input { background: rgba(0,0,0,0.4); color: #fff; border-color: rgba(255,255,255,0.6); }
 #ugc-confirm-overlay { z-index: 10001; }
 `;
 
 let _storyReady = false;
 let _storyOnDeleted = null;
+let _storyOwnerEmail = '';
+let _storyReplySending = false;
 
 function storyAgeLabel(createdAt) {
     if (!createdAt) return '';
@@ -446,12 +454,22 @@ function ensureStoryPlayer() {
             <div id="story-age" class="story-age"></div>
             <div id="story-delete-btn" class="story-delete-btn">Delete</div>
             <video id="story-player" class="story-video" autoplay playsinline></video>
+            <form id="story-reply-bar" class="story-reply-bar">
+                <input type="text" id="story-reply-input" class="story-reply-input" placeholder="Reply to story..." maxlength="300" autocomplete="off">
+                <button type="submit" id="story-reply-send" class="story-reply-send">Send</button>
+            </form>
         </div>
     `;
     document.body.appendChild(modal);
 
     const player = document.getElementById('story-player');
     const fill = document.getElementById('story-progress-fill');
+    const replyInput = document.getElementById('story-reply-input');
+
+    document.getElementById('story-reply-bar').addEventListener('submit', (e) => { e.preventDefault(); sendStoryReply(); });
+    // Pause the story while typing, resume afterwards
+    replyInput.addEventListener('focus', () => { player.pause(); });
+    replyInput.addEventListener('blur', () => { if (document.getElementById('story-viewer-modal').classList.contains('open')) player.play().catch(() => {}); });
 
     modal.addEventListener('click', (e) => { if (e.target === modal) closeStoryModal(); });
     document.getElementById('story-close-btn').addEventListener('click', closeStoryModal);
@@ -471,6 +489,10 @@ function openStory({ mediaUrl, createdAt, ownerEmail, onDeleted }) {
     const me = getSessionUser();
     const isOwner = !!(me && me.email && ownerEmail && me.email.toLowerCase() === String(ownerEmail).toLowerCase());
     document.getElementById('story-delete-btn').style.display = isOwner ? 'flex' : 'none';
+
+    _storyOwnerEmail = ownerEmail ? String(ownerEmail) : '';
+    document.getElementById('story-reply-bar').style.display = (!isOwner && _storyOwnerEmail) ? 'flex' : 'none';
+    document.getElementById('story-reply-input').value = '';
 
     const label = storyAgeLabel(createdAt);
     const ageEl = document.getElementById('story-age');
@@ -492,6 +514,39 @@ function closeStoryModal() {
     player.load();
     document.getElementById('story-progress-fill').style.width = '0%';
     document.getElementById('story-viewer-modal').classList.remove('open');
+    document.getElementById('story-reply-input').value = '';
+    document.getElementById('story-reply-input').blur();
+}
+
+async function sendStoryReply() {
+    if (_storyReplySending) return;
+    const user = getSessionUser();
+    if (!user) { closeStoryModal(); promptSignup('reply to stories'); return; }
+
+    const input = document.getElementById('story-reply-input');
+    const btn = document.getElementById('story-reply-send');
+    const content = input.value.trim();
+    if (!content || !_storyOwnerEmail) return;
+
+    _storyReplySending = true;
+    btn.disabled = true;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/reply`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ ownerEmail: _storyOwnerEmail, content })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send reply');
+        input.value = '';
+        input.blur();
+        showToast("Reply sent");
+    } catch (err) {
+        showToast(err.message);
+    } finally {
+        _storyReplySending = false;
+        btn.disabled = false;
+    }
 }
 
 function deleteOwnStory() {
