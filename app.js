@@ -539,11 +539,10 @@ function onFcmTokenReady(fcmToken, authToken) {
     })
     .then(data => {
         console.log("FCM token registered in D1:", data);
-        alert("FCM registered"); // DEBUG: remove once confirmed working
     })
     .catch(e => {
         _fcmRegistered = false;
-        alert("FCM fetch error: " + e.message); // DEBUG: remove once confirmed working
+        console.error("FCM fetch error:", e.message);
     });
 }
 
@@ -563,10 +562,10 @@ function tryRegisterFcmWithRetry(authToken, retries = 5) {
         if (retries > 0) {
             setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 2000);
         } else {
-            alert("FCM Error: AndroidBridge returned empty token after retries."); // DEBUG
+            console.error("FCM Error: AndroidBridge returned empty token after retries.");
         }
     } catch (e) {
-        alert("FCM Exception: " + e.message); // DEBUG
+        console.error("FCM Exception:", e.message);
     }
 }
 
