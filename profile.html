@@ -12,70 +12,40 @@
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
-        
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-tab.active .footer-icon { stroke: #000; }
-
         .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
-        
         .pfp-container { position: relative; width: 86px; height: 86px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .story-ring-wrapper { position: relative; width: 82px; height: 82px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; }
         .profile-pfp { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; }
-        
         .add-story-badge { position: absolute; bottom: 0px; left: 0px; width: 26px; height: 26px; background: #000; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-        .add-story-badge:hover { transform: scale(1.08); }
-
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
         .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
-
         .profile-stats { display: flex; gap: 16px; font-size: 13px; color: #333; margin: 2px 0; }
         .profile-stats div { cursor: pointer; }
-        .profile-stats div:hover { opacity: 0.7; }
         .profile-stats strong { font-weight: bold; color: #111; }
-
-        /* Slide-out Drawer Styles for Followers/Following */
         .users-drawer { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100dvh; background: #fff; border-left: 1px solid #e5e5e5; box-shadow: -4px 0 16px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
         .users-drawer.open { right: 0; }
         .users-drawer-header { height: 48px; padding: 0 16px; background: #fafafa; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 15px; }
         .users-drawer-body { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
         .user-row-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; text-decoration: none; color: inherit; border-bottom: 1px solid #eee; }
-        .user-row-item:hover { background: #fafafa; }
         .user-row-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
         .user-row-name { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 4px; }
-
-        /* Upload Progress Bar Styles */
         .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
         .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
         .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
         .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.15s ease; }
-
-        html.dark .profile-header-card, html.dark .upload-progress-panel, html.dark .users-drawer { background: #181818; border-color: #2a2a2a; color: #eee; }
-        html.dark .users-drawer-header { background: #1f1f1f; border-color: #2a2a2a; }
-        html.dark .user-row-item { border-color: #2a2a2a; }
-        html.dark .user-row-item:hover { background: #222; }
-        html.dark .profile-stats { color: #aaa; }
-        html.dark .profile-stats strong { color: #eee; }
-        html.dark .upload-progress-text { color: #eee; }
-        html.dark .upload-progress-track { background: #333; }
-        html.dark .upload-progress-fill { background: #fff; }
-        html.dark .profile-pfp { border-color: #333; background: #1c1c1c; }
-        html.dark .profile-name { color: #eee; }
-        html.dark .add-story-badge { background: #fff; color: #000; border-color: #181818; }
-
         .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
         .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
         .panel-content { padding: 10px; }
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; color: #111; }
-        html.dark .btn-app-secondary { background: #222; border-color: #444; color: #eee; }
-        
         .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
         .post-box:first-child { border-top: none; }
         .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
-        
         .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
         .reaction-group { display: flex; gap: 10px; align-items: center; }
         .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; }
@@ -84,12 +54,10 @@
         .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-
         .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
         .comments-drawer.open { bottom: 0; }
         .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
         .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        
         .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
         .comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
@@ -101,7 +69,6 @@
         .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
         .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
         .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
-
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
@@ -110,24 +77,17 @@
         .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
-
         .mutual-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
         .mutual-item { display: flex; flex-direction: column; align-items: center; width: 58px; flex-shrink: 0; text-decoration: none; color: inherit; }
         .mutual-pfp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; }
         .mutual-name { font-size: 10px; font-weight: 600; margin-top: 4px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-        html.dark .mutual-pfp { border-color: #333; background: #1c1c1c; }
-
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
-        html.dark .pfp-pick-btn { border-color: #444; }
     </style>
 </head>
 <body>
-    <!-- Hidden file input for uploading a story -->
     <input type="file" id="story-file-input" accept="video/*" style="display: none;" onchange="handleStoryUpload(this)">
-
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
-
     <div class="wrapper">
         <div class="profile-header-card">
             <div class="pfp-container">
@@ -145,41 +105,30 @@
                 <div id="verification-btn-container"></div>
             </div>
         </div>
-
-        <!-- Story Upload Progress Bar Component -->
         <div id="story-upload-progress" class="upload-progress-panel">
             <div id="story-upload-status-text" class="upload-progress-text">Uploading story... (0%)</div>
             <div class="upload-progress-track">
                 <div id="story-upload-bar" class="upload-progress-fill"></div>
             </div>
         </div>
-
         <div class="panel">
             <div class="panel-header">Bio</div>
             <div class="panel-content" id="bio-display">No bio provided.</div>
         </div>
-
         <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
-
         <div id="mutual-friends" style="display: none;"></div>
-
         <div class="panel">
             <div class="panel-header" id="posts-header">Posts</div>
             <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
         </div>
     </div>
-
-    <!-- Slide-out Drawer for Followers / Following -->
     <div id="users-drawer" class="users-drawer">
         <div class="users-drawer-header">
             <span id="users-drawer-title">Users</span>
             <span style="cursor: pointer; font-size: 18px;" onclick="closeUsersDrawer()">✕</span>
         </div>
-        <div class="users-drawer-body" id="users-drawer-list">
-            <div class="loading-spinner">Loading...</div>
-        </div>
+        <div class="users-drawer-body" id="users-drawer-list"><div class="loading-spinner">Loading...</div></div>
     </div>
-
     <div id="comments-drawer" class="comments-drawer">
         <div class="drawer-header">
             <span>Comments</span>
@@ -197,7 +146,6 @@
             </form>
         </div>
     </div>
-
     <footer>
         <a href="feed.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -216,7 +164,6 @@
             Profile
         </a>
     </footer>
-
     <div id="edit-modal" class="modal">
         <div class="modal-window">
             <div class="modal-header">
@@ -250,7 +197,6 @@
             </div>
         </div>
     </div>
-
     <script src="app.js"></script>
     <script>
         const loggedUser = requireAuth(true);
@@ -296,15 +242,11 @@
                 document.getElementById('following-count').innerText = data.following_count;
 
                 const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
-                
                 document.getElementById('add-story-btn').style.display = isOwner ? 'flex' : 'none';
 
                 const ringContainer = document.getElementById('story-ring-container');
-                if (activeStory) {
-                    ringContainer.classList.add('has-story');
-                } else {
-                    ringContainer.classList.remove('has-story');
-                }
+                if (activeStory) ringContainer.classList.add('has-story');
+                else ringContainer.classList.remove('has-story');
 
                 const verificationBtnContainer = document.getElementById('verification-btn-container');
                 const controlsEl = document.getElementById('owner-controls');
@@ -313,7 +255,9 @@
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
                     
-                    if (!activeProfileUser.verified) {
+                    // Hide external payment verification button inside the Android WebView app
+                    const isNativeApp = navigator.userAgent.includes("NvaritiaApp");
+                    if (!activeProfileUser.verified && !isNativeApp) {
                         verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
                     } else {
                         verificationBtnContainer.innerHTML = '';
@@ -328,9 +272,7 @@
                 } else {
                     verificationBtnContainer.innerHTML = '';
                     if (data.isBlocked) {
-                        controlsEl.innerHTML = `
-                            <button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>
-                        `;
+                        controlsEl.innerHTML = `<button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>`;
                         document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
                         return;
                     } else {
@@ -341,11 +283,8 @@
                                 if (fr.ok) fStatus = (await fr.json()).status;
                             } catch (e) {}
                         }
-                        
                         const followBtnText = isFollowingActiveUser ? 'Unfollow' : 'Follow';
-                        const followBtnStyle = isFollowingActiveUser 
-                            ? 'background: #fff; color: #111; border: 1px solid #ccc;' 
-                            : 'background: #000; color: #fff; border: 1px solid #000;';
+                        const followBtnStyle = isFollowingActiveUser ? 'background: #fff; color: #111; border: 1px solid #ccc;' : 'background: #000; color: #fff; border: 1px solid #000;';
 
                         controlsEl.innerHTML = `
                             <button id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
@@ -358,27 +297,18 @@
                 }
 
                 document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${activeProfileUser.username || 'User'}'s Posts`;
-
                 const container = document.getElementById('posts-container');
-                if (!data.posts.length) {
-                    container.innerHTML = '<p style="color: #666; padding: 10px;">No posts recorded.</p>';
-                    return;
-                }
+                if (!data.posts.length) { container.innerHTML = '<p style="color: #666; padding: 10px;">No posts recorded.</p>'; return; }
 
                 container.innerHTML = '';
                 for (const p of data.posts) {
                     const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${p.id}&email=${encodeURIComponent(loggedUser.email || '')}`);
                     const rxData = await rxRes.json();
-
                     const postEl = document.createElement('div');
                     postEl.className = 'post-box';
                     postEl.id = `post-${p.id}`;
-                    
                     const formattedContent = escapeHtml(p.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
-
-                    const actionControl = isOwner
-                        ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>`
-                        : `<button onclick="reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
+                    const actionControl = isOwner ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : `<button onclick="reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
 
                     postEl.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -389,16 +319,10 @@
                         ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
                         <div class="post-actions">
                             <div class="reaction-group">
-                                <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${p.id}', 'like')">
-                                    ${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span>
-                                </button>
-                                <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${p.id}', 'dislike')">
-                                    ${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span>
-                                </button>
+                                <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${p.id}', 'like')">${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span></button>
+                                <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${p.id}', 'dislike')">${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span></button>
                             </div>
-                            <button class="reaction-btn" onclick="openCommentsDrawer('${p.id}')">
-                                ${COMMENT_SVG} Comments
-                            </button>
+                            <button class="reaction-btn" onclick="openCommentsDrawer('${p.id}')">${COMMENT_SVG} Comments</button>
                         </div>
                     `;
                     container.appendChild(postEl);
@@ -409,33 +333,20 @@
             }
         }
 
-        // --- Slide-out Drawers for Followers and Following ---
         async function openUsersDrawer(type) {
             const drawer = document.getElementById('users-drawer');
             const titleEl = document.getElementById('users-drawer-title');
             const listEl = document.getElementById('users-drawer-list');
-
             titleEl.innerText = type === 'followers' ? 'Followers' : 'Following';
             drawer.classList.add('open');
             listEl.innerHTML = '<div class="loading-spinner">Loading...</div>';
-
             const emailArray = profileFollowData[type] || [];
-            if (!emailArray.length) {
-                listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} yet.</p>`;
-                return;
-            }
-
+            if (!emailArray.length) { listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} yet.</p>`; return; }
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/list?emails=${encodeURIComponent(emailArray.join(','))}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 const users = data.users || [];
-                if (!users.length) {
-                    listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} found.</p>`;
-                    return;
-                }
-
                 const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
                 listEl.innerHTML = users.map(u => `
                     <a class="user-row-item" href="profile.html?user=${encodeURIComponent(u.username)}">
@@ -443,14 +354,10 @@
                         <div class="user-row-name">@${escapeHtml(u.username)}${renderVerifiedBadge(u.verified)}</div>
                     </a>
                 `).join('');
-            } catch (err) {
-                listEl.innerHTML = '<p style="color: red; text-align: center; padding: 20px; font-size: 13px;">Failed to load list.</p>';
-            }
+            } catch (err) { listEl.innerHTML = '<p style="color: red; text-align: center; padding: 20px; font-size: 13px;">Failed to load list.</p>'; }
         }
 
-        function closeUsersDrawer() {
-            document.getElementById('users-drawer').classList.remove('open');
-        }
+        function closeUsersDrawer() { document.getElementById('users-drawer').classList.remove('open'); }
 
         async function toggleFollow() {
             if (loggedUser.guest) return promptSignup('follow users');
@@ -463,34 +370,23 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 isFollowingActiveUser = data.is_following;
                 const btn = document.getElementById('follow-btn');
                 if (isFollowingActiveUser) {
                     btn.innerText = 'Unfollow';
-                    btn.style.background = '#fff';
-                    btn.style.color = '#111';
-                    btn.style.border = '1px solid #ccc';
-                    if (!profileFollowData.followers.includes(loggedUser.email.toLowerCase())) {
-                        profileFollowData.followers.push(loggedUser.email.toLowerCase());
-                    }
+                    btn.style.background = '#fff'; btn.style.color = '#111'; btn.style.border = '1px solid #ccc';
+                    if (!profileFollowData.followers.includes(loggedUser.email.toLowerCase())) profileFollowData.followers.push(loggedUser.email.toLowerCase());
                 } else {
                     btn.innerText = 'Follow';
-                    btn.style.background = '#000';
-                    btn.style.color = '#fff';
-                    btn.style.border = '1px solid #000';
+                    btn.style.background = '#000'; btn.style.color = '#fff'; btn.style.border = '1px solid #000';
                     profileFollowData.followers = profileFollowData.followers.filter(e => e !== loggedUser.email.toLowerCase());
                 }
-
                 const countElem = document.getElementById('followers-count');
                 let current = parseInt(countElem.innerText, 10) || 0;
                 countElem.innerText = isFollowingActiveUser ? current + 1 : Math.max(0, current - 1);
-            } catch (err) {
-                showToast(err.message);
-            }
+            } catch (err) { showToast(err.message); }
         }
 
-        // Story Upload with Real-time Progress Tracking
         function triggerStoryUpload() {
             if (loggedUser.guest) return promptSignup('post a story');
             document.getElementById('story-file-input').click();
@@ -500,34 +396,17 @@
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', `${WORKER_ORIGIN}/api/stories/create`);
-                
                 const headers = authHeaders();
-                for (const key in headers) {
-                    xhr.setRequestHeader(key, headers[key]);
-                }
-
-                xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
-                        onProgress(percent);
-                    }
-                };
-
+                for (const key in headers) xhr.setRequestHeader(key, headers[key]);
+                xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
                 xhr.onload = () => {
                     try {
                         const data = JSON.parse(xhr.responseText);
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            resolve(data);
-                        } else {
-                            reject(new Error(data.error || 'Failed to post story'));
-                        }
-                    } catch (err) {
-                        reject(new Error('Invalid response from server'));
-                    }
+                        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+                        else reject(new Error(data.error || 'Failed'));
+                    } catch (err) { reject(new Error('Invalid response')); }
                 };
-
-                xhr.onerror = () => reject(new Error('Network error during upload'));
-
+                xhr.onerror = () => reject(new Error('Network error'));
                 const formData = new FormData();
                 formData.append('media', file);
                 xhr.send(formData);
@@ -537,101 +416,55 @@
         async function handleStoryUpload(input) {
             let file = input.files[0];
             if (!file) return;
-
-            if (!file.type.startsWith('video/')) {
-                showToast("Stories must be video files.");
-                input.value = '';
-                return;
-            }
-
+            if (!file.type.startsWith('video/')) { showToast("Stories must be video files."); input.value = ''; return; }
             const video = document.createElement('video');
-            video.preload = 'metadata';
-            video.muted = true;
-            video.playsInline = true;
-
+            video.preload = 'metadata'; video.muted = true; video.playsInline = true;
             video.onloadedmetadata = async function() {
                 window.URL.revokeObjectURL(video.src);
-                if (video.duration > 30.5) {
-                    showToast("Story video cannot exceed 30 seconds.");
-                    input.value = '';
-                    return;
-                }
-
+                if (video.duration > 30.5) { showToast("Story video cannot exceed 30 seconds."); input.value = ''; return; }
                 const progressBox = document.getElementById('story-upload-progress');
                 const progressBar = document.getElementById('story-upload-bar');
                 const progressText = document.getElementById('story-upload-status-text');
-                
-                progressBox.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressText.innerText = 'Uploading story... (0%)';
-
+                progressBox.style.display = 'block'; progressBar.style.width = '0%'; progressText.innerText = 'Uploading story... (0%)';
                 try {
-                    await uploadStoryWithProgress(file, (uploadPercent) => {
-                        progressBar.style.width = uploadPercent + '%';
-                        progressText.innerText = `Uploading story... (${uploadPercent}%)`;
-                    });
-
+                    await uploadStoryWithProgress(file, (p) => { progressBar.style.width = p + '%'; progressText.innerText = `Uploading story... (${p}%)`; });
                     showToast("Story posted successfully!");
                     loadProfile();
-                } catch (err) {
-                    showToast(err.message);
-                } finally {
-                    progressBox.style.display = 'none';
-                    input.value = '';
-                }
+                } catch (err) { showToast(err.message); }
+                finally { progressBox.style.display = 'none'; input.value = ''; }
             };
-
-            video.onerror = function() {
-                window.URL.revokeObjectURL(video.src);
-                showToast("Could not read video file.");
-                input.value = '';
-            };
-
+            video.onerror = function() { window.URL.revokeObjectURL(video.src); showToast("Could not read video."); input.value = ''; };
             video.src = URL.createObjectURL(file);
         }
 
         function openProfileStory() {
             if (!activeStory) {
-                if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) {
-                    triggerStoryUpload();
-                }
+                if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) triggerStoryUpload();
                 return;
             }
-            openStory({
-                mediaUrl: activeStory.media_url,
-                createdAt: activeStory.created_at,
-                ownerEmail: activeProfileUser.email,
-                onDeleted: loadProfile
-            });
+            openStory({ mediaUrl: activeStory.media_url, createdAt: activeStory.created_at, ownerEmail: activeProfileUser.email, onDeleted: loadProfile });
         }
 
         function setFriendButton(status) {
             const btn = document.getElementById('friend-btn');
             if (!btn || !activeProfileUser) return;
-            btn.disabled = false;
-            btn.style.opacity = '1';
+            btn.disabled = false; btn.style.opacity = '1';
             if (status === 'friends') {
                 btn.innerText = 'Message';
                 btn.onclick = () => { location.href = `messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}`; };
             } else if (status === 'sent') {
-                btn.innerText = 'Request Sent';
-                btn.disabled = true;
-                btn.style.opacity = '0.6';
-                btn.onclick = null;
+                btn.innerText = 'Request Sent'; btn.disabled = true; btn.style.opacity = '0.6'; btn.onclick = null;
             } else if (status === 'received') {
-                btn.innerText = 'Respond to Request';
-                btn.onclick = () => { location.href = 'messages.html'; };
+                btn.innerText = 'Respond to Request'; btn.onclick = () => { location.href = 'messages.html'; };
             } else {
-                btn.innerText = 'Friend Request';
-                btn.onclick = sendFriendRequest;
+                btn.innerText = 'Friend Request'; btn.onclick = sendFriendRequest;
             }
         }
 
         async function sendFriendRequest() {
             if (loggedUser.guest) return promptSignup('send friend requests');
             const btn = document.getElementById('friend-btn');
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
+            btn.disabled = true; btn.style.opacity = '0.6';
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/friends/request`, {
                     method: 'POST',
@@ -642,10 +475,7 @@
                 if (!res.ok) throw new Error(data.error);
                 setFriendButton(data.status);
                 if (data.status === 'friends') loadMutualFriends();
-            } catch (err) {
-                setFriendButton('none');
-                showToast(err.message);
-            }
+            } catch (err) { setFriendButton('none'); showToast(err.message); }
         }
 
         async function loadMutualFriends() {
@@ -654,7 +484,6 @@
                 const res = await fetch(`${WORKER_ORIGIN}/api/friends/mutual?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 const list = data.mutual || [];
                 const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
                 box.innerHTML = `
@@ -670,9 +499,7 @@
                     </div>
                 `;
                 box.style.display = 'block';
-            } catch (e) {
-                box.style.display = 'none';
-            }
+            } catch (e) { box.style.display = 'none'; }
         }
 
         async function unblockUser(targetEmail) {
@@ -682,25 +509,21 @@
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ blockedEmail: targetEmail })
                 });
-                if (!res.ok) throw new Error('Failed to unblock');
+                if (!res.ok) throw new Error('Failed');
                 showToast("User unblocked");
                 loadProfile();
-            } catch (err) {
-                showToast(err.message);
-            }
+            } catch (err) { showToast(err.message); }
         }
 
         async function openCommentsDrawer(postId) {
-            activePostId = postId;
-            cancelReply();
+            activePostId = postId; cancelReply();
             document.getElementById('comments-drawer').classList.add('open');
             loadComments();
         }
 
         function closeCommentsDrawer() {
             document.getElementById('comments-drawer').classList.remove('open');
-            activePostId = null;
-            cancelReply();
+            activePostId = null; cancelReply();
         }
 
         async function loadComments() {
@@ -710,28 +533,14 @@
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email || '')}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
-                if (!data.comments.length) {
-                    listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>';
-                    return;
-                }
-
+                if (!data.comments.length) { listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>'; return; }
                 const commentMap = new Map();
                 const rootComments = [];
-
+                data.comments.forEach(c => { c.replies = []; commentMap.set(c.id, c); });
                 data.comments.forEach(c => {
-                    c.replies = [];
-                    commentMap.set(c.id, c);
+                    if (c.parent_id && commentMap.has(c.parent_id)) commentMap.get(c.parent_id).replies.push(c);
+                    else if (!c.parent_id) rootComments.push(c);
                 });
-
-                data.comments.forEach(c => {
-                    if (c.parent_id && commentMap.has(c.parent_id)) {
-                        commentMap.get(c.parent_id).replies.push(c);
-                    } else if (!c.parent_id) {
-                        rootComments.push(c);
-                    }
-                });
-
                 function renderCommentNode(c, isReply = false) {
                     const isMe = !loggedUser.guest && c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
                     return `
@@ -741,12 +550,8 @@
                                 <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</span>
                                 <div class="comment-content">${escapeHtml(c.content)}</div>
                                 <div class="comment-actions">
-                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
-                                        ${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span>
-                                    </button>
-                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
-                                        ${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span>
-                                    </button>
+                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span></button>
+                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span></button>
                                     <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
                                     ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
                                 </div>
@@ -755,26 +560,21 @@
                         ${c.replies.map(r => renderCommentNode(r, true)).join('')}
                     `;
                 }
-
                 listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
                 listEl.scrollTop = listEl.scrollHeight;
-            } catch (err) {
-                listEl.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load comments.</p>';
-            }
+            } catch (err) { listEl.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load.</p>'; }
         }
 
         function setReplyingTo(commentId, username) {
             if (loggedUser.guest) return promptSignup('reply to comments');
-            replyingToId = commentId;
-            replyingToUsername = username;
+            replyingToId = commentId; replyingToUsername = username;
             document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
             document.getElementById('replying-banner').style.display = 'flex';
             document.getElementById('comment-input').focus();
         }
 
         function cancelReply() {
-            replyingToId = null;
-            replyingToUsername = null;
+            replyingToId = null; replyingToUsername = null;
             document.getElementById('replying-banner').style.display = 'none';
         }
 
@@ -784,7 +584,6 @@
             const input = document.getElementById('comment-input');
             const content = input.value.trim();
             if (!content || !activePostId) return;
-
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
                     method: 'POST',
@@ -793,13 +592,8 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
-                input.value = '';
-                cancelReply();
-                loadComments();
-            } catch (err) {
-                showToast(err.message);
-            }
+                input.value = ''; cancelReply(); loadComments();
+            } catch (err) { showToast(err.message); }
         }
 
         async function toggleCommentReaction(commentId, reactionType) {
@@ -812,17 +606,13 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 document.getElementById(`c-likes-${commentId}`).innerText = data.likes;
                 document.getElementById(`c-dislikes-${commentId}`).innerText = data.dislikes;
-
                 const parent = document.getElementById(`comment-${commentId}`);
                 const buttons = parent.querySelectorAll('.comment-reaction-btn');
                 buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
-            } catch (err) {
-                showToast(err.message);
-            }
+            } catch (err) { showToast(err.message); }
         }
 
         async function toggleReaction(postId, reactionType) {
@@ -835,17 +625,13 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 document.getElementById(`likes-${postId}`).innerText = data.likes;
                 document.getElementById(`dislikes-${postId}`).innerText = data.dislikes;
-
                 const parent = document.getElementById(`post-${postId}`);
                 const buttons = parent.querySelectorAll('.reaction-btn');
                 buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
                 buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
-            } catch (err) {
-                showToast(err.message);
-            }
+            } catch (err) { showToast(err.message); }
         }
 
         async function saveProfile(e) {
@@ -855,23 +641,16 @@
             formData.append('bio', document.getElementById('edit-bio').value.trim());
             const file = document.getElementById('edit-pfp').files[0];
             if (file) formData.append('pfp', typeof compressImage === 'function' ? await compressImage(file, 512) : file);
-
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { 
-                    method: 'POST', 
-                    headers: authHeaders(),
-                    body: formData 
-                });
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { method: 'POST', headers: authHeaders(), body: formData });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-
                 setSessionUser(data.user, data.token);
                 closeModal('edit-modal');
                 window.location.href = `profile.html?user=${encodeURIComponent(data.user.username || data.user.email)}`;
             } catch (err) {
                 const el = document.getElementById('edit-error');
-                el.innerText = err.message;
-                el.style.display = 'block';
+                el.innerText = err.message; el.style.display = 'block';
             }
         }
 
@@ -884,12 +663,10 @@
                         body: JSON.stringify({ postId })
                     });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed to delete');
+                    if (!res.ok) throw new Error(data.error || 'Failed');
                     document.getElementById(`post-${postId}`)?.remove();
                     showToast("Post deleted");
-                } catch (err) {
-                    showToast(err.message);
-                }
+                } catch (err) { showToast(err.message); }
             });
         }
 
