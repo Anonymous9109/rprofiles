@@ -366,11 +366,11 @@ async function loadComments() {
 
             return `
                 <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
-                    <a href="${profileUrl}" class="comment-avatar-link" title="View @${escapeHtml(c.username)}'s profile">
+                    <a href="${profileUrl}" class="comment-avatar-link" onclick="event.stopPropagation(); window.location.href='${profileUrl}'; return false;" title="View @${escapeHtml(c.username)}'s profile">
                         <img class="comment-avatar" src="${c.pfp_url || defaultAvatar}">
                     </a>
                     <div style="flex-grow: 1;">
-                        <a href="${profileUrl}" class="comment-author-link">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
+                        <a href="${profileUrl}" class="comment-author-link" onclick="event.stopPropagation(); window.location.href='${profileUrl}'; return false;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
                         <div class="comment-content">${escapeHtml(c.content)}</div>
                         <div class="comment-actions">
                             <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
