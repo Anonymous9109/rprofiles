@@ -43,11 +43,17 @@
         .panel-content { padding: 10px; }
         .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
         .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; color: #111; }
-        .post-box { border-top: 1px solid #e5e5e5; padding: 10px 0; }
+        .post-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
         .post-box:first-child { border-top: none; }
-        .post-text { font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+        .post-header-line { display: flex; align-items: center; gap: 10px; margin-top: 8px; margin-bottom: 8px; }
+        .feed-avatar-container { position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
+        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
+        .post-meta { font-weight: 600; color: #111; text-decoration: none; display: inline-block; padding: 2px 0; }
+        .post-meta:hover { text-decoration: underline; }
+        .post-text { font-size: 13px; margin-top: 6px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
         .post-timestamp { color: #666; font-size: 10px; }
-        .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; margin-top: 6px; }
+        .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 4px; display: block; }
         .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
         .reaction-group { display: flex; gap: 10px; align-items: center; }
         .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; user-select: none; }
@@ -171,7 +177,7 @@
             </div>
         </div>
     </div>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
     <script>
         const loggedUser = requireAuth(true);
         const urlParams = new URLSearchParams(window.location.search);
@@ -265,7 +271,6 @@
                 const container = document.getElementById('posts-container');
                 await renderPosts(data.posts, container, {
                     clear: true,
-                    showHeader: false,
                     fallbackAuthor: activeProfileUser
                 });
             } catch (e) {
