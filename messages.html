@@ -357,15 +357,15 @@
                 for (const conv of data.conversations) {
                     const peer = conv.peer;
                     const peerEmail = peer.email.toLowerCase();
-                    const lastMsg = conv.last_message;
+                    const lastMsgText = formatInboxPreviewText(conv.last_message);
 
                     if (!inboxLoadedOnce) {
-                        inboxLastMessages[peerEmail] = lastMsg;
+                        inboxLastMessages[peerEmail] = lastMsgText;
                     } else {
-                        if (inboxLastMessages[peerEmail] !== lastMsg) {
-                            inboxLastMessages[peerEmail] = lastMsg;
+                        if (inboxLastMessages[peerEmail] !== lastMsgText) {
+                            inboxLastMessages[peerEmail] = lastMsgText;
                             if (!activePeer || activePeer.email.toLowerCase() !== peerEmail) {
-                                notifyUser(`@${peer.username}`, lastMsg, peer.pfp_url);
+                                notifyUser(`@${peer.username}`, lastMsgText, peer.pfp_url);
                             }
                         }
                     }
@@ -378,7 +378,7 @@
                         </div>
                         <div class="info">
                             <div class="name">@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}</div>
-                            <div class="preview">${escapeHtml(lastMsg)}</div>
+                            <div class="preview">${escapeHtml(lastMsgText)}</div>
                         </div>
                     `;
                     el.addEventListener('click', () => openDrawer(peer));
@@ -469,7 +469,7 @@
                         const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
                         if (!isSent && !notifiedMessageKeys.has(msgKey)) {
                             notifiedMessageKeys.add(msgKey);
-                            notifyUser(`@${peerAtRequest.username}`, m.content, peerAtRequest.pfp_url);
+                            notifyUser(`@${peerAtRequest.username}`, formatInboxPreviewText(m.content), peerAtRequest.pfp_url);
                         }
                     });
                 }
@@ -479,7 +479,10 @@
 
                 chatContainer.innerHTML = data.messages.map((m, i) => {
                     const isSent = m.sender_email.toLowerCase() === me;
-                    let html = `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+                    const shared = parseSharedPostContent(m.content);
+                    let html = shared
+                        ? renderSharedPostBubbleHtml(shared, isSent)
+                        : `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
 
                     if (isSent && i === lastSentIdx) {
                         if (m.read_at && m.read_at !== "") {
