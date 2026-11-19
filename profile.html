@@ -54,21 +54,6 @@
         .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
         .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
         .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-        .comments-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80vh; background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px; border: 1px solid #ccc; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); z-index: 1000; transition: bottom 0.3s ease-in-out; display: flex; flex-direction: column; }
-        .comments-drawer.open { bottom: 0; }
-        .drawer-header { background: #f0f0f0; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 1px solid #e5e5e5; }
-        .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        .comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
-        .comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
-        .comment-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; }
-        .comment-content { font-size: 13px; line-height: 1.4; margin-top: 3px; }
-        .comment-actions { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; align-items: center; font-weight: 600; }
-        .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; }
-        .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
-        .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
-        .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
-        .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
         .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
         .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
         .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
@@ -129,23 +114,6 @@
         </div>
         <div class="users-drawer-body" id="users-drawer-list"><div class="loading-spinner">Loading...</div></div>
     </div>
-    <div id="comments-drawer" class="comments-drawer">
-        <div class="drawer-header">
-            <span>Comments</span>
-            <span style="cursor: pointer; font-size: 16px;" onclick="closeCommentsDrawer()">✕</span>
-        </div>
-        <div class="drawer-body">
-            <div class="comments-container" id="comments-list">Loading comments...</div>
-            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px;">
-                <span id="replying-to-text">Replying...</span>
-                <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
-            </div>
-            <form onsubmit="submitComment(event)" style="display: flex; gap: 6px;">
-                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;">
-                <button type="submit" style="background: #000; color: #fff; border: none; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">Post</button>
-            </form>
-        </div>
-    </div>
     <footer>
         <a href="feed.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -197,7 +165,7 @@
             </div>
         </div>
     </div>
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
     <script>
         const loggedUser = requireAuth(true);
         const urlParams = new URLSearchParams(window.location.search);
@@ -205,9 +173,6 @@
         if (guestNoTarget) promptSignup('view your profile');
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
         let activeProfileUser = null;
-        let activePostId = null;
-        let replyingToId = null;
-        let replyingToUsername = null;
         let activeStory = null;
         let isFollowingActiveUser = false;
         let profileFollowData = { followers: [], following: [] };
@@ -215,8 +180,14 @@
         const LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
         const DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
         const COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-        const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
-        const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+
+        function goToProfile(url, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            window.location.href = url;
+        }
 
         async function loadProfile() {
             document.getElementById('mutual-friends').style.display = 'none';
@@ -264,7 +235,7 @@
                     }
 
                     controlsEl.innerHTML = `
-                        <button class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
+                        <button type="button" class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
                         <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
@@ -272,7 +243,7 @@
                 } else {
                     verificationBtnContainer.innerHTML = '';
                     if (data.isBlocked) {
-                        controlsEl.innerHTML = `<button class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>`;
+                        controlsEl.innerHTML = `<button type="button" class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>`;
                         document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
                         return;
                     } else {
@@ -287,9 +258,9 @@
                         const followBtnStyle = isFollowingActiveUser ? 'background: #fff; color: #111; border: 1px solid #ccc;' : 'background: #000; color: #fff; border: 1px solid #000;';
 
                         controlsEl.innerHTML = `
-                            <button id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
-                            <button id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
-                            <button class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
+                            <button type="button" id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
+                            <button type="button" id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
+                            <button type="button" class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
                         `;
                         setFriendButton(fStatus);
                         if (!loggedUser.guest) loadMutualFriends();
@@ -307,8 +278,8 @@
                     const postEl = document.createElement('div');
                     postEl.className = 'post-box';
                     postEl.id = `post-${p.id}`;
-                    const formattedContent = escapeHtml(p.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
-                    const actionControl = isOwner ? `<button onclick="deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : `<button onclick="reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
+                    const formattedContent = escapeHtml(p.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" onclick="goToProfile(\'profile.html?user=$1\', event)" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
+                    const actionControl = isOwner ? `<button type="button" onclick="event.stopPropagation(); deletePost('${p.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:600;">Delete</button>` : `<button type="button" onclick="event.stopPropagation(); reportPost('${p.id}')" style="background:none; border:none; color:#777; cursor:pointer; font-size:11px; font-weight:600;">Report</button>`;
 
                     postEl.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -319,10 +290,10 @@
                         ${p.media_url ? `<img class="post-media" src="${p.media_url}">` : ''}
                         <div class="post-actions">
                             <div class="reaction-group">
-                                <button class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${p.id}', 'like')">${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span></button>
-                                <button class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${p.id}', 'dislike')">${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span></button>
+                                <button type="button" class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${p.id}', 'like')">${LIKE_SVG} <span id="likes-${p.id}">${rxData.likes}</span></button>
+                                <button type="button" class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${p.id}', 'dislike')">${DISLIKE_SVG} <span id="dislikes-${p.id}">${rxData.dislikes}</span></button>
                             </div>
-                            <button class="reaction-btn" onclick="openCommentsDrawer('${p.id}')">${COMMENT_SVG} Comments</button>
+                            <button type="button" class="reaction-btn" onclick="event.stopPropagation(); openCommentsDrawer('${p.id}')">${COMMENT_SVG} Comments</button>
                         </div>
                     `;
                     container.appendChild(postEl);
@@ -512,106 +483,6 @@
                 if (!res.ok) throw new Error('Failed');
                 showToast("User unblocked");
                 loadProfile();
-            } catch (err) { showToast(err.message); }
-        }
-
-        async function openCommentsDrawer(postId) {
-            activePostId = postId; cancelReply();
-            document.getElementById('comments-drawer').classList.add('open');
-            loadComments();
-        }
-
-        function closeCommentsDrawer() {
-            document.getElementById('comments-drawer').classList.remove('open');
-            activePostId = null; cancelReply();
-        }
-
-        async function loadComments() {
-            const listEl = document.getElementById('comments-list');
-            listEl.innerHTML = 'Loading comments...';
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/get?postId=${activePostId}&email=${encodeURIComponent(loggedUser.email || '')}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                if (!data.comments.length) { listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>'; return; }
-                const commentMap = new Map();
-                const rootComments = [];
-                data.comments.forEach(c => { c.replies = []; commentMap.set(c.id, c); });
-                data.comments.forEach(c => {
-                    if (c.parent_id && commentMap.has(c.parent_id)) commentMap.get(c.parent_id).replies.push(c);
-                    else if (!c.parent_id) rootComments.push(c);
-                });
-                function renderCommentNode(c, isReply = false) {
-                    const isMe = !loggedUser.guest && c.user_email.toLowerCase() === loggedUser.email.toLowerCase();
-                    return `
-                        <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
-                            <img class="comment-avatar" src="${c.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'34\' height=\'34\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
-                            <div style="flex-grow: 1;">
-                                <span style="font-weight: bold; font-size: 13px;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</span>
-                                <div class="comment-content">${escapeHtml(c.content)}</div>
-                                <div class="comment-actions">
-                                    <button class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span></button>
-                                    <button class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span></button>
-                                    <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${c.username}')">Reply</span>
-                                    ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${c.replies.map(r => renderCommentNode(r, true)).join('')}
-                    `;
-                }
-                listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
-                listEl.scrollTop = listEl.scrollHeight;
-            } catch (err) { listEl.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load.</p>'; }
-        }
-
-        function setReplyingTo(commentId, username) {
-            if (loggedUser.guest) return promptSignup('reply to comments');
-            replyingToId = commentId; replyingToUsername = username;
-            document.getElementById('replying-to-text').innerText = `Replying to @${username}`;
-            document.getElementById('replying-banner').style.display = 'flex';
-            document.getElementById('comment-input').focus();
-        }
-
-        function cancelReply() {
-            replyingToId = null; replyingToUsername = null;
-            document.getElementById('replying-banner').style.display = 'none';
-        }
-
-        async function submitComment(e) {
-            e.preventDefault();
-            if (loggedUser.guest) return promptSignup('comment');
-            const input = document.getElementById('comment-input');
-            const content = input.value.trim();
-            if (!content || !activePostId) return;
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ postId: activePostId, content, parentId: replyingToId })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                input.value = ''; cancelReply(); loadComments();
-            } catch (err) { showToast(err.message); }
-        }
-
-        async function toggleCommentReaction(commentId, reactionType) {
-            if (loggedUser.guest) return promptSignup('like or dislike comments');
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ commentId, reaction: reactionType })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                document.getElementById(`c-likes-${commentId}`).innerText = data.likes;
-                document.getElementById(`c-dislikes-${commentId}`).innerText = data.dislikes;
-                const parent = document.getElementById(`comment-${commentId}`);
-                const buttons = parent.querySelectorAll('.comment-reaction-btn');
-                buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
-                buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
             } catch (err) { showToast(err.message); }
         }
 
