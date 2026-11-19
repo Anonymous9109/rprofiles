@@ -411,14 +411,10 @@ async function renderPosts(posts, container, options = {}) {
 
         const mediaHtml = post.media_url ? `<img class="post-media" src="${post.media_url}">` : '';
 
-        // If an image was posted: image first -> PFP & username under it -> text following the image.
-        // If no image: text first -> PFP & username under it.
-        const bodyHtml = post.media_url
-            ? `${mediaHtml}${authorRowHtml}${formattedContent}`
-            : `${formattedContent}${authorRowHtml}`;
-
         postEl.innerHTML = `
-            ${bodyHtml}
+            ${authorRowHtml}
+            ${formattedContent}
+            ${mediaHtml}
             <div class="post-actions">
                 <div class="reaction-group">
                     <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like')">
