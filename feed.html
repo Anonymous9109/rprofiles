@@ -176,6 +176,7 @@
         let cachedNotifications = [];
         let cachedFriendRequests = [];
 
+        const SEEN_ACTIVITY_KEY = `nvaritia_seen_activity_${((currentUser && currentUser.email) || '').toLowerCase()}`;
         const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
 
         function showToast(message) {
@@ -186,6 +187,35 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        function getSeenActivityKeys() {
+            try {
+                return new Set(JSON.parse(localStorage.getItem(SEEN_ACTIVITY_KEY) || '[]'));
+            } catch (e) {
+                return new Set();
+            }
+        }
+
+        function getActivityItemKey(prefix, item) {
+            if (item && item.id !== undefined && item.id !== null) {
+                return `${prefix}:${item.id}`;
+            }
+            return `${prefix}:${item.actor_username || item.username || ''}:${item.type || ''}:${item.post_id || ''}:${item.created_at || ''}:${item.message || ''}`;
+        }
+
+        function markCurrentActivityAsSeen() {
+            const seen = getSeenActivityKeys();
+            for (const r of cachedFriendRequests) {
+                seen.add(getActivityItemKey('fr', r));
+            }
+            for (const n of cachedNotifications) {
+                seen.add(getActivityItemKey('notif', n));
+            }
+            try {
+                localStorage.setItem(SEEN_ACTIVITY_KEY, JSON.stringify([...seen].slice(-300)));
+            } catch (e) {}
+            updateNotifBadge();
         }
 
         function formatNotificationText(n) {
@@ -201,8 +231,14 @@
         function updateNotifBadge() {
             const badge = document.getElementById('notif-badge');
             if (!badge) return;
-            const hasItems = cachedFriendRequests.length > 0 || cachedNotifications.length > 0;
-            badge.classList.toggle('show', hasItems);
+            if (isActivityDrawerOpen) {
+                badge.classList.remove('show');
+                return;
+            }
+            const seen = getSeenActivityKeys();
+            const hasUnseenFriendRequest = cachedFriendRequests.some(r => !seen.has(getActivityItemKey('fr', r)));
+            const hasUnseenNotification = cachedNotifications.some(n => !seen.has(getActivityItemKey('notif', n)));
+            badge.classList.toggle('show', hasUnseenFriendRequest || hasUnseenNotification);
         }
 
         async function respondToFriendRequest(requestId, action, el) {
@@ -249,10 +285,12 @@
 
                 cachedNotifications = data.notifications || [];
                 cachedFriendRequests = friendRequests;
-                updateNotifBadge();
 
                 if (isActivityDrawerOpen) {
+                    markCurrentActivityAsSeen();
                     renderActivityDrawerItems();
+                } else {
+                    updateNotifBadge();
                 }
             } catch (err) {
                 if (isActivityDrawerOpen && bodyEl) {
@@ -324,6 +362,7 @@
 
         function openActivityDrawer() {
             isActivityDrawerOpen = true;
+            markCurrentActivityAsSeen();
             document.getElementById('activity-drawer').classList.add('open');
             renderActivityDrawerItems();
             loadActivity();
@@ -331,6 +370,7 @@
 
         function closeActivityDrawer() {
             isActivityDrawerOpen = false;
+            markCurrentActivityAsSeen();
             document.getElementById('activity-drawer').classList.remove('open');
         }
 
