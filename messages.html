@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nvaritia - Messages & Activity</title>
-   <style>
+    <title>Nvaritia - Messages</title>
+    <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
         header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
@@ -12,7 +12,7 @@
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
-        
+
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -26,12 +26,8 @@
         .story-tray-item.watched .story-tray-name { color: #888; }
 
         .section-title { font-size: 14px; font-weight: bold; margin: 12px 0 8px 0; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; color: #333; }
-        .inbox-item, .activity-item { display: flex; align-items: center; gap: 14px; padding: 12px 6px; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; cursor: pointer; border-radius: 8px; transition: background 0.15s ease; }
-        .inbox-item:hover, .activity-item:hover { background: #fafafa; }
-
-        /* Activity Thread Special Avatar */
-        .activity-icon-circle { width: 100%; height: 100%; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; }
-        .activity-icon-circle svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .inbox-item { display: flex; align-items: center; gap: 14px; padding: 12px 6px; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; cursor: pointer; border-radius: 8px; transition: background 0.15s ease; }
+        .inbox-item:hover { background: #fafafa; }
 
         /* Preserves original clamp() PFP size + adds story ring wrapper */
         .story-ring-wrapper { position: relative; width: clamp(50px, 14.5vw, 64px); height: clamp(50px, 14.5vw, 64px); flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -54,7 +50,6 @@
         .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
         .drawer-header .story-ring-wrapper { width: clamp(30px, 8.5vw, 38px); height: clamp(30px, 8.5vw, 38px); }
         .drawer-header .story-ring-wrapper.has-story { padding: 2px; }
-        .drawer-header .activity-icon-circle svg { width: 18px; height: 18px; }
         #drawer-title { font-weight: bold; font-size: clamp(14px, 4vw, 17px); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .drawer-body { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; padding: 0; }
         .chat-container { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
@@ -66,24 +61,11 @@
         .receipt { align-self: flex-end; font-size: clamp(11px, 3vw, 12px); color: #888; margin-top: -2px; }
         .receipt.seen { color: #2563eb; font-weight: 600; }
 
-        /* Activity Drawer Items */
-        .drawer-activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fff; border: 1px solid #eee; border-radius: 12px; cursor: pointer; }
-        .drawer-activity-item:hover { background: #f5f5f5; }
-        .drawer-activity-item .story-ring-wrapper { width: 44px; height: 44px; }
-
-        .fr-actions { display: flex; gap: 6px; flex-shrink: 0; }
-        .fr-btn { border: 1px solid #ccc; border-radius: 6px; padding: 7px clamp(10px, 3vw, 14px); font-size: clamp(12px, 3.4vw, 14px); font-weight: 600; cursor: pointer; background: #fff; color: #111; }
-        .fr-btn.fr-accept { background: #000; color: #fff; border-color: #000; }
-        .fr-btn:disabled { opacity: 0.6; cursor: default; }
-        html.dark .fr-btn { background: #2a2a2a; color: #eee; border-color: #444; }
-        html.dark .fr-btn.fr-accept { background: #fff; color: #000; border-color: #fff; }
-
         @media (min-width: 700px) {
             .chat-drawer { left: calc(50% - 340px); width: 680px; border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; }
         }
         @media (max-width: 360px) {
             .wrapper { padding: 12px; }
-            .fr-actions { gap: 4px; }
         }
 
         #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -105,20 +87,6 @@
         <div id="stories-tray" class="stories-tray" style="display: none;"></div>
 
         <div class="section-title">Messages</div>
-        
-        <!-- Activity & Notifications Conversation-Style Entry -->
-        <div id="activity-thread-entry" class="inbox-item" onclick="openActivityDrawer()">
-            <div class="story-ring-wrapper">
-                <div class="activity-icon-circle">
-                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                </div>
-            </div>
-            <div class="info">
-                <div class="name">Activity & Notifications</div>
-                <div id="activity-preview" class="preview">Loading activity...</div>
-            </div>
-        </div>
-
         <div id="inbox-container"><div class="loading-spinner">Loading conversations...</div></div>
     </div>
 
@@ -165,7 +133,6 @@
     <script>
         const currentUser = requireAuth();
         let activePeer = null;
-        let isActivityDrawerOpen = false;
         let threadTimer = null;
         let inboxTimer = null;
         let notifiedMessageKeys = new Set();
@@ -176,8 +143,6 @@
         // Cache active stories by lowercase email or username
         const storyCache = new Map();
         let friendStoriesList = [];
-        let cachedNotifications = [];
-        let cachedFriendRequests = [];
 
         // Watched stories persistence (keyed by story ID so new stories reset automatically)
         const WATCHED_STORIES_KEY = `nvaritia_watched_stories_${(currentUser.email || '').toLowerCase()}`;
@@ -242,7 +207,6 @@
             const unwatched = [];
             const watched = [];
 
-            // friendStoriesList is already ordered latest-first by created_at DESC
             for (const s of friendStoriesList) {
                 if (watchedSet.has(s.id)) watched.push(s);
                 else unwatched.push(s);
@@ -375,182 +339,6 @@
             }
         }
 
-        function formatNotificationText(n) {
-            if (n.type === 'tag') return 'tagged you in a post';
-            if (n.type === 'like') return 'liked your post';
-            if (n.type === 'comment') return 'commented on your post';
-            if (n.type === 'comment_reply') return 'replied to your comment';
-            if (n.type === 'follow') return 'started following you';
-            if (n.type === 'story_reply') return n.message ? `replied to your story: "${n.message}"` : 'replied to your story';
-            return 'interacted with your post';
-        }
-
-        function updateActivityPreview() {
-            const previewEl = document.getElementById('activity-preview');
-            if (!previewEl) return;
-
-            if (cachedFriendRequests.length > 0) {
-                const r = cachedFriendRequests[0];
-                const extra = cachedFriendRequests.length > 1 ? ` (+${cachedFriendRequests.length - 1} more)` : '';
-                previewEl.textContent = `@${r.username} sent you a friend request${extra}`;
-            } else if (cachedNotifications.length > 0) {
-                const n = cachedNotifications[0];
-                previewEl.textContent = `@${n.actor_username} ${formatNotificationText(n)}`;
-            } else {
-                previewEl.textContent = 'No new activity';
-            }
-        }
-
-        async function respondToFriendRequest(requestId, action, el) {
-            el.querySelectorAll('.fr-btn').forEach(b => b.disabled = true);
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/friends/respond`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ requestId, action })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                cachedFriendRequests = cachedFriendRequests.filter(r => r.id !== requestId);
-                el.remove();
-                updateActivityPreview();
-                showToast(action === 'accept' ? 'Friend request accepted' : 'Friend request declined');
-
-                if (action === 'accept') {
-                    loadFriendStories();
-                }
-
-                const chatContainer = document.getElementById('chat-messages');
-                if (isActivityDrawerOpen && !chatContainer.children.length) {
-                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 12px; margin: auto;">No new activity or notifications.</p>';
-                }
-            } catch (err) {
-                el.querySelectorAll('.fr-btn').forEach(b => b.disabled = false);
-                showToast(err.message);
-            }
-        }
-
-        async function loadActivity() {
-            const previewEl = document.getElementById('activity-preview');
-            try {
-                const [notifRes, reqRes] = await Promise.all([
-                    fetch(`${WORKER_ORIGIN}/api/notifications`, { headers: authHeaders() }),
-                    fetch(`${WORKER_ORIGIN}/api/friends/requests`, { headers: authHeaders() })
-                ]);
-                const data = await notifRes.json();
-                if (!notifRes.ok) throw new Error(data.error);
-
-                let friendRequests = [];
-                try {
-                    if (reqRes.ok) friendRequests = (await reqRes.json()).requests || [];
-                } catch (e) {}
-
-                cachedNotifications = data.notifications || [];
-                cachedFriendRequests = friendRequests;
-                updateActivityPreview();
-
-                if (isActivityDrawerOpen) {
-                    renderActivityDrawerItems();
-                }
-            } catch (err) {
-                if (previewEl) previewEl.textContent = 'Failed to load activity';
-            }
-        }
-
-        function openActivityDrawer() {
-            clearInterval(threadTimer);
-            activePeer = null;
-            isActivityDrawerOpen = true;
-
-            const avatarContainer = document.getElementById('drawer-avatar-container');
-            avatarContainer.className = 'story-ring-wrapper';
-            avatarContainer.removeAttribute('data-story-user');
-            avatarContainer.onclick = null;
-            avatarContainer.innerHTML = `
-                <div class="activity-icon-circle">
-                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                </div>
-            `;
-
-            document.getElementById('drawer-title').textContent = 'Activity & Notifications';
-            document.getElementById('block-peer-btn').style.display = 'none';
-            document.getElementById('dm-form').style.display = 'none';
-            document.getElementById('chat-drawer').classList.add('open');
-
-            renderActivityDrawerItems();
-            loadActivity();
-        }
-
-        function renderActivityDrawerItems() {
-            const container = document.getElementById('chat-messages');
-            if (!cachedNotifications.length && !cachedFriendRequests.length) {
-                container.innerHTML = '<p style="color: #666; text-align: center; font-size: 12px; margin: auto;">No new activity or notifications.</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-
-            for (const r of cachedFriendRequests) {
-                const el = document.createElement('div');
-                el.className = 'drawer-activity-item';
-                const storyKey = r.email || r.username || '';
-                el.innerHTML = `
-                    <div class="story-ring-wrapper" data-story-user="${escapeHtml(storyKey)}">
-                        <img class="avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}">
-                    </div>
-                    <div class="info">
-                        <div class="name">@${escapeHtml(r.username)}${renderVerifiedBadge(r.verified)}</div>
-                        <div class="preview">sent you a friend request</div>
-                    </div>
-                    <div class="fr-actions">
-                        <button type="button" class="fr-btn fr-accept">Accept</button>
-                        <button type="button" class="fr-btn fr-deny">Deny</button>
-                    </div>
-                `;
-                el.querySelector('.fr-accept').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    respondToFriendRequest(r.id, 'accept', el);
-                });
-                el.querySelector('.fr-deny').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    respondToFriendRequest(r.id, 'deny', el);
-                });
-                el.addEventListener('click', () => {
-                    window.location.href = `profile.html?user=${encodeURIComponent(r.username)}`;
-                });
-                container.appendChild(el);
-            }
-
-            for (const n of cachedNotifications) {
-                const el = document.createElement('div');
-                el.className = 'drawer-activity-item';
-                const storyKey = n.actor_email || n.actor_username || '';
-                const actionText = formatNotificationText(n);
-                const timeStr = new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                el.innerHTML = `
-                    <div class="story-ring-wrapper" data-story-user="${escapeHtml(storyKey)}">
-                        <img class="avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}">
-                    </div>
-                    <div class="info">
-                        <div class="name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
-                        <div class="preview">${escapeHtml(actionText)} • ${timeStr}</div>
-                    </div>
-                `;
-                el.addEventListener('click', () => {
-                    if (n.post_id) {
-                        window.location.href = `feed.html?highlight=${n.post_id}`;
-                    } else {
-                        window.location.href = `profile.html?user=${encodeURIComponent(n.actor_username)}`;
-                    }
-                });
-                container.appendChild(el);
-            }
-
-            hydrateStoryRings(container);
-        }
-
         async function loadInbox() {
             const container = document.getElementById('inbox-container');
             try {
@@ -591,7 +379,6 @@
                             <div class="preview">${escapeHtml(lastMsg)}</div>
                         </div>
                     `;
-                    // Whole container is clickable to open conversation
                     el.addEventListener('click', () => openDrawer(peer));
                     container.appendChild(el);
                 }
@@ -603,7 +390,6 @@
         }
 
         async function openDrawer(peer) {
-            isActivityDrawerOpen = false;
             activePeer = peer;
             activeThreadLoadedOnce = false;
 
@@ -629,9 +415,7 @@
             clearInterval(threadTimer);
             document.getElementById('chat-drawer').classList.remove('open');
             activePeer = null;
-            isActivityDrawerOpen = false;
             loadInbox();
-            loadActivity();
         }
 
         function blockActivePeer() {
@@ -694,14 +478,14 @@
                 chatContainer.innerHTML = data.messages.map((m, i) => {
                     const isSent = m.sender_email.toLowerCase() === me;
                     let html = `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
-                    
+
                     if (isSent && i === lastSentIdx) {
                         if (m.read_at && m.read_at !== "") {
                             let d = new Date(m.read_at);
                             if (isNaN(d.getTime())) {
                                 d = new Date(m.read_at.replace(' ', 'T') + 'Z');
                             }
-                            
+
                             if (!isNaN(d.getTime())) {
                                 const t = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                                 html += `<div class="receipt seen">Seen ${t}</div>`;
@@ -748,14 +532,12 @@
         async function init() {
             checkNotificationBanner();
             loadFriendStories();
-            loadActivity();
             loadInbox();
 
             if (inboxTimer) clearInterval(inboxTimer);
             inboxTimer = setInterval(() => {
                 if (!activePeer) {
                     loadInbox();
-                    loadActivity();
                 }
             }, 5000);
 
