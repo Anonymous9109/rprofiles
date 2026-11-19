@@ -79,6 +79,8 @@ html.dark .comment-avatar { border-color:#333; background:#1c1c1c; }
 html.dark .comment-reaction-btn { color:#aaa; }
 html.dark .comment-reaction-btn.active-like { color:#fff; }
 html.dark .comment-reaction-btn.active-like svg { stroke:#fff; fill:#fff; }
+html.dark .comment-reaction-btn.active-dislike { color:#ef4444; }
+html.dark .comment-reaction-btn.active-dislike svg { stroke:#ef4444; fill:#ef4444; }
 html.dark .chat-bubble.received { background:#2a2a2a; color:#eee; }
 html.dark .chat-bubble.sent { background:#fff; color:#000; }
 html.dark .inbox-item, html.dark .activity-item { border-color:#2a2a2a; }
@@ -341,7 +343,6 @@ async function renderPosts(posts, container, options = {}) {
         clear = true,
         highlightPostId = null,
         observer = null,
-        showHeader = true,
         fallbackAuthor = null
     } = options;
 
@@ -375,48 +376,49 @@ async function renderPosts(posts, container, options = {}) {
         postEl.setAttribute('data-post-id', post.id);
         postEl.setAttribute('data-author', authorEmail.toLowerCase());
 
-        const formattedContent = escapeHtml(post.content || '').replace(
-            /@([a-zA-Z0-9_]+)/g,
-            '<a href="profile.html?user=$1" onclick="goToProfile(\'profile.html?user=$1\', event)" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>'
-        );
+        const formattedContent = post.content
+            ? `<div class="post-text">${escapeHtml(post.content).replace(
+                /@([a-zA-Z0-9_]+)/g,
+                '<a href="profile.html?user=$1" onclick="goToProfile(\'profile.html?user=$1\', event)" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>'
+            )}</div>`
+            : '';
 
         const ownerOrSafetyControls = isOwner
             ? `<div class="delete-btn" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete</div>`
             : `<div class="safety-actions" onclick="event.stopPropagation()">
                 <div class="safety-btn" onclick="reportPost('${post.id}')">Report</div>
-                ${showHeader ? `<div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(authorEmail)}', '${escapeHtml(authorUsername)}')">Block</div>` : ''}
+                <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(authorEmail)}', '${escapeHtml(authorUsername)}')">Block</div>
                </div>`;
 
         const profileUrl = `profile.html?user=${encodeURIComponent(authorUsername || authorEmail)}`;
         const hasStoryClass = post.has_story ? 'has-story' : '';
-        const avatarClickAttr = post.has_story
+        const avatarClickAttr = post.has_story && typeof viewUserStory === 'function'
             ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(authorEmail)}', '${escapeHtml(post.story_created_at || '')}')"`
             : `onclick="goToProfile('${profileUrl}', event)"`;
 
-        const headerHtml = showHeader
-            ? `
-                <div class="post-header-line">
-                    <div class="feed-avatar-container ${hasStoryClass}" ${avatarClickAttr} title="${post.has_story ? 'View Story' : 'View Profile'}">
-                        <img class="post-avatar" src="${authorPfp}">
-                    </div>
-                    <div style="flex-grow: 1;">
-                        <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${authorUsername ? '@' + escapeHtml(authorUsername) : escapeHtml(authorEmail)}</a>${renderVerifiedBadge(authorVerified)}
-                        <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
-                    </div>
-                    ${ownerOrSafetyControls}
+        const authorRowHtml = `
+            <div class="post-header-line">
+                <div class="feed-avatar-container ${hasStoryClass}" ${avatarClickAttr} title="${post.has_story ? 'View Story' : 'View Profile'}">
+                    <img class="post-avatar" src="${authorPfp}">
                 </div>
-            `
-            : `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
-                    ${ownerOrSafetyControls}
+                <div style="flex-grow: 1;">
+                    <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${authorUsername ? '@' + escapeHtml(authorUsername) : escapeHtml(authorEmail)}</a>${renderVerifiedBadge(authorVerified)}
+                    <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
                 </div>
-            `;
+                ${ownerOrSafetyControls}
+            </div>
+        `;
+
+        const mediaHtml = post.media_url ? `<img class="post-media" src="${post.media_url}">` : '';
+
+        // If an image was posted: image first -> PFP & username under it -> text following the image.
+        // If no image: text first -> PFP & username under it.
+        const bodyHtml = post.media_url
+            ? `${mediaHtml}${authorRowHtml}${formattedContent}`
+            : `${formattedContent}${authorRowHtml}`;
 
         postEl.innerHTML = `
-            ${headerHtml}
-            ${post.content ? `<div class="post-text">${formattedContent}</div>` : ''}
-            ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
+            ${bodyHtml}
             <div class="post-actions">
                 <div class="reaction-group">
                     <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like')">
