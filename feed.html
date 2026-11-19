@@ -22,25 +22,31 @@
         .footer-tab.active .footer-icon { stroke: #000; }
         .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
 
-        .post-box { border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; border-radius: 6px; }
+        .post-box { border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; border-radius: 6px; overflow: hidden; }
         .post-box.highlighted { border: 2px solid #000; background: #fafafa; }
-        .post-header-line { display: flex; align-items: center; gap: 10px; }
+        .post-header-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
 
-        /* Story indicator ring on feed avatars */
-        .feed-avatar-container { position: relative; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        /* Story indicator ring & post author avatar */
+        .feed-avatar-container { position: relative; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; cursor: pointer; }
-        .feed-avatar { width: 100%; height: 100%; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; cursor: pointer; display: block; }
+        .feed-avatar, .post-avatar { width: 100%; height: 100%; min-width: 0; min-height: 0; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; cursor: pointer; display: block; flex-shrink: 0; }
+        .feed-avatar-container.has-story .post-avatar,
         .feed-avatar-container.has-story .feed-avatar { border: 2px solid #fff; }
+        html.dark .feed-avatar-container.has-story .post-avatar,
         html.dark .feed-avatar-container.has-story .feed-avatar { border-color: #121212; }
 
         .post-meta { font-weight: bold; font-size: 13px; color: #000; text-decoration: none; cursor: pointer; }
         .post-meta:hover { text-decoration: underline; }
         .post-timestamp { font-size: 11px; color: #666; }
         .post-text { font-size: 13px; line-height: 1.4; word-break: break-word; }
-        .post-media { max-width: 100%; border: 1px solid #ccc; border-radius: 4px; object-fit: contain; }
-        .delete-btn { background: #ef4444; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; user-select: none; }
-        .safety-actions { display: flex; gap: 6px; margin-left: auto; }
-        .safety-btn { background: #f0f0f0; color: #333; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; }
+
+        /* Post media framing */
+        .post-media { display: block; width: 100%; max-width: 100%; max-height: 520px; border: 1px solid #ccc; border-radius: 4px; object-fit: contain; background: #fafafa; }
+        html.dark .post-media { background: #181818; }
+
+        .delete-btn { background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; user-select: none; flex-shrink: 0; }
+        .safety-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+        .safety-btn { background: #f0f0f0; color: #333; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; }
 
         /* Reaction SVG icons */
         .reaction-group { display: flex; gap: 16px; align-items: center; }
@@ -70,7 +76,7 @@
         .user-result-box { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 10px; text-decoration: none; color: inherit; cursor: pointer; }
         .user-result-box:hover { background: #fafafa; }
         html.dark .user-result-box:hover { background: #1c1c1c; }
-        .user-result-avatar { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; }
+        .user-result-avatar { width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; display: block; }
 
         /* Activity Notifications Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
@@ -79,15 +85,10 @@
         .modal-body { padding: 12px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
         .activity-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; cursor: pointer; }
         .activity-item:hover { background: #fafafa; }
-        .activity-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; }
-
-        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .activity-avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; background: #f0f0f0; display: block; }
     </style>
 </head>
 <body>
-    <div id="app-toast"></div>
-
     <header>
         <a href="feed.html" class="brand">Nvaritia</a>
         <div class="header-actions">
@@ -163,15 +164,6 @@
         let activeSearchFilter = 'all';
         let searchDebounceTimer = null;
         let cachedSearchData = { users: [], posts: [] };
-
-        function showToast(message) {
-            const toast = document.getElementById('app-toast');
-            toast.innerText = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
 
         // View active story for a user from the feed
         async function viewUserStory(userEmail, fallbackCreatedAt) {
