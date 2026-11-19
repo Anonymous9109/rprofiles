@@ -291,7 +291,7 @@ function blockAuthorFromFeed(authorEmail, authorUsername) {
     });
 }
 
-async function toggleReaction(postId, reactionType) {
+async function toggleReaction(postId, reactionType, buttonEl = null) {
     const user = getSessionUser();
     if (!user) return promptSignup('like or dislike posts');
     try {
@@ -301,18 +301,33 @@ async function toggleReaction(postId, reactionType) {
             body: JSON.stringify({ postId, reaction: reactionType })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        if (!res.ok) throw new Error(data.error || 'Failed to update reaction');
 
-        const likesEl = document.getElementById(`likes-${postId}`);
-        const dislikesEl = document.getElementById(`dislikes-${postId}`);
-        if (likesEl) likesEl.innerText = data.likes;
-        if (dislikesEl) dislikesEl.innerText = data.dislikes;
+        // Update all matching post boxes (handles duplicate postId across feed & search results)
+        const boxes = document.querySelectorAll(`.post-box[data-post-id="${postId}"]`);
+        if (boxes.length) {
+            boxes.forEach(box => {
+                const lSpan = box.querySelector('.likes-count');
+                const dSpan = box.querySelector('.dislikes-count');
+                if (lSpan) lSpan.innerText = data.likes;
+                if (dSpan) dSpan.innerText = data.dislikes;
 
-        const parent = document.getElementById(`post-${postId}`);
-        if (parent) {
-            const buttons = parent.querySelectorAll('.reaction-btn');
-            if (buttons[0]) buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
-            if (buttons[1]) buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+                const buttons = box.querySelectorAll('.reaction-btn');
+                if (buttons[0]) buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+                if (buttons[1]) buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+            });
+        } else if (buttonEl) {
+            const card = buttonEl.closest('.post-box');
+            if (card) {
+                const lSpan = card.querySelector('.likes-count');
+                const dSpan = card.querySelector('.dislikes-count');
+                if (lSpan) lSpan.innerText = data.likes;
+                if (dSpan) dSpan.innerText = data.dislikes;
+
+                const buttons = card.querySelectorAll('.reaction-btn');
+                if (buttons[0]) buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+                if (buttons[1]) buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+            }
         }
     } catch (err) {
         showToast(err.message);
@@ -329,7 +344,7 @@ async function deletePost(postId) {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to delete');
-            document.getElementById(`post-${postId}`)?.remove();
+            document.querySelectorAll(`.post-box[data-post-id="${postId}"]`).forEach(el => el.remove());
             showToast("Post deleted");
         } catch (err) {
             showToast(err.message);
@@ -372,7 +387,6 @@ async function renderPosts(posts, container, options = {}) {
         const isHighlighted = highlightPostId === post.id;
         const postEl = document.createElement('div');
         postEl.className = `post-box ${isHighlighted ? 'highlighted' : ''}`;
-        postEl.id = `post-${post.id}`;
         postEl.setAttribute('data-post-id', post.id);
         postEl.setAttribute('data-author', authorEmail.toLowerCase());
 
@@ -417,11 +431,11 @@ async function renderPosts(posts, container, options = {}) {
             ${mediaHtml}
             <div class="post-actions">
                 <div class="reaction-group">
-                    <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like')">
-                        ${POST_LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
+                    <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like', this)">
+                        ${POST_LIKE_SVG} <span class="likes-count">${rxData.likes}</span>
                     </div>
-                    <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'dislike')">
-                        ${POST_DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
+                    <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'dislike', this)">
+                        ${POST_DISLIKE_SVG} <span class="dislikes-count">${rxData.dislikes}</span>
                     </div>
                 </div>
                 <div class="reaction-btn" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
@@ -436,7 +450,7 @@ async function renderPosts(posts, container, options = {}) {
     }
 
     if (highlightPostId && observer) {
-        const target = document.getElementById(`post-${highlightPostId}`);
+        const target = container.querySelector(`.post-box[data-post-id="${highlightPostId}"]`);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
@@ -552,10 +566,10 @@ async function loadComments() {
                         <div class="comment-content">${escapeHtml(c.content)}</div>
                         <div class="comment-actions">
                             <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
-                                ${COMMENT_LIKE_SVG} <span id="c-likes-${c.id}">${c.likes}</span>
+                                ${COMMENT_LIKE_SVG} <span class="c-likes-count">${c.likes}</span>
                             </div>
                             <div class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
-                                ${COMMENT_DISLIKE_SVG} <span id="c-dislikes-${c.id}">${c.dislikes}</span>
+                                ${COMMENT_DISLIKE_SVG} <span class="c-dislikes-count">${c.dislikes}</span>
                             </div>
                             <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${escapeHtml(c.username)}')">Reply</span>
                             ${!isMe ? `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>` : ''}
@@ -636,13 +650,13 @@ async function toggleCommentReaction(commentId, reactionType) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to react');
 
-        const likesEl = document.getElementById(`c-likes-${commentId}`);
-        const dislikesEl = document.getElementById(`c-dislikes-${commentId}`);
-        if (likesEl) likesEl.innerText = data.likes;
-        if (dislikesEl) dislikesEl.innerText = data.dislikes;
-
         const parent = document.getElementById(`comment-${commentId}`);
         if (parent) {
+            const lSpan = parent.querySelector('.c-likes-count');
+            const dSpan = parent.querySelector('.c-dislikes-count');
+            if (lSpan) lSpan.innerText = data.likes;
+            if (dSpan) dSpan.innerText = data.dislikes;
+
             const buttons = parent.querySelectorAll('.comment-reaction-btn');
             if (buttons[0]) buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
             if (buttons[1]) buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
