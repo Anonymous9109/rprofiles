@@ -24,6 +24,30 @@ const THEME_CSS = `
 .btn-app-secondary { cursor:pointer; text-align:center; user-select:none; }
 .btn-app { user-select:none; }
 
+.post-actions { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.reaction-group { display: flex; align-items: center; gap: 12px; }
+.reaction-btn,
+html.dark .reaction-btn,
+html.dark .reaction-btn.active-like,
+html.dark .reaction-btn.active-dislike {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 4px 6px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: inherit;
+}
+.reaction-btn.active-like { color: #000 !important; font-weight: 700; }
+html.dark .reaction-btn.active-like { color: #fff !important; font-weight: 700; }
+.reaction-btn.active-like .reaction-icon { stroke: #000; fill: #000; }
+html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
+.reaction-btn.active-dislike { color: #ef4444 !important; font-weight: 700; }
+.reaction-btn.active-dislike .reaction-icon { stroke: #ef4444; fill: #ef4444; }
+
 /* Comments Slide-In Page from Right */
 .comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: #fff; z-index: 2100; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
 .comments-drawer.open { right: 0; }
@@ -64,10 +88,6 @@ html.dark .btn-app-secondary { background:#1c1c1c; color:#eee; border-color:#333
 html.dark :is(button, div)[style*="background: #000"] { background:#fff !important; color:#000 !important; }
 html.dark .comment-post-btn { background:#fff; color:#000; }
 html.dark span[style*="color: #000"], html.dark a[style*="color:#000"] { color:#fff !important; }
-html.dark .reaction-btn { background:#1c1c1c; color:#eee; border-color:#333; }
-html.dark .reaction-btn.active-like { background:#fff; color:#000; border-color:#fff; }
-html.dark .reaction-btn.active-like .reaction-icon { fill:#000; stroke:#000; }
-html.dark .reaction-btn.active-dislike { background:#ef4444; color:#fff; border-color:#ef4444; }
 html.dark .comments-drawer, html.dark .chat-drawer, html.dark .modal-window, html.dark .ugc-dialog-box, html.dark .search-drawer { background:#121212; border-color:#2a2a2a; color:#eee; }
 html.dark .comments-drawer .drawer-header, html.dark .search-drawer-header, html.dark .drawer-header, html.dark .modal-header, html.dark .ugc-dialog-head { background:#181818; border-color:#2a2a2a; color:#eee; }
 html.dark .search-filters { background:#181818; border-color:#2a2a2a; }
@@ -284,6 +304,7 @@ function escapeHtml(str) {
 const POST_LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 const POST_DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
 const POST_COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+const POST_SHARE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
 
 function blockAuthorFromFeed(authorEmail, authorUsername) {
     blockUser(authorEmail, authorUsername, () => {
@@ -350,6 +371,32 @@ async function deletePost(postId) {
             showToast(err.message);
         }
     });
+}
+
+async function sharePost(postId) {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?post=${encodeURIComponent(postId)}`;
+    try {
+        if (navigator.share) {
+            await navigator.share({ url: shareUrl });
+            return;
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return;
+    }
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+            showToast("Link copied");
+            return;
+        }
+    } catch (e) {}
+    const temp = document.createElement('input');
+    temp.value = shareUrl;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand('copy');
+    temp.remove();
+    showToast("Link copied");
 }
 
 async function renderPosts(posts, container, options = {}) {
@@ -437,9 +484,12 @@ async function renderPosts(posts, container, options = {}) {
                     <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'dislike', this)">
                         ${POST_DISLIKE_SVG} <span class="dislikes-count">${rxData.dislikes}</span>
                     </div>
+                    <div class="reaction-btn" aria-label="Comments" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
+                        ${POST_COMMENT_SVG}
+                    </div>
                 </div>
-                <div class="reaction-btn" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
-                    ${POST_COMMENT_SVG} Comments
+                <div class="reaction-btn" aria-label="Share" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                    ${POST_SHARE_SVG}
                 </div>
             </div>
         `;
@@ -458,6 +508,7 @@ async function renderPosts(posts, container, options = {}) {
 window.renderPosts = renderPosts;
 window.toggleReaction = toggleReaction;
 window.deletePost = deletePost;
+window.sharePost = sharePost;
 window.blockAuthorFromFeed = blockAuthorFromFeed;
 
 // ===== COMMENTS DRAWER (CONTROLLED BY APP.JS) =====
