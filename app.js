@@ -51,12 +51,14 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .reaction-btn.active-dislike .reaction-icon { stroke: #ef4444; fill: #ef4444; }
 
 /* Comments Slide-In Page from Right */
-.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: #fff; z-index: 2100; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
+.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; overflow: hidden; }
 .comments-drawer.open { right: 0; }
-.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 15px; }
+.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
 .comments-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
-.comments-drawer .drawer-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; }
-.comments-container { flex-grow: 1; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
+.comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; }
+.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
+#comment-submit-form { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+#comment-input { flex-grow: 1; min-width: 0; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
 .comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
 .comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
 .comment-avatar-link { flex-shrink: 0; display: inline-block; line-height: 0; }
@@ -70,7 +72,7 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
 .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
 .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
-.comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; }
+.comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 
 html.dark { color-scheme: dark; }
 html.dark body { background:#121212; color:#eee; }
@@ -537,9 +539,29 @@ window.blockAuthorFromFeed = blockAuthorFromFeed;
 let _activeCommentsPostId = null;
 let _replyingToCommentId = null;
 let _replyingToCommentUsername = null;
+let _commentsViewportBound = false;
 
 const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+
+function syncCommentsDrawerViewport() {
+    const drawer = document.getElementById('comments-drawer');
+    if (!drawer || !drawer.classList.contains('open')) return;
+    if (window.visualViewport) {
+        drawer.style.height = `${window.visualViewport.height}px`;
+        drawer.style.top = `${window.visualViewport.offsetTop}px`;
+    } else {
+        drawer.style.height = `${window.innerHeight}px`;
+        drawer.style.top = '0px';
+    }
+}
+
+function resetCommentsDrawerViewport() {
+    const drawer = document.getElementById('comments-drawer');
+    if (!drawer) return;
+    drawer.style.height = '';
+    drawer.style.top = '';
+}
 
 function ensureCommentsDrawer() {
     let drawer = document.getElementById('comments-drawer');
@@ -557,12 +579,12 @@ function ensureCommentsDrawer() {
         </div>
         <div class="drawer-body">
             <div class="comments-container" id="comments-list">Loading comments...</div>
-            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px;">
+            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px; flex-shrink: 0;">
                 <span id="replying-to-text">Replying...</span>
                 <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
             </div>
-            <form id="comment-submit-form" style="display: flex; gap: 6px;">
-                <input type="text" id="comment-input" placeholder="Write a comment..." required style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;">
+            <form id="comment-submit-form">
+                <input type="text" id="comment-input" placeholder="Write a comment..." required>
                 <div class="comment-post-btn" id="comment-post-submit-btn">Post</div>
             </form>
         </div>
@@ -571,6 +593,19 @@ function ensureCommentsDrawer() {
 
     document.getElementById('comment-submit-form').addEventListener('submit', submitComment);
     document.getElementById('comment-post-submit-btn').addEventListener('click', submitComment);
+    document.getElementById('comment-input').addEventListener('focus', () => {
+        syncCommentsDrawerViewport();
+        setTimeout(syncCommentsDrawerViewport, 150);
+    });
+
+    if (!_commentsViewportBound) {
+        _commentsViewportBound = true;
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncCommentsDrawerViewport);
+            window.visualViewport.addEventListener('scroll', syncCommentsDrawerViewport);
+        }
+        window.addEventListener('resize', syncCommentsDrawerViewport);
+    }
 
     return drawer;
 }
@@ -580,12 +615,16 @@ function openCommentsDrawer(postId) {
     _activeCommentsPostId = postId;
     cancelReply();
     drawer.classList.add('open');
+    syncCommentsDrawerViewport();
     loadComments();
 }
 
 function closeCommentsDrawer() {
     const drawer = document.getElementById('comments-drawer');
-    if (drawer) drawer.classList.remove('open');
+    if (drawer) {
+        drawer.classList.remove('open');
+        resetCommentsDrawerViewport();
+    }
     _activeCommentsPostId = null;
     cancelReply();
 }
