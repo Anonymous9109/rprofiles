@@ -40,7 +40,7 @@
         .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
         .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
         
-        .post-meta { font-weight: 600; color: #111; text-decoration: none; }
+        .post-meta { font-weight: 600; color: #111; text-decoration: none; display: inline-block; padding: 2px 0; }
         .post-meta:hover { text-decoration: underline; }
         .post-timestamp { color: #666; font-size: 10px; }
         .post-text { font-size: 13px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
@@ -79,7 +79,7 @@
     <!-- Sliding Search Drawer -->
     <div id="search-drawer" class="search-drawer">
         <div class="search-drawer-header">
-            <button class="search-back-btn" onclick="closeSearchDrawer()">
+            <button type="button" class="search-back-btn" onclick="closeSearchDrawer()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
             <input type="text" id="drawer-search-input" class="search-drawer-input" placeholder="Search Nvaritia..." oninput="handleSearch(this.value)">
@@ -102,7 +102,7 @@
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
         </a>
-        <button class="footer-tab" onclick="openSearchDrawer()">
+        <button type="button" class="footer-tab" onclick="openSearchDrawer()">
             <svg class="footer-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             Search
         </button>
@@ -116,11 +116,19 @@
         </a>
     </footer>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
     <script>
         const currentUser = requireAuth(true);
         let currentSearchFilter = 'posts';
         let lastSearchQuery = '';
+
+        function goToProfile(url, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            window.location.href = url;
+        }
 
         function openSearchDrawer() {
             document.getElementById('search-drawer').classList.add('open');
@@ -233,8 +241,8 @@
                     for (const u of data.users) {
                         const profileUrl = `profile.html?user=${encodeURIComponent(u.username)}`;
                         const avatarClickAttr = u.has_story
-                            ? `onclick="viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"`
-                            : `onclick="window.location.href='${profileUrl}'"`;
+                            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"`
+                            : `onclick="goToProfile('${profileUrl}', event)"`;
 
                         const uEl = document.createElement('div');
                         uEl.className = 'user-result-box';
@@ -243,7 +251,7 @@
                                 <div class="feed-avatar-container ${u.has_story ? 'has-story' : ''}" ${avatarClickAttr} title="${u.has_story ? 'View Story' : 'View Profile'}">
                                     <img class="post-avatar" src="${u.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                                 </div>
-                                <span><a href="${profileUrl}" class="post-meta">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
+                                <span><a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
                             </div>
                         `;
                         container.appendChild(uEl);
@@ -285,11 +293,11 @@
                 postEl.setAttribute('data-post-id', post.id);
                 postEl.setAttribute('data-author', post.user_email.toLowerCase());
                 
-                const formattedContent = escapeHtml(post.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
+                const formattedContent = escapeHtml(post.content).replace(/@([a-zA-Z0-9_]+)/g, '<a href="profile.html?user=$1" onclick="goToProfile(\'profile.html?user=$1\', event)" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>');
 
                 const ownerOrSafetyControls = isOwner
-                    ? `<div class="delete-btn" onclick="deletePost('${post.id}')">Delete</div>`
-                    : `<div class="safety-actions">
+                    ? `<div class="delete-btn" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete</div>`
+                    : `<div class="safety-actions" onclick="event.stopPropagation()">
                         <div class="safety-btn" onclick="reportPost('${post.id}')">Report</div>
                         <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(post.user_email)}', '${escapeHtml(post.username || '')}')">Block</div>
                        </div>`;
@@ -297,8 +305,8 @@
                 const profileUrl = `profile.html?user=${encodeURIComponent(post.username || post.user_email)}`;
                 const hasStoryClass = post.has_story ? 'has-story' : '';
                 const avatarClickAttr = post.has_story
-                    ? `onclick="viewUserStory('${escapeHtml(post.user_email)}', '${escapeHtml(post.story_created_at || '')}')"`
-                    : `onclick="window.location.href='${profileUrl}'"`;
+                    ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(post.user_email)}', '${escapeHtml(post.story_created_at || '')}')"`
+                    : `onclick="goToProfile('${profileUrl}', event)"`;
 
                 postEl.innerHTML = `
                     <div class="post-header-line">
@@ -306,7 +314,7 @@
                             <img class="post-avatar" src="${post.pfp_url || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'36\' height=\'36\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/></svg>'}">
                         </div>
                         <div style="flex-grow: 1;">
-                            <a href="${profileUrl}" class="post-meta">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>${renderVerifiedBadge(post.verified)}
+                            <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${post.username ? '@' + escapeHtml(post.username) : escapeHtml(post.user_email)}</a>${renderVerifiedBadge(post.verified)}
                             <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
                         </div>
                         ${ownerOrSafetyControls}
@@ -315,14 +323,14 @@
                     ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
                     <div class="post-actions">
                         <div class="reaction-group">
-                            <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleReaction('${post.id}', 'like')">
+                            <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like')">
                                 ${LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
                             </div>
-                            <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleReaction('${post.id}', 'dislike')">
+                            <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'dislike')">
                                 ${DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
                             </div>
                         </div>
-                        <div class="reaction-btn" onclick="openCommentsDrawer('${post.id}')">
+                        <div class="reaction-btn" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
                             ${COMMENT_SVG} Comments
                         </div>
                     </div>
