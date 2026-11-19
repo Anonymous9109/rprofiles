@@ -25,7 +25,7 @@ const THEME_CSS = `
 .btn-app { user-select:none; }
 
 .post-actions { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.reaction-group { display: flex; align-items: center; gap: 12px; }
+.reaction-group { display: flex; align-items: center; gap: 14px; }
 .reaction-btn,
 html.dark .reaction-btn,
 html.dark .reaction-btn.active-like,
@@ -37,10 +37,12 @@ html.dark .reaction-btn.active-dislike {
     padding: 4px 6px !important;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     cursor: pointer;
     color: inherit;
+    font-size: 13px;
 }
+.reaction-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .reaction-btn.active-like { color: #000 !important; font-weight: 700; }
 html.dark .reaction-btn.active-like { color: #fff !important; font-weight: 700; }
 .reaction-btn.active-like .reaction-icon { stroke: #000; fill: #000; }
@@ -375,21 +377,41 @@ async function deletePost(postId) {
 
 async function sharePost(postId) {
     const shareUrl = `${window.location.origin}${window.location.pathname}?post=${encodeURIComponent(postId)}`;
-    try {
-        if (navigator.share) {
-            await navigator.share({ url: shareUrl });
-            return;
-        }
-    } catch (e) {
-        if (e && e.name === 'AbortError') return;
+    const shareTitle = document.title || 'Nvaritia Post';
+
+    if (window.AndroidBridge) {
+        try {
+            if (typeof window.AndroidBridge.shareUrl === 'function') {
+                window.AndroidBridge.shareUrl(shareUrl, shareTitle);
+                return;
+            }
+            if (typeof window.AndroidBridge.shareText === 'function') {
+                window.AndroidBridge.shareText(shareUrl);
+                return;
+            }
+        } catch (e) {}
     }
+
+    if (typeof navigator.share === 'function') {
+        try {
+            await navigator.share({
+                title: shareTitle,
+                url: shareUrl
+            });
+            return;
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;
+        }
+    }
+
     try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
             await navigator.clipboard.writeText(shareUrl);
             showToast("Link copied");
             return;
         }
     } catch (e) {}
+
     const temp = document.createElement('input');
     temp.value = shareUrl;
     document.body.appendChild(temp);
