@@ -8,6 +8,16 @@ function renderVerifiedBadge(isVerified) {
     return (isVerified === true || Number(isVerified) === 1) ? VERIFIED_BADGE_SVG : '';
 }
 
+function goToProfile(url, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    window.location.href = url;
+}
+
+window.goToProfile = goToProfile;
+
 // ===== THEME, TOAST & CUSTOM DIALOGS =====
 const THEME_CSS = `
 :where(.btn-app-secondary) { background:#fff; color:#111; border:1px solid #ccc; padding:6px 12px; border-radius:4px; font-weight:600; font-size:12px; }
@@ -268,6 +278,176 @@ function escapeHtml(str) {
     });
 }
 
+// ===== POSTS RENDERING & ACTIONS (CONTROLLED BY APP.JS) =====
+const POST_LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+const POST_DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+const POST_COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+
+function blockAuthorFromFeed(authorEmail, authorUsername) {
+    blockUser(authorEmail, authorUsername, () => {
+        document.querySelectorAll(`[data-author="${authorEmail.toLowerCase()}"]`).forEach(el => el.remove());
+    });
+}
+
+async function toggleReaction(postId, reactionType) {
+    const user = getSessionUser();
+    if (!user) return promptSignup('like or dislike posts');
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/reactions/toggle`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ postId, reaction: reactionType })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const likesEl = document.getElementById(`likes-${postId}`);
+        const dislikesEl = document.getElementById(`dislikes-${postId}`);
+        if (likesEl) likesEl.innerText = data.likes;
+        if (dislikesEl) dislikesEl.innerText = data.dislikes;
+
+        const parent = document.getElementById(`post-${postId}`);
+        if (parent) {
+            const buttons = parent.querySelectorAll('.reaction-btn');
+            if (buttons[0]) buttons[0].className = `reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+            if (buttons[1]) buttons[1].className = `reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+        }
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
+async function deletePost(postId) {
+    showConfirmDialog("Delete Post", "Are you sure you want to delete this post?", "Delete", async () => {
+        try {
+            const res = await fetch(`${WORKER_ORIGIN}/api/posts/delete`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ postId })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete');
+            document.getElementById(`post-${postId}`)?.remove();
+            showToast("Post deleted");
+        } catch (err) {
+            showToast(err.message);
+        }
+    });
+}
+
+async function renderPosts(posts, container, options = {}) {
+    if (!container) return;
+    const {
+        clear = true,
+        highlightPostId = null,
+        observer = null,
+        showHeader = true,
+        fallbackAuthor = null
+    } = options;
+
+    if (clear) container.innerHTML = '';
+    if (!posts || (!posts.length && clear)) {
+        container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">No posts recorded.</p>';
+        return;
+    }
+
+    const viewer = getSessionUser();
+    const viewerEmail = viewer && viewer.email ? viewer.email : '';
+    const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+    for (const post of posts) {
+        const authorEmail = post.user_email || (fallbackAuthor && fallbackAuthor.email) || '';
+        const authorUsername = post.username || (fallbackAuthor && fallbackAuthor.username) || '';
+        const authorPfp = post.pfp_url || (fallbackAuthor && fallbackAuthor.pfp_url) || defaultAvatar;
+        const authorVerified = post.verified !== undefined ? post.verified : (fallbackAuthor && fallbackAuthor.verified);
+
+        const isOwner = !!(viewer && viewer.email && authorEmail && viewer.email.toLowerCase() === authorEmail.toLowerCase());
+        let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
+        try {
+            const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${encodeURIComponent(post.id)}&email=${encodeURIComponent(viewerEmail)}`);
+            if (rxRes.ok) rxData = await rxRes.json();
+        } catch (e) {}
+
+        const isHighlighted = highlightPostId === post.id;
+        const postEl = document.createElement('div');
+        postEl.className = `post-box ${isHighlighted ? 'highlighted' : ''}`;
+        postEl.id = `post-${post.id}`;
+        postEl.setAttribute('data-post-id', post.id);
+        postEl.setAttribute('data-author', authorEmail.toLowerCase());
+
+        const formattedContent = escapeHtml(post.content || '').replace(
+            /@([a-zA-Z0-9_]+)/g,
+            '<a href="profile.html?user=$1" onclick="goToProfile(\'profile.html?user=$1\', event)" style="font-weight:600; color:#000; text-decoration:underline;">@$1</a>'
+        );
+
+        const ownerOrSafetyControls = isOwner
+            ? `<div class="delete-btn" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete</div>`
+            : `<div class="safety-actions" onclick="event.stopPropagation()">
+                <div class="safety-btn" onclick="reportPost('${post.id}')">Report</div>
+                ${showHeader ? `<div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(authorEmail)}', '${escapeHtml(authorUsername)}')">Block</div>` : ''}
+               </div>`;
+
+        const profileUrl = `profile.html?user=${encodeURIComponent(authorUsername || authorEmail)}`;
+        const hasStoryClass = post.has_story ? 'has-story' : '';
+        const avatarClickAttr = post.has_story
+            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(authorEmail)}', '${escapeHtml(post.story_created_at || '')}')"`
+            : `onclick="goToProfile('${profileUrl}', event)"`;
+
+        const headerHtml = showHeader
+            ? `
+                <div class="post-header-line">
+                    <div class="feed-avatar-container ${hasStoryClass}" ${avatarClickAttr} title="${post.has_story ? 'View Story' : 'View Profile'}">
+                        <img class="post-avatar" src="${authorPfp}">
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${authorUsername ? '@' + escapeHtml(authorUsername) : escapeHtml(authorEmail)}</a>${renderVerifiedBadge(authorVerified)}
+                        <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
+                    </div>
+                    ${ownerOrSafetyControls}
+                </div>
+            `
+            : `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
+                    ${ownerOrSafetyControls}
+                </div>
+            `;
+
+        postEl.innerHTML = `
+            ${headerHtml}
+            ${post.content ? `<div class="post-text">${formattedContent}</div>` : ''}
+            ${post.media_url ? `<img class="post-media" src="${post.media_url}">` : ''}
+            <div class="post-actions">
+                <div class="reaction-group">
+                    <div class="reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'like')">
+                        ${POST_LIKE_SVG} <span id="likes-${post.id}">${rxData.likes}</span>
+                    </div>
+                    <div class="reaction-btn ${rxData.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="event.stopPropagation(); toggleReaction('${post.id}', 'dislike')">
+                        ${POST_DISLIKE_SVG} <span id="dislikes-${post.id}">${rxData.dislikes}</span>
+                    </div>
+                </div>
+                <div class="reaction-btn" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
+                    ${POST_COMMENT_SVG} Comments
+                </div>
+            </div>
+        `;
+        container.appendChild(postEl);
+        if (observer) {
+            observer.observe(postEl);
+        }
+    }
+
+    if (highlightPostId && observer) {
+        const target = document.getElementById(`post-${highlightPostId}`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+window.renderPosts = renderPosts;
+window.toggleReaction = toggleReaction;
+window.deletePost = deletePost;
+window.blockAuthorFromFeed = blockAuthorFromFeed;
+
 // ===== COMMENTS DRAWER (CONTROLLED BY APP.JS) =====
 let _activeCommentsPostId = null;
 let _replyingToCommentId = null;
@@ -366,11 +546,11 @@ async function loadComments() {
 
             return `
                 <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
-                    <a href="${profileUrl}" class="comment-avatar-link" onclick="event.stopPropagation(); window.location.href='${profileUrl}'; return false;" title="View @${escapeHtml(c.username)}'s profile">
+                    <a href="${profileUrl}" class="comment-avatar-link" onclick="goToProfile('${profileUrl}', event)" title="View @${escapeHtml(c.username)}'s profile">
                         <img class="comment-avatar" src="${c.pfp_url || defaultAvatar}">
                     </a>
                     <div style="flex-grow: 1;">
-                        <a href="${profileUrl}" class="comment-author-link" onclick="event.stopPropagation(); window.location.href='${profileUrl}'; return false;">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
+                        <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
                         <div class="comment-content">${escapeHtml(c.content)}</div>
                         <div class="comment-actions">
                             <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
