@@ -74,6 +74,21 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
 .comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 
+/* Share to Friends & Shared Post Bubble Styles */
+.share-friends-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 50vh; overflow-y: auto; }
+.share-friend-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa; }
+.share-friend-meta { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.share-friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; background: #f0f0f0; flex-shrink: 0; }
+.share-friend-name { font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share-friend-send-btn { background: #000; color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+.share-friend-send-btn:disabled { opacity: 0.55; cursor: default; }
+.share-post-preview { padding: 8px 10px; border-radius: 8px; background: #f4f4f5; font-size: 12px; color: #333; border: 1px solid #e4e4e7; }
+.shared-post-bubble { cursor: pointer; display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+.shared-post-kicker { font-size: 11px; font-weight: 700; opacity: 0.8; }
+.shared-post-snippet { font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.shared-post-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(128,128,128,0.25); }
+.shared-post-cta { font-size: 12px; font-weight: 700; text-decoration: underline; }
+
 html.dark { color-scheme: dark; }
 html.dark body { background:#121212; color:#eee; }
 html.dark header, html.dark footer { background:#121212; border-color:#2a2a2a; }
@@ -113,6 +128,9 @@ html.dark input, html.dark textarea, html.dark select { background:#1c1c1c; colo
 html.dark .custom-file-upload { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark [style*="background: #f0f0f0"] { background:#2a2a2a !important; color:#eee !important; }
 html.dark .report-option { background:#222; border-color:#333; color:#eee; }
+html.dark .share-friend-row { background:#1c1c1c; border-color:#2a2a2a; }
+html.dark .share-post-preview { background:#1c1c1c; border-color:#2a2a2a; color:#ddd; }
+html.dark .share-friend-send-btn { background:#fff; color:#000; }
 
 #offline-banner { position: fixed; bottom: 50px; left: 0; width: 100%; background: #ef4444; color: #fff; text-align: center; font-size: 11px; font-weight: 700; padding: 5px; z-index: 9999; display: none; }
 #toast-box { position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 10000; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-align: center; max-width: 90%; }
@@ -254,7 +272,6 @@ function setSessionUser(user, token) {
     if (token) setSessionToken(token);
 }
 
-// Re-fetch the logged-in user from the server so cached fields (like `verified`) never go stale.
 async function refreshSession() {
     const u = getSessionUser();
     if (!u) return null;
@@ -304,6 +321,214 @@ function escapeHtml(str) {
     });
 }
 
+// ===== SHARED POST HELPERS =====
+const SHARED_POST_PREFIX = "__NVARITIA_POST__:";
+const _sharedPostCache = new Map();
+let _shareTargetPost = null;
+let _friendsCache = null;
+
+function parseSharedPostContent(content) {
+    if (!content || typeof content !== "string") return null;
+
+    if (content.startsWith(SHARED_POST_PREFIX)) {
+        try {
+            const parsed = JSON.parse(content.slice(SHARED_POST_PREFIX.length));
+            if (parsed && parsed.postId) return parsed;
+        } catch (e) {}
+    }
+
+    const match = content.match(/[?&]post=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+        return { postId: match[1], authorUsername: "", content: "", mediaUrl: "" };
+    }
+
+    return null;
+}
+
+function formatInboxPreviewText(rawContent) {
+    const shared = parseSharedPostContent(rawContent);
+    if (!shared) return rawContent || "";
+    return shared.authorUsername
+        ? `Shared @${shared.authorUsername}'s post`
+        : "Shared a post";
+}
+
+function renderSharedPostBubbleHtml(shared, isSent) {
+    const postId = encodeURIComponent(shared.postId);
+    const targetUrl = `feed.html?post=${postId}`;
+    const authorLabel = shared.authorUsername ? `@${escapeHtml(shared.authorUsername)}` : "Post on Nvaritia";
+    const snippet = shared.content ? `<div class="shared-post-snippet">${escapeHtml(shared.content)}</div>` : "";
+    const mediaThumb = shared.mediaUrl
+        ? `<img class="shared-post-thumb" src="${escapeHtml(shared.mediaUrl)}" alt="Shared post media">`
+        : "";
+
+    return `
+        <div class="chat-bubble shared-post-bubble ${isSent ? 'sent' : 'received'}" onclick="window.location.href='${targetUrl}'">
+            <div class="shared-post-kicker">Shared Post • ${authorLabel}</div>
+            ${snippet}
+            ${mediaThumb}
+            <div class="shared-post-cta">View in Feed →</div>
+        </div>
+    `;
+}
+
+function copyPostLinkFallback(shareUrl) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(shareUrl).then(() => showToast("Link copied")).catch(() => {
+            execCopyFallback(shareUrl);
+        });
+        return;
+    }
+    execCopyFallback(shareUrl);
+}
+
+function execCopyFallback(text) {
+    const temp = document.createElement('input');
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand('copy');
+    temp.remove();
+    showToast("Link copied");
+}
+
+function ensureShareFriendsModal() {
+    let overlay = document.getElementById('share-friends-overlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'share-friends-overlay';
+    overlay.className = 'ugc-overlay';
+    overlay.innerHTML = `
+        <div class="ugc-dialog-box">
+            <div class="ugc-dialog-head">
+                <span>Share to Friends</span>
+                <span style="cursor:pointer;" id="share-friends-close">✕</span>
+            </div>
+            <div class="ugc-dialog-body">
+                <div id="share-post-summary" class="share-post-preview"></div>
+                <input type="text" id="share-friend-search" placeholder="Search friends..." style="padding:8px 10px; border:1px solid #ccc; border-radius:6px; font-size:13px;">
+                <div id="share-friends-list" class="share-friends-list">
+                    <div style="text-align:center; padding:14px; color:#666;">Loading friends...</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
+                    <button type="button" id="share-copy-link-btn" class="ugc-btn ugc-btn-cancel">Copy Link</button>
+                    <button type="button" id="share-done-btn" class="ugc-btn ugc-btn-cancel">Done</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeModal = () => { overlay.style.display = 'none'; };
+    document.getElementById('share-friends-close').addEventListener('click', closeModal);
+    document.getElementById('share-done-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    document.getElementById('share-friend-search').addEventListener('input', (e) => {
+        renderFriendsInShareModal(e.target.value.trim().toLowerCase());
+    });
+
+    document.getElementById('share-copy-link-btn').addEventListener('click', () => {
+        if (!_shareTargetPost) return;
+        copyPostLinkFallback(`${window.location.origin}/feed.html?post=${encodeURIComponent(_shareTargetPost.id)}`);
+    });
+
+    return overlay;
+}
+
+function renderFriendsInShareModal(filterText = "") {
+    const listEl = document.getElementById('share-friends-list');
+    if (!listEl) return;
+
+    const friends = Array.isArray(_friendsCache) ? _friendsCache : [];
+    const filtered = filterText
+        ? friends.filter(f => (f.username || "").toLowerCase().includes(filterText) || (f.email || "").toLowerCase().includes(filterText))
+        : friends;
+
+    if (!filtered.length) {
+        listEl.innerHTML = `<p style="color:#666; text-align:center; padding:12px;">${friends.length ? "No matching friends." : "No friends yet. Add friends from their profile to share posts."}</p>`;
+        return;
+    }
+
+    const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+    listEl.innerHTML = '';
+
+    for (const friend of filtered) {
+        const row = document.createElement('div');
+        row.className = 'share-friend-row';
+        row.innerHTML = `
+            <div class="share-friend-meta">
+                <img class="share-friend-avatar" src="${friend.pfp_url || defaultAvatar}" alt="">
+                <span class="share-friend-name">@${escapeHtml(friend.username)}${renderVerifiedBadge(friend.verified)}</span>
+            </div>
+            <button type="button" class="share-friend-send-btn">Send</button>
+        `;
+        const btn = row.querySelector('.share-friend-send-btn');
+        btn.addEventListener('click', async () => {
+            if (!_shareTargetPost) return;
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/posts/share`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        postId: _shareTargetPost.id,
+                        recipientEmail: friend.email,
+                        authorUsername: _shareTargetPost.username || "",
+                        snippet: _shareTargetPost.content || "",
+                        mediaUrl: _shareTargetPost.media_url || ""
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Could not share post");
+                btn.innerText = "Sent ✓";
+                showToast(`Shared with @${friend.username}`);
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "Send";
+                showToast(err.message);
+            }
+        });
+        listEl.appendChild(row);
+    }
+}
+
+async function sharePost(postId) {
+    const user = getSessionUser();
+    if (!user) return promptSignup('share posts with friends');
+
+    const postMeta = _sharedPostCache.get(postId) || { id: postId, username: "", content: "", media_url: "" };
+    _shareTargetPost = postMeta;
+
+    const modal = ensureShareFriendsModal();
+    const summaryEl = document.getElementById('share-post-summary');
+    const searchEl = document.getElementById('share-friend-search');
+    const listEl = document.getElementById('share-friends-list');
+
+    summaryEl.innerHTML = postMeta.username
+        ? `<strong>@${escapeHtml(postMeta.username)}</strong>${postMeta.content ? `: ${escapeHtml(postMeta.content)}` : " (Media post)"}`
+        : `Post ID: ${escapeHtml(postId)}`;
+    searchEl.value = "";
+    listEl.innerHTML = `<div style="text-align:center; padding:14px; color:#666;">Loading friends...</div>`;
+    modal.style.display = 'flex';
+
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/friends/list`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load friends");
+        _friendsCache = data.friends || [];
+        renderFriendsInShareModal("");
+    } catch (err) {
+        listEl.innerHTML = `<p style="color:#ef4444; text-align:center; padding:12px;">${escapeHtml(err.message)}</p>`;
+    }
+}
+
+window.parseSharedPostContent = parseSharedPostContent;
+window.formatInboxPreviewText = formatInboxPreviewText;
+window.renderSharedPostBubbleHtml = renderSharedPostBubbleHtml;
+
 // ===== POSTS RENDERING & ACTIONS (CONTROLLED BY APP.JS) =====
 const POST_LIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 const POST_DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
@@ -328,7 +553,6 @@ async function toggleReaction(postId, reactionType, buttonEl = null) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to update reaction');
 
-        // Update all matching post boxes (handles duplicate postId across feed & search results)
         const boxes = document.querySelectorAll(`.post-box[data-post-id="${postId}"]`);
         if (boxes.length) {
             boxes.forEach(box => {
@@ -377,52 +601,6 @@ async function deletePost(postId) {
     });
 }
 
-async function sharePost(postId) {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?post=${encodeURIComponent(postId)}`;
-    const shareTitle = document.title || 'Nvaritia Post';
-
-    if (window.AndroidBridge) {
-        try {
-            if (typeof window.AndroidBridge.shareUrl === 'function') {
-                window.AndroidBridge.shareUrl(shareUrl, shareTitle);
-                return;
-            }
-            if (typeof window.AndroidBridge.shareText === 'function') {
-                window.AndroidBridge.shareText(shareUrl);
-                return;
-            }
-        } catch (e) {}
-    }
-
-    if (typeof navigator.share === 'function') {
-        try {
-            await navigator.share({
-                title: shareTitle,
-                url: shareUrl
-            });
-            return;
-        } catch (e) {
-            if (e && e.name === 'AbortError') return;
-        }
-    }
-
-    try {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            await navigator.clipboard.writeText(shareUrl);
-            showToast("Link copied");
-            return;
-        }
-    } catch (e) {}
-
-    const temp = document.createElement('input');
-    temp.value = shareUrl;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand('copy');
-    temp.remove();
-    showToast("Link copied");
-}
-
 async function renderPosts(posts, container, options = {}) {
     if (!container) return;
     const {
@@ -447,6 +625,14 @@ async function renderPosts(posts, container, options = {}) {
         const authorUsername = post.username || (fallbackAuthor && fallbackAuthor.username) || '';
         const authorPfp = post.pfp_url || (fallbackAuthor && fallbackAuthor.pfp_url) || defaultAvatar;
         const authorVerified = post.verified !== undefined ? post.verified : (fallbackAuthor && fallbackAuthor.verified);
+
+        _sharedPostCache.set(post.id, {
+            id: post.id,
+            user_email: authorEmail,
+            username: authorUsername,
+            content: post.content || "",
+            media_url: post.media_url || ""
+        });
 
         const isOwner = !!(viewer && viewer.email && authorEmail && viewer.email.toLowerCase() === authorEmail.toLowerCase());
         let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
@@ -1009,7 +1195,6 @@ function ensureStoryPlayer() {
     const replyInput = document.getElementById('story-reply-input');
 
     document.getElementById('story-reply-bar').addEventListener('submit', (e) => { e.preventDefault(); sendStoryReply(); });
-    // Pause the story while typing, resume afterwards
     replyInput.addEventListener('focus', () => { player.pause(); });
     replyInput.addEventListener('blur', () => { if (document.getElementById('story-viewer-modal').classList.contains('open')) player.play().catch(() => {}); });
 
@@ -1113,14 +1298,10 @@ window.openStory = openStory;
 window.closeStoryModal = closeStoryModal;
 
 // ===== FCM TOKEN REGISTRATION =====
-// Single source of truth. Do NOT redefine these functions in any HTML page.
-// Called from Java via evaluateJavascript (1 arg) and from tryRegisterFcmWithRetry.
 let _fcmRegistered = false;
 
 function onFcmTokenReady(fcmToken, authToken) {
     authToken = authToken || getSessionToken();
-    // Not logged in yet (or no token yet): skip. The DOMContentLoaded
-    // handler below retries on every page once a session exists.
     if (!fcmToken || !authToken || _fcmRegistered) return;
     _fcmRegistered = true;
 
@@ -1155,7 +1336,6 @@ function tryRegisterFcmWithRetry(authToken, retries = 5) {
                 return;
             }
         } else {
-            // Not running inside the Android app (normal browser): nothing to do.
             return;
         }
 
