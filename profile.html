@@ -22,6 +22,7 @@
         .pfp-container { position: relative; width: 86px; height: 86px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .story-ring-wrapper { position: relative; width: 82px; height: 82px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; }
+        .story-ring-wrapper.has-note:not(.has-story) { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 3px; }
         .profile-pfp { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; }
         .add-story-badge { position: absolute; bottom: 0px; left: 0px; width: 26px; height: 26px; background: #000; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
@@ -180,6 +181,7 @@
         </div>
     </div>
     <script src="app.js?v=4"></script>
+    <script src="music-notes.js"></script>
     <script>
         const loggedUser = requireAuth(true);
         const urlParams = new URLSearchParams(window.location.search);
@@ -188,6 +190,7 @@
         const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
         let activeProfileUser = null;
         let activeStory = null;
+        let activeNote = null;
         let isFollowingActiveUser = false;
         let profileFollowData = { followers: [], following: [] };
 
@@ -201,6 +204,7 @@
 
                 activeProfileUser = data.user;
                 activeStory = data.story || null;
+                activeNote = data.note || null;
                 isFollowingActiveUser = data.is_following;
                 profileFollowData = {
                     followers: data.followers || [],
@@ -218,8 +222,9 @@
                 document.getElementById('add-story-btn').style.display = isOwner ? 'flex' : 'none';
 
                 const ringContainer = document.getElementById('story-ring-container');
+                ringContainer.classList.remove('has-story', 'has-note');
                 if (activeStory) ringContainer.classList.add('has-story');
-                else ringContainer.classList.remove('has-story');
+                else if (activeNote) ringContainer.classList.add('has-note');
 
                 const verificationBtnContainer = document.getElementById('verification-btn-container');
                 const controlsEl = document.getElementById('owner-controls');
@@ -238,6 +243,7 @@
 
                     controlsEl.innerHTML = `
                         <button type="button" class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
+                        <button type="button" class="btn-app-secondary" style="flex: 1; border-color: #eab308; background: #fef9c3; color: #111;" onclick="${activeNote ? "openNoteViewer(activeNote, 'Your', true, loadProfile)" : "openNotePicker(() => loadProfile())"}">${activeNote ? '♫ My Note' : '+ Song Note'}</button>
                         <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
                     `;
                     document.getElementById('edit-username').value = activeProfileUser.username || '';
@@ -262,6 +268,7 @@
                         controlsEl.innerHTML = `
                             <button type="button" id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
                             <button type="button" id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
+                            ${activeNote ? `<button type="button" class="btn-app-secondary" style="padding: 8px; border-color: #eab308; background: #fef9c3; color: #111;" onclick="openNoteViewer(activeNote, '@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}\\'s', false)">♫ Note</button>` : ''}
                             <button type="button" class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
                         `;
                         setFriendButton(fStatus);
@@ -386,11 +393,16 @@
         }
 
         function openProfileStory() {
-            if (!activeStory) {
-                if (!loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase()) triggerStoryUpload();
+            const isOwner = !loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
+            if (activeStory) {
+                openStory({ mediaUrl: activeStory.media_url, createdAt: activeStory.created_at, ownerEmail: activeProfileUser.email, onDeleted: loadProfile });
                 return;
             }
-            openStory({ mediaUrl: activeStory.media_url, createdAt: activeStory.created_at, ownerEmail: activeProfileUser.email, onDeleted: loadProfile });
+            if (activeNote) {
+                openNoteViewer(activeNote, isOwner ? 'Your' : `@${activeProfileUser.username || activeProfileUser.email}'s`, isOwner, loadProfile);
+                return;
+            }
+            if (isOwner) triggerStoryUpload();
         }
 
         function setFriendButton(status) {
