@@ -290,14 +290,26 @@
 
         const style = document.createElement('style');
         style.textContent = `
+            .story-ring-wrapper {
+                width: clamp(60px, 17vw, 76px);
+                height: clamp(60px, 17vw, 76px);
+            }
+            .drawer-header .story-ring-wrapper {
+                width: clamp(34px, 9.5vw, 42px);
+                height: clamp(34px, 9.5vw, 42px);
+            }
             .story-ring-wrapper.has-note:not(.has-story) {
                 background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-                padding: 2.5px;
+                padding: 3px;
                 cursor: pointer;
+            }
+            .drawer-header .story-ring-wrapper.has-story,
+            .drawer-header .story-ring-wrapper.has-note:not(.has-story) {
+                padding: 2px;
             }
             .story-ring-wrapper.has-note:not(.has-story) .avatar,
             .story-ring-wrapper.has-note:not(.has-story) .profile-pfp {
-                border: 2px solid #fff;
+                border: 2.5px solid #fff;
             }
             html.dark .story-ring-wrapper.has-note:not(.has-story) .avatar,
             html.dark .story-ring-wrapper.has-note:not(.has-story) .profile-pfp {
@@ -305,54 +317,62 @@
             }
             .feed-avatar-container.has-note:not(.has-story) {
                 background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-                padding: 2px;
+                padding: 2.5px;
             }
-            .note-tray-card {
+            .note-tray-card,
+            .story-tray-item {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                width: clamp(66px, 18vw, 78px);
+                width: clamp(78px, 21vw, 96px);
                 flex-shrink: 0;
                 cursor: pointer;
                 user-select: none;
             }
+            .stories-tray .story-ring-wrapper,
             .note-tray-ring {
-                width: clamp(54px, 15vw, 64px);
-                height: clamp(54px, 15vw, 64px);
+                width: clamp(64px, 18vw, 80px);
+                height: clamp(64px, 18vw, 80px);
                 border-radius: 50%;
-                background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-                padding: 2.5px;
+                padding: 3px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+            }
+            .note-tray-ring {
+                background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
             }
             .note-tray-ring img {
                 width: 100%;
                 height: 100%;
                 border-radius: 50%;
                 object-fit: cover;
-                border: 2px solid #fff;
+                border: 2.5px solid #fff;
                 background: #f0f0f0;
                 display: block;
             }
+            html.dark .note-tray-ring img {
+                border-color: #121212;
+            }
             .note-tray-song {
-                font-size: 10px;
+                font-size: 10.5px;
                 font-weight: 600;
                 color: #854d0e;
                 background: #fef9c3;
-                border-radius: 8px;
-                padding: 2px 5px;
-                margin-top: 4px;
+                border-radius: 999px;
+                padding: 2px 7px;
+                margin-top: 5px;
                 max-width: 100%;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            .note-tray-user {
-                font-size: 11px;
+            .note-tray-user,
+            .story-tray-name {
+                font-size: 12px;
                 color: #222;
-                margin-top: 2px;
+                margin-top: 5px;
                 max-width: 100%;
                 white-space: nowrap;
                 overflow: hidden;
