@@ -1,7 +1,5 @@
 (function () {
-    const AUDIUS_APP_NAME = 'Nvaritia';
     const DEFAULT_CLIP_SECONDS = 15;
-    let audiusHost = null;
 
     let noteAudio = window.__nvaritiaNoteAudio || (window.__nvaritiaNoteAudio = new Audio());
     noteAudio.preload = 'auto';
@@ -17,7 +15,6 @@
     let pickerTrackDuration = 0;
     let isPickerPreviewPlaying = false;
     let clipWatchInterval = null;
-    let activeViewerClipEnd = null;
 
     function esc(str) {
         return String(str || '').replace(/[&<>"']/g, (m) => ({
@@ -32,33 +29,11 @@
         return `${mins}:${String(rem).padStart(2, '0')}`;
     }
 
-    async function getAudiusHost() {
-        if (audiusHost) return audiusHost;
-        try {
-            const res = await fetch('https://api.audius.co');
-            const data = await res.json();
-            const hosts = Array.isArray(data && data.data) ? data.data : [];
-            if (hosts.length > 0) {
-                audiusHost = hosts[Math.floor(Math.random() * Math.min(hosts.length, 3))];
-                return audiusHost;
-            }
-        } catch (e) {}
-        audiusHost = 'https://discoveryprovider.audius.co';
-        return audiusHost;
-    }
-
-    function buildAudiusStreamUrl(trackId, host) {
-        if (!trackId) return '';
-        const base = host || audiusHost || 'https://discoveryprovider.audius.co';
-        return `${base}/v1/tracks/${encodeURIComponent(trackId)}/stream?app_name=${encodeURIComponent(AUDIUS_APP_NAME)}`;
-    }
-
     function clearClipWatcher() {
         if (clipWatchInterval) {
             clearInterval(clipWatchInterval);
             clipWatchInterval = null;
         }
-        activeViewerClipEnd = null;
     }
 
     function stopPickerPreview() {
@@ -110,15 +85,10 @@
 
         const seekAndPlay = () => {
             try {
-                if (start > 0 && noteAudio.duration > start) {
-                    noteAudio.currentTime = start;
-                } else {
-                    noteAudio.currentTime = start;
-                }
+                noteAudio.currentTime = Math.min(start, Math.max(0, (noteAudio.duration || start) - 1));
             } catch (e) {}
 
             if (end) {
-                activeViewerClipEnd = end;
                 clipWatchInterval = setInterval(() => {
                     if (noteAudio.currentTime >= end) {
                         stopNoteAudio();
@@ -153,17 +123,18 @@
         const totalLabel = document.getElementById('note-track-total-label');
         if (!slider || !rangeLabel || !totalLabel) return;
 
-        const maxDur = pickerTrackDuration > 0 ? pickerTrackDuration : Math.max(pickerStartSec + pickerDurationSec + 30, 180);
-        const maxStart = Math.max(0, maxDur - pickerDurationSec);
+        const maxDur = pickerTrackDuration > 0 ? pickerTrackDuration : 30;
+        const effectiveDur = Math.min(pickerDurationSec, maxDur);
+        const maxStart = Math.max(0, maxDur - effectiveDur);
 
         if (pickerStartSec > maxStart) pickerStartSec = maxStart;
         slider.max = String(maxStart);
         slider.value = String(pickerStartSec);
         if (durSelect) durSelect.value = String(pickerDurationSec);
 
-        const endSec = Math.min(maxDur, pickerStartSec + pickerDurationSec);
-        rangeLabel.innerText = `${formatTime(pickerStartSec)} – ${formatTime(endSec)} (${pickerDurationSec}s)`;
-        totalLabel.innerText = pickerTrackDuration > 0 ? `Track length: ${formatTime(pickerTrackDuration)}` : 'Loading length...';
+        const endSec = Math.min(maxDur, pickerStartSec + effectiveDur);
+        rangeLabel.innerText = `${formatTime(pickerStartSec)} – ${formatTime(endSec)} (${effectiveDur}s)`;
+        totalLabel.innerText = pickerTrackDuration > 0 ? `Preview length: ${formatTime(pickerTrackDuration)}` : 'Preview: up to 0:30';
     }
 
     window.onClipSliderInput = function (val) {
@@ -181,7 +152,7 @@
 
     window.togglePickerClipPreview = function () {
         if (!selectedTrack || !selectedTrack.previewUrl) {
-            if (typeof showToast === 'function') showToast('No audio stream available for this track.');
+            if (typeof showToast === 'function') showToast('No preview audio available for this track.');
             return;
         }
         const btn = document.getElementById('picker-preview-btn');
@@ -198,8 +169,10 @@
             noteAudio.src = selectedTrack.previewUrl;
         }
 
-        const startAt = pickerStartSec;
-        const stopAt = startAt + pickerDurationSec;
+        const maxDur = pickerTrackDuration > 0 ? pickerTrackDuration : 30;
+        const effectiveDur = Math.min(pickerDurationSec, maxDur);
+        const startAt = Math.min(pickerStartSec, Math.max(0, maxDur - effectiveDur));
+        const stopAt = startAt + effectiveDur;
 
         const playFromClip = () => {
             try { noteAudio.currentTime = startAt; } catch (e) {}
@@ -209,7 +182,6 @@
                     return;
                 }
                 if (noteAudio.currentTime >= stopAt) {
-                    // Loop the chosen segment during preview so the user can judge it
                     try { noteAudio.currentTime = startAt; } catch (e) {}
                 }
             }, 200);
@@ -239,7 +211,7 @@
         selectedTrack = track;
         pickerStartSec = 0;
         pickerDurationSec = DEFAULT_CLIP_SECONDS;
-        pickerTrackDuration = Number(track.durationSec) || 0;
+        pickerTrackDuration = Number(track.durationSec) || 30;
 
         const box = document.getElementById('note-trimmer-box');
         const titleEl = document.getElementById('note-trimmer-title');
@@ -431,8 +403,8 @@
                 </div>
                 <div class="note-modal-body">
                     <input type="text" id="note-text-input" maxlength="80" placeholder="Add a short note (optional)..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
-                    <input type="text" id="note-song-search" placeholder="Search a song or artist on Audius..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
-                    <div id="note-search-status" style="font-size:11px;color:#666;">Type a song title to search via Audius.</div>
+                    <input type="text" id="note-song-search" placeholder="Search a song or artist..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+                    <div id="note-search-status" style="font-size:11px;color:#666;">Type a song title to search.</div>
                     <div id="note-search-results" class="note-search-results" style="display:none;"></div>
 
                     <div id="note-trimmer-box" class="note-trimmer-box">
@@ -441,16 +413,16 @@
                             <span>Part: <strong id="note-clip-range-label">0:00 – 0:15 (15s)</strong></span>
                             <span id="note-track-total-label"></span>
                         </div>
-                        <input type="range" id="note-start-slider" min="0" max="120" value="0" step="1" oninput="onClipSliderInput(this.value)" style="width:100%;accent-color:#eab308;cursor:pointer;">
+                        <input type="range" id="note-start-slider" min="0" max="25" value="0" step="1" oninput="onClipSliderInput(this.value)" style="width:100%;accent-color:#eab308;cursor:pointer;">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                             <button type="button" id="picker-preview-btn" onclick="togglePickerClipPreview()" style="padding:6px 12px;border:none;background:#111;color:#fff;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">▶ Preview Clip</button>
                             <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#444;">
                                 Length:
                                 <select id="note-clip-length" onchange="onClipLengthChange(this.value)" style="padding:4px 6px;border:1px solid #ccc;border-radius:6px;background:#fff;font-size:11px;">
+                                    <option value="5">5s</option>
                                     <option value="10">10s</option>
                                     <option value="15" selected>15s</option>
                                     <option value="20">20s</option>
-                                    <option value="30">30s</option>
                                 </select>
                             </label>
                         </div>
@@ -488,25 +460,24 @@
                 document.getElementById('note-search-status').innerText = 'Type at least 2 characters to search.';
                 return;
             }
-            document.getElementById('note-search-status').innerText = 'Searching Audius...';
-            searchDebounce = setTimeout(() => searchAudiusSongs(q), 350);
+            document.getElementById('note-search-status').innerText = 'Searching...';
+            searchDebounce = setTimeout(() => searchItunesSongs(q), 400);
         });
     }
 
-    async function searchAudiusSongs(query) {
+    async function searchItunesSongs(query) {
         const statusEl = document.getElementById('note-search-status');
         const listEl = document.getElementById('note-search-results');
         try {
-            const host = await getAudiusHost();
-            const res = await fetch(`${host}/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=${encodeURIComponent(AUDIUS_APP_NAME)}&limit=8`);
+            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
             if (res.status === 429) {
                 statusEl.innerText = 'Search rate limit reached briefly—wait a few seconds and try again.';
                 return;
             }
             const data = await res.json();
-            const tracks = (data.data || []).filter(t => t && t.id && t.title);
+            const tracks = (data.results || []).filter(t => t.trackId && t.trackName);
             if (!tracks.length) {
-                statusEl.innerText = 'No matching tracks found on Audius.';
+                statusEl.innerText = 'No matching songs found.';
                 listEl.style.display = 'none';
                 return;
             }
@@ -515,39 +486,33 @@
             listEl.innerHTML = '';
 
             tracks.forEach(t => {
-                const artwork = (t.artwork && (t.artwork['150x150'] || t.artwork['480x480'] || t.artwork['1000x1000'])) || '';
-                const artistName = (t.user && (t.user.name || t.user.handle)) || 'Unknown Artist';
-                const streamUrl = buildAudiusStreamUrl(t.id, host);
-                const trackUrl = t.permalink ? `https://audius.co${t.permalink}` : '';
-                const durationSec = Number(t.duration) || 0;
-
+                const artwork = (t.artworkUrl100 || '').replace('100x100', '200x200');
                 const row = document.createElement('div');
                 row.className = 'note-track-row';
                 row.innerHTML = `
                     <img src="${esc(artwork)}" alt="">
                     <div style="min-width:0;flex:1;">
-                        <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.title)}</div>
-                        <div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(artistName)}${durationSec ? ` · ${formatTime(durationSec)}` : ''}</div>
+                        <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.trackName)}</div>
+                        <div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.artistName || '')}</div>
                     </div>
                 `;
                 row.onclick = () => {
                     listEl.querySelectorAll('.note-track-row').forEach(r => r.classList.remove('selected'));
                     row.classList.add('selected');
                     selectTrackForTrimming({
-                        trackId: String(t.id),
-                        trackName: t.title,
-                        artistName,
+                        trackId: String(t.trackId),
+                        trackName: t.trackName,
+                        artistName: t.artistName || 'Unknown Artist',
                         artworkUrl: artwork,
-                        previewUrl: streamUrl,
-                        trackViewUrl: trackUrl,
-                        durationSec
+                        previewUrl: t.previewUrl || '',
+                        trackViewUrl: t.trackViewUrl || '',
+                        durationSec: 30
                     });
                 };
                 listEl.appendChild(row);
             });
         } catch (err) {
-            audiusHost = null;
-            statusEl.innerText = 'Could not reach Audius search right now.';
+            statusEl.innerText = 'Could not reach song search right now.';
         }
     }
 
@@ -558,14 +523,14 @@
         selectedTrack = null;
         pickerStartSec = 0;
         pickerDurationSec = DEFAULT_CLIP_SECONDS;
-        pickerTrackDuration = 0;
+        pickerTrackDuration = 30;
         createCallback = typeof onCreated === 'function' ? onCreated : null;
         document.getElementById('note-text-input').value = '';
         document.getElementById('note-song-search').value = '';
         document.getElementById('note-search-results').style.display = 'none';
         document.getElementById('note-search-results').innerHTML = '';
         document.getElementById('note-trimmer-box').style.display = 'none';
-        document.getElementById('note-search-status').innerText = 'Type a song title to search via Audius.';
+        document.getElementById('note-search-status').innerText = 'Type a song title to search.';
         document.getElementById('note-picker-modal').classList.add('open');
     };
 
@@ -642,7 +607,7 @@
         const bodyEl = document.getElementById('note-viewer-body');
         titleEl.innerText = ownerLabel ? `${ownerLabel} Music Note` : 'Music Note';
 
-        const streamUrl = note.preview_url || note.previewUrl || buildAudiusStreamUrl(note.track_id || note.trackId);
+        const streamUrl = note.preview_url || note.previewUrl || '';
         const safeStream = streamUrl.replace(/'/g, "\\'");
         const trackLink = note.track_view_url || note.trackViewUrl || '';
         const clipStart = Math.max(0, Number(note.clip_start ?? note.clipStart ?? 0) || 0);
@@ -660,7 +625,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 ${streamUrl ? `<button type="button" id="note-play-btn" onclick="toggleNoteAudio('${safeStream}', this, ${clipStart}, ${clipDuration})" style="padding:7px 14px;border:none;background:#000;color:#fff;border-radius:6px;font-weight:600;cursor:pointer;">⏸ Pause</button>` : ''}
-                ${trackLink ? `<a href="${esc(trackLink)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">Open on Audius ↗</a>` : ''}
+                ${trackLink ? `<a href="${esc(trackLink)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">Open on Apple Music ↗</a>` : ''}
                 ${isOwner ? `<button type="button" id="change-note-btn" style="margin-left:auto;padding:7px 12px;border:1px solid #eab308;background:#fef9c3;color:#111;border-radius:6px;font-weight:600;cursor:pointer;">Change</button>` : ''}
                 ${isOwner ? `<button type="button" id="delete-note-btn" style="padding:7px 12px;border:1px solid #ef4444;background:#fff;color:#ef4444;border-radius:6px;font-weight:600;cursor:pointer;">Delete</button>` : ''}
             </div>
