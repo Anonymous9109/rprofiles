@@ -24,6 +24,14 @@
         .form-row label { font-weight: 600; color: #555; font-size: 12px; }
         .form-row textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; min-height: 120px; resize: vertical; }
 
+        .tag-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; }
+        .tag-input-wrap { display: flex; gap: 6px; width: 100%; }
+        .tag-input { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; }
+        .tag-add-btn { background: #111; color: #fff; border: 1px solid #111; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .tag-chip { background: #f3f4f6; border: 1px solid #d1d5db; color: #111; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .tag-chip:hover { background: #e5e7eb; }
+        .tag-meta { font-size: 11px; color: #666; }
+
         .custom-file-upload { display: inline-block; padding: 10px 14px; background: #fafafa; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: center; color: #111; }
         .custom-file-upload:hover { background: #f0f0f0; }
         input[type="file"] { display: none; }
@@ -42,8 +50,20 @@
         <div id="post-error" class="error-msg"></div>
         <form onsubmit="submitPost(event)">
             <div class="form-row">
-                <label>What's on your mind? (Use @username to tag people)</label>
-                <textarea id="post-text" placeholder="Type your post here..."></textarea>
+                <label>What's on your mind? (Use @username to tag people and #tags for topics)</label>
+                <textarea id="post-text" placeholder="Type your post here... e.g. Shipped a new build today #coding #buildinpublic" oninput="updateTagCount()"></textarea>
+                <div class="tag-input-wrap">
+                    <input type="text" id="hashtag-input" class="tag-input" placeholder="Add a hashtag (e.g. gaming, tech, art)" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag();}">
+                    <button type="button" class="tag-add-btn" onclick="addHashtag()">+ Tag</button>
+                </div>
+                <div class="tag-bar" id="quick-tags">
+                    <button type="button" class="tag-chip" onclick="insertTag('trending')">#trending</button>
+                    <button type="button" class="tag-chip" onclick="insertTag('tech')">#tech</button>
+                    <button type="button" class="tag-chip" onclick="insertTag('gaming')">#gaming</button>
+                    <button type="button" class="tag-chip" onclick="insertTag('life')">#life</button>
+                    <button type="button" class="tag-chip" onclick="insertTag('creative')">#creative</button>
+                </div>
+                <div class="tag-meta" id="tag-counter">0 / 6 hashtags used</div>
             </div>
             <div class="form-row">
                 <label>Attach Media</label>
@@ -80,6 +100,51 @@
     <script src="app.js"></script>
     <script>
         const currentUser = requireAuth();
+        const MAX_HASHTAGS = 6;
+
+        function extractTags(text) {
+            const matches = (text || "").match(/#[a-zA-Z0-9_]{1,32}/g) || [];
+            return [...new Set(matches.map(t => t.toLowerCase()))];
+        }
+
+        function updateTagCount() {
+            const textarea = document.getElementById('post-text');
+            const tags = extractTags(textarea.value);
+            const counter = document.getElementById('tag-counter');
+            counter.innerText = `${tags.length} / ${MAX_HASHTAGS} hashtags used`;
+            counter.style.color = tags.length > MAX_HASHTAGS ? '#b91c1c' : '#666';
+        }
+
+        function insertTag(rawTag) {
+            const clean = String(rawTag || '').replace(/^#+/, '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 32);
+            if (!clean) return;
+
+            const textarea = document.getElementById('post-text');
+            const tag = `#${clean}`;
+            const currentTags = extractTags(textarea.value);
+
+            if (currentTags.includes(tag)) {
+                updateTagCount();
+                return;
+            }
+            if (currentTags.length >= MAX_HASHTAGS) {
+                showError(`Maximum of ${MAX_HASHTAGS} hashtags per post keeps feeds fair for everyone.`);
+                return;
+            }
+
+            const needsSpace = textarea.value.length > 0 && !/\s$/.test(textarea.value);
+            textarea.value = `${textarea.value}${needsSpace ? ' ' : ''}${tag}`;
+            textarea.focus();
+            updateTagCount();
+        }
+
+        function addHashtag() {
+            const input = document.getElementById('hashtag-input');
+            const val = input.value.trim();
+            if (!val) return;
+            insertTag(val);
+            input.value = '';
+        }
 
         function previewFile(input) {
             const file = input.files[0];
@@ -101,6 +166,12 @@
             const media = document.getElementById('post-media').files[0];
             if (!text && !media) {
                 showError('Post must have text or media.');
+                return;
+            }
+
+            const tags = extractTags(text);
+            if (tags.length > MAX_HASHTAGS) {
+                showError(`Please use at most ${MAX_HASHTAGS} hashtags per post.`);
                 return;
             }
 
