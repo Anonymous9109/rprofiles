@@ -2,59 +2,121 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Nvaritia - Create Post</title>
     <style>
+        :root {
+            --bg: #f6f6f7;
+            --surface: #ffffff;
+            --text: #111113;
+            --muted: #6b6b73;
+            --line: #e6e6ea;
+            --accent: #111113;
+            --danger: #c0262d;
+            --danger-bg: #fdecec;
+            --radius: 14px;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 48px; padding-bottom: 54px; }
-        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-        header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
-        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
-        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
-        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 15px;
+            line-height: 1.45;
+            min-height: 100vh;
+            padding-top: 52px;
+            padding-bottom: 72px;
+        }
+        button, input, textarea { font: inherit; color: inherit; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
-        .footer-tab.active { color: #000; }
-        .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        /* Header + footer */
+        header, footer {
+            position: fixed; left: 0; width: 100%; z-index: 100;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+            display: flex; align-items: center;
+        }
+        header { top: 0; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+        footer { bottom: 0; height: 60px; justify-content: space-around; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0); }
+        .brand { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+
+        .footer-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; color: var(--muted); text-decoration: none; font-size: 10.5px; font-weight: 600; padding: 6px 0; }
+        .footer-tab.active { color: var(--text); }
+        .footer-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-icon.icon-filled { fill: currentColor; stroke: none; }
-        .footer-tab.active .footer-icon { stroke: #000; }
-        .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
 
-        .form-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
-        .form-row label { font-weight: 600; color: #555; font-size: 12px; }
-        .form-row textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; min-height: 120px; resize: vertical; }
+        /* Layout */
+        .wrapper { width: 100%; max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+        .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
 
-        .tag-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; }
-        .tag-input-wrap { display: flex; gap: 6px; width: 100%; }
-        .tag-input { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; }
-        .tag-add-btn { background: #111; color: #fff; border: 1px solid #111; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .tag-chip { background: #f3f4f6; border: 1px solid #d1d5db; color: #111; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
-        .tag-chip:hover { background: #e5e7eb; }
-        .tag-meta { font-size: 11px; color: #666; }
+        .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+        .card-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .card-hint { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
 
-        .custom-file-upload { display: inline-block; padding: 10px 14px; background: #fafafa; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: center; color: #111; }
-        .custom-file-upload:hover { background: #f0f0f0; }
+        /* Error */
+        .error-msg { display: none; background: var(--danger-bg); border: 1px solid #f3b8bb; color: var(--danger); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; font-size: 13.5px; font-weight: 600; }
+
+        /* Composer */
+        textarea#post-text {
+            display: block; width: 100%; min-height: 150px; resize: vertical;
+            border: none; outline: none; background: transparent;
+            font-size: 16px; line-height: 1.5; padding: 0;
+        }
+        textarea#post-text::placeholder { color: #a0a0a8; }
+        .composer-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
+        .tag-meta { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+        /* Tags */
+        .tag-input-wrap { display: flex; gap: 8px; margin-bottom: 10px; }
+        .tag-input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--bg); }
+        .tag-input:focus { background: var(--surface); border-color: var(--text); outline: none; }
+        .tag-add-btn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .tag-add-btn:active { transform: scale(0.97); }
+        .tag-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag-chip { background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tag-chip:hover { background: #ececef; }
+
+        /* Media */
+        .custom-file-upload {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            padding: 22px 14px; border: 1.5px dashed #c9c9d0; border-radius: 12px;
+            background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600; text-align: center; cursor: pointer;
+        }
+        .custom-file-upload:hover { background: #ececef; color: var(--text); }
+        .custom-file-upload svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         input[type="file"] { display: none; }
+        .preview-wrap { position: relative; display: none; margin-top: 12px; }
+        .preview-img { display: block; width: 100%; max-height: 320px; border-radius: 12px; object-fit: cover; }
+        .remove-img { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(17, 17, 19, 0.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+        #file-name { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-        .btn-app { background: #000; border: 1px solid #000; border-radius: 6px; color: #fff; font-weight: 600; padding: 12px 14px; font-size: 14px; cursor: pointer; width: 100%; }
-        .btn-app:disabled { opacity: 0.6; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 10px; border-radius: 6px; margin-bottom: 14px; font-weight: 600; display: none; }
-        .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 8px; display: none; object-fit: cover; }
+        /* Publish */
+        .btn-app { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn-app:active { transform: scale(0.99); }
+        .btn-app:disabled { opacity: 0.55; cursor: default; }
     </style>
 </head>
 <body>
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #e5e5e5; padding-bottom: 6px;">Create New Post</div>
-        <div id="post-error" class="error-msg"></div>
+        <h1 class="page-title">New post</h1>
+        <div id="post-error" class="error-msg" role="alert"></div>
         <form onsubmit="submitPost(event)">
-            <div class="form-row">
-                <label>What's on your mind? (Use @username to tag people and #tags for topics)</label>
-                <textarea id="post-text" placeholder="Type your post here... e.g. Shipped a new build today #coding #buildinpublic" oninput="updateTagCount()"></textarea>
+            <div class="card">
+                <textarea id="post-text" aria-label="Post text" placeholder="What's on your mind? Use @username to tag people and #tags for topics." oninput="updateTagCount()"></textarea>
+                <div class="composer-foot">
+                    <span class="tag-meta" id="tag-counter">0 / 6 hashtags used</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <span class="card-label">Hashtags</span>
                 <div class="tag-input-wrap">
-                    <input type="text" id="hashtag-input" class="tag-input" placeholder="Add a hashtag (e.g. gaming, tech, art)" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag();}">
-                    <button type="button" class="tag-add-btn" onclick="addHashtag()">+ Tag</button>
+                    <input type="text" id="hashtag-input" class="tag-input" placeholder="Add a hashtag, e.g. gaming" aria-label="Add a hashtag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag();}">
+                    <button type="button" class="tag-add-btn" onclick="addHashtag()">Add</button>
                 </div>
                 <div class="tag-bar" id="quick-tags">
                     <button type="button" class="tag-chip" onclick="insertTag('trending')">#trending</button>
@@ -63,18 +125,23 @@
                     <button type="button" class="tag-chip" onclick="insertTag('life')">#life</button>
                     <button type="button" class="tag-chip" onclick="insertTag('creative')">#creative</button>
                 </div>
-                <div class="tag-meta" id="tag-counter">0 / 6 hashtags used</div>
             </div>
-            <div class="form-row">
-                <label>Attach Media</label>
+
+            <div class="card">
+                <span class="card-label">Image</span>
                 <label class="custom-file-upload">
                     <input type="file" id="post-media" accept="image/*" onchange="previewFile(this)">
-                    Choose Image
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+                    Choose an image
                 </label>
-                <img id="img-preview" class="preview-img">
-                <span id="file-name" style="font-size: 11px; color: #666; margin-top: 4px;"></span>
+                <div class="preview-wrap" id="preview-wrap">
+                    <img id="img-preview" class="preview-img" alt="Selected image preview">
+                    <button type="button" class="remove-img" onclick="removeImage()" aria-label="Remove image">&times;</button>
+                </div>
+                <span id="file-name"></span>
             </div>
-            <button type="submit" class="btn-app" id="pub-btn">Publish Post</button>
+
+            <button type="submit" class="btn-app" id="pub-btn">Publish post</button>
         </form>
     </div>
 
@@ -112,7 +179,7 @@
             const tags = extractTags(textarea.value);
             const counter = document.getElementById('tag-counter');
             counter.innerText = `${tags.length} / ${MAX_HASHTAGS} hashtags used`;
-            counter.style.color = tags.length > MAX_HASHTAGS ? '#b91c1c' : '#666';
+            counter.style.color = tags.length > MAX_HASHTAGS ? '#c0262d' : '';
         }
 
         function insertTag(rawTag) {
@@ -152,12 +219,18 @@
                 document.getElementById('file-name').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = e => {
-                    const img = document.getElementById('img-preview');
-                    img.src = e.target.result;
-                    img.style.display = 'block';
+                    document.getElementById('img-preview').src = e.target.result;
+                    document.getElementById('preview-wrap').style.display = 'block';
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function removeImage() {
+            document.getElementById('post-media').value = '';
+            document.getElementById('img-preview').removeAttribute('src');
+            document.getElementById('preview-wrap').style.display = 'none';
+            document.getElementById('file-name').innerText = '';
         }
 
         async function submitPost(e) {
@@ -199,7 +272,7 @@
             } catch (err) {
                 showError(err.message);
                 btn.disabled = false;
-                btn.innerText = "Publish Post";
+                btn.innerText = "Publish post";
             }
         }
 
@@ -207,6 +280,7 @@
             const el = document.getElementById('post-error');
             el.innerText = msg;
             el.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
