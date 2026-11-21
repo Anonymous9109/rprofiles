@@ -1,6 +1,6 @@
 (function () {
     const DEFAULT_CLIP_SECONDS = 15;
-    const SEARCH_DEBOUNCE_MS = 550;
+    const SEARCH_DEBOUNCE_MS = 800;
     const CLIENT_CACHE_PREFIX = 'nvaritia_song_cache_';
     const PAUSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 511.989" style="width:15px;height:15px;vertical-align:-2px;display:inline-block;flex-shrink:0;"><path fill="#fff" fill-rule="nonzero" d="M256 0c70.678 0 134.697 28.664 181.017 74.983C483.336 121.303 512 185.322 512 256s-28.664 134.687-74.983 181.006c-46.32 46.319-110.339 74.983-181.017 74.983s-134.697-28.664-181.017-74.983C28.664 390.687 0 326.678 0 256S28.664 121.303 74.983 74.983C121.303 28.664 185.322 0 256 0zm-66.919 168.325h38.043c5.086 0 9.235 4.204 9.235 9.235v156.87c0 5.03-4.194 9.235-9.235 9.235h-38.043c-5.03 0-9.235-4.161-9.235-9.235V177.56c0-5.086 4.149-9.235 9.235-9.235zm95.772 0h38.055c5.086 0 9.235 4.193 9.235 9.235v156.87c0 5.03-4.194 9.235-9.235 9.235h-38.055c-5.041 0-9.235-4.161-9.235-9.235V177.56c0-5.086 4.161-9.235 9.235-9.235zm127.895-69.072C372.641 59.146 317.209 34.33 256 34.33c-61.209 0-116.641 24.816-156.748 64.923C59.146 139.36 34.33 194.791 34.33 256c0 61.209 24.816 116.63 64.922 156.737C139.359 452.843 194.791 477.66 256 477.66c61.209 0 116.641-24.817 156.748-64.923C452.854 372.63 477.67 317.209 477.67 256c0-61.209-24.816-116.64-64.922-156.747z"/></svg>`;
 
@@ -9,6 +9,7 @@
     let noteAudioBtn = null;
     let onNoteStateChange = null;
     let searchDebounce = null;
+    let activeSearchController = null;
     let selectedTrack = null;
     let createCallback = null;
 
@@ -285,6 +286,20 @@
         } catch (e) {}
     }
 
+    function mapItunesResults(results) {
+        return (results || [])
+            .filter(t => t.trackId && t.trackName && t.previewUrl)
+            .map(t => ({
+                trackId: String(t.trackId),
+                trackName: t.trackName,
+                artistName: t.artistName || 'Unknown Artist',
+                artworkUrl: (t.artworkUrl100 || '').replace('100x100', '200x200'),
+                previewUrl: t.previewUrl || '',
+                trackViewUrl: t.trackViewUrl || '',
+                durationSec: 30
+            }));
+    }
+
     function ensureUiInjected() {
         if (document.getElementById('note-picker-modal')) return;
 
@@ -482,7 +497,7 @@
                 <div class="note-modal-body">
                     <input type="text" id="note-text-input" maxlength="80" placeholder="Add a short note (optional)..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
                     <input type="text" id="note-song-search" placeholder="Search a song or artist..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
-                    <div id="note-search-status" style="font-size:11px;color:#666;">Type a song title to search.</div>
+                    <div id="note-search-status" style="font-size:11px;color:#666;">Type at least 3 characters to search.</div>
                     <div id="note-search-results" class="note-search-results" style="display:none;"></div>
 
                     <div id="note-trimmer-box" class="note-trimmer-box">
@@ -533,9 +548,13 @@
         document.getElementById('note-song-search').addEventListener('input', (e) => {
             const q = e.target.value.trim();
             clearTimeout(searchDebounce);
-            if (q.length < 2) {
+            if (activeSearchController) {
+                activeSearchController.abort();
+                activeSearchController = null;
+            }
+            if (q.length < 3) {
                 document.getElementById('note-search-results').style.display = 'none';
-                document.getElementById('note-search-status').innerText = 'Type at least 2 characters to search.';
+                document.getElementById('note-search-status').innerText = 'Type at least 3 characters to search.';
                 return;
             }
             document.getElementById('note-search-status').innerText = 'Searching...';
@@ -583,34 +602,35 @@
             return;
         }
 
-        try {
-            const workerUrl = typeof WORKER_ORIGIN !== 'undefined' && WORKER_ORIGIN
-                ? `${WORKER_ORIGIN}/api/notes/search?q=${encodeURIComponent(normQuery)}`
-                : `https://itunes.apple.com/search?term=${encodeURIComponent(normQuery)}&entity=song&limit=10`;
+        if (activeSearchController) {
+            activeSearchController.abort();
+        }
+        activeSearchController = new AbortController();
+        const { signal } = activeSearchController;
 
-            const res = await fetch(workerUrl);
+        try {
+            const directUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(normQuery)}&entity=song&media=music&limit=10`;
+            let res = await fetch(directUrl, { signal });
+
+            if ((!res.ok || res.status === 429) && typeof WORKER_ORIGIN !== 'undefined' && WORKER_ORIGIN) {
+                res = await fetch(`${WORKER_ORIGIN}/api/notes/search?q=${encodeURIComponent(normQuery)}`, { signal });
+            }
+
             if (res.status === 429) {
                 statusEl.innerText = 'Search rate limit reached briefly—wait a few seconds and try again.';
                 return;
             }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
             const data = await res.json();
             const tracks = Array.isArray(data.tracks)
                 ? data.tracks
-                : (data.results || [])
-                    .filter(t => t.trackId && t.trackName)
-                    .map(t => ({
-                        trackId: String(t.trackId),
-                        trackName: t.trackName,
-                        artistName: t.artistName || 'Unknown Artist',
-                        artworkUrl: (t.artworkUrl100 || '').replace('100x100', '200x200'),
-                        previewUrl: t.previewUrl || '',
-                        trackViewUrl: t.trackViewUrl || '',
-                        durationSec: 30
-                    }));
+                : mapItunesResults(data.results);
 
             setClientCachedTracks(normQuery, tracks);
             renderTrackResults(tracks);
         } catch (err) {
+            if (err.name === 'AbortError') return;
             statusEl.innerText = 'Could not reach song search right now.';
         }
     }
@@ -629,7 +649,7 @@
         document.getElementById('note-search-results').style.display = 'none';
         document.getElementById('note-search-results').innerHTML = '';
         document.getElementById('note-trimmer-box').style.display = 'none';
-        document.getElementById('note-search-status').innerText = 'Type a song title to search.';
+        document.getElementById('note-search-status').innerText = 'Type at least 3 characters to search.';
         document.getElementById('note-picker-modal').classList.add('open');
     };
 
