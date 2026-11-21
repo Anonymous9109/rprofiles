@@ -1,5 +1,7 @@
 (function () {
     const DEFAULT_CLIP_SECONDS = 15;
+    const SEARCH_DEBOUNCE_MS = 550;
+    const CLIENT_CACHE_PREFIX = 'nvaritia_song_cache_';
 
     let noteAudio = window.__nvaritiaNoteAudio || (window.__nvaritiaNoteAudio = new Audio());
     noteAudio.preload = 'auto';
@@ -12,9 +14,10 @@
     // Picker clip preview state
     let pickerStartSec = 0;
     let pickerDurationSec = DEFAULT_CLIP_SECONDS;
-    let pickerTrackDuration = 0;
+    let pickerTrackDuration = 30;
     let isPickerPreviewPlaying = false;
     let clipWatchInterval = null;
+    const clientSearchCache = new Map();
 
     function esc(str) {
         return String(str || '').replace(/[&<>"']/g, (m) => ({
@@ -53,6 +56,84 @@
         }
     }
 
+    // Seeks reliably once data is ready, re-applying once if initial play starts at 0
+    function playAtOffset(url, targetStart, onTick, onFinish) {
+        clearClipWatcher();
+        const start = Math.max(0, Number(targetStart) || 0);
+        let appliedInitialSeek = false;
+        let seekAttempts = 0;
+
+        const forceSeek = () => {
+            if (start <= 0) return;
+            try {
+                if (isFinite(noteAudio.duration) && noteAudio.duration > 0) {
+                    noteAudio.currentTime = Math.min(start, Math.max(0, noteAudio.duration - 1));
+                } else {
+                    noteAudio.currentTime = start;
+                }
+            } catch (e) {}
+        };
+
+        const cleanupListeners = () => {
+            noteAudio.removeEventListener('loadedmetadata', onMeta);
+            noteAudio.removeEventListener('canplay', onCanPlay);
+            noteAudio.removeEventListener('playing', onPlaying);
+        };
+
+        const onMeta = () => {
+            if (isFinite(noteAudio.duration) && noteAudio.duration > 0 && selectedTrack) {
+                pickerTrackDuration = Math.floor(noteAudio.duration);
+                syncClipSliderBounds();
+            }
+            forceSeek();
+        };
+
+        const onCanPlay = () => {
+            if (!appliedInitialSeek) {
+                forceSeek();
+            }
+        };
+
+        const onPlaying = () => {
+            if (start > 0 && !appliedInitialSeek && noteAudio.currentTime < 1 && seekAttempts < 3) {
+                seekAttempts++;
+                forceSeek();
+                setTimeout(() => {
+                    if (noteAudio.currentTime >= 1) appliedInitialSeek = true;
+                }, 150);
+            } else {
+                appliedInitialSeek = true;
+            }
+        };
+
+        noteAudio.addEventListener('loadedmetadata', onMeta);
+        noteAudio.addEventListener('canplay', onCanPlay);
+        noteAudio.addEventListener('playing', onPlaying);
+
+        if (noteAudio.src !== url) {
+            noteAudio.src = url;
+            noteAudio.load();
+        } else if (noteAudio.readyState >= 2) {
+            forceSeek();
+        } else {
+            noteAudio.load();
+        }
+
+        if (typeof onTick === 'function') {
+            clipWatchInterval = setInterval(() => onTick(cleanupListeners), 200);
+        }
+
+        const p = noteAudio.play();
+        if (p && typeof p.catch === 'function') {
+            p.catch(() => {
+                cleanupListeners();
+                if (typeof onFinish === 'function') onFinish();
+            });
+        }
+
+        return cleanupListeners;
+    }
+
     noteAudio.addEventListener('ended', () => {
         stopPickerPreview();
         stopNoteAudio();
@@ -60,12 +141,6 @@
     noteAudio.addEventListener('error', () => {
         stopPickerPreview();
         stopNoteAudio();
-    });
-
-    noteAudio.addEventListener('loadedmetadata', () => {
-        if (!selectedTrack || !isFinite(noteAudio.duration) || noteAudio.duration <= 0) return;
-        pickerTrackDuration = Math.floor(noteAudio.duration);
-        syncClipSliderBounds();
     });
 
     window.toggleNoteAudio = function (previewUrl, btnEl, startSec = 0, clipDuration = null) {
@@ -79,41 +154,20 @@
             return;
         }
         stopNoteAudio();
-        noteAudio.src = previewUrl;
         noteAudioBtn = btnEl || null;
         if (btnEl) btnEl.innerText = '⏸ Pause';
 
-        const seekAndPlay = () => {
-            try {
-                noteAudio.currentTime = Math.min(start, Math.max(0, (noteAudio.duration || start) - 1));
-            } catch (e) {}
-
-            if (end) {
-                clipWatchInterval = setInterval(() => {
-                    if (noteAudio.currentTime >= end) {
-                        stopNoteAudio();
-                    }
-                }, 200);
-            }
-
-            const p = noteAudio.play();
-            if (p && typeof p.catch === 'function') {
-                p.catch(() => {
+        playAtOffset(
+            previewUrl,
+            start,
+            (cleanup) => {
+                if (end && noteAudio.currentTime >= end) {
+                    cleanup();
                     stopNoteAudio();
-                });
-            }
-        };
-
-        if (noteAudio.readyState >= 1) {
-            seekAndPlay();
-        } else {
-            const onLoaded = () => {
-                noteAudio.removeEventListener('loadedmetadata', onLoaded);
-                seekAndPlay();
-            };
-            noteAudio.addEventListener('loadedmetadata', onLoaded);
-            noteAudio.load();
-        }
+                }
+            },
+            () => stopNoteAudio()
+        );
     };
 
     function syncClipSliderBounds() {
@@ -134,7 +188,7 @@
 
         const endSec = Math.min(maxDur, pickerStartSec + effectiveDur);
         rangeLabel.innerText = `${formatTime(pickerStartSec)} – ${formatTime(endSec)} (${effectiveDur}s)`;
-        totalLabel.innerText = pickerTrackDuration > 0 ? `Preview length: ${formatTime(pickerTrackDuration)}` : 'Preview: up to 0:30';
+        totalLabel.innerText = pickerTrackDuration > 0 ? `Preview: ${formatTime(pickerTrackDuration)}` : 'Preview: up to 0:30';
     }
 
     window.onClipSliderInput = function (val) {
@@ -161,49 +215,28 @@
             return;
         }
 
-        clearClipWatcher();
         isPickerPreviewPlaying = true;
         if (btn) btn.innerText = '⏸ Stop Preview';
-
-        if (noteAudio.src !== selectedTrack.previewUrl) {
-            noteAudio.src = selectedTrack.previewUrl;
-        }
 
         const maxDur = pickerTrackDuration > 0 ? pickerTrackDuration : 30;
         const effectiveDur = Math.min(pickerDurationSec, maxDur);
         const startAt = Math.min(pickerStartSec, Math.max(0, maxDur - effectiveDur));
         const stopAt = startAt + effectiveDur;
 
-        const playFromClip = () => {
-            try { noteAudio.currentTime = startAt; } catch (e) {}
-            clipWatchInterval = setInterval(() => {
+        playAtOffset(
+            selectedTrack.previewUrl,
+            startAt,
+            (cleanup) => {
                 if (!isPickerPreviewPlaying) {
-                    clearClipWatcher();
+                    cleanup();
                     return;
                 }
                 if (noteAudio.currentTime >= stopAt) {
                     try { noteAudio.currentTime = startAt; } catch (e) {}
                 }
-            }, 200);
-
-            const p = noteAudio.play();
-            if (p && typeof p.catch === 'function') {
-                p.catch(() => {
-                    stopPickerPreview();
-                });
-            }
-        };
-
-        if (noteAudio.readyState >= 1) {
-            playFromClip();
-        } else {
-            const onMeta = () => {
-                noteAudio.removeEventListener('loadedmetadata', onMeta);
-                playFromClip();
-            };
-            noteAudio.addEventListener('loadedmetadata', onMeta);
-            noteAudio.load();
-        }
+            },
+            () => stopPickerPreview()
+        );
     };
 
     function selectTrackForTrimming(track) {
@@ -225,6 +258,30 @@
             noteAudio.src = track.previewUrl;
             noteAudio.load();
         }
+    }
+
+    function getClientCachedTracks(normQuery) {
+        if (clientSearchCache.has(normQuery)) return clientSearchCache.get(normQuery);
+        try {
+            const raw = sessionStorage.getItem(CLIENT_CACHE_PREFIX + normQuery);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.expiresAt > Date.now() && Array.isArray(parsed.tracks)) {
+                clientSearchCache.set(normQuery, parsed.tracks);
+                return parsed.tracks;
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function setClientCachedTracks(normQuery, tracks) {
+        clientSearchCache.set(normQuery, tracks);
+        try {
+            sessionStorage.setItem(
+                CLIENT_CACHE_PREFIX + normQuery,
+                JSON.stringify({ tracks, expiresAt: Date.now() + 6 * 60 * 60 * 1000 })
+            );
+        } catch (e) {}
     }
 
     function ensureUiInjected() {
@@ -461,56 +518,77 @@
                 return;
             }
             document.getElementById('note-search-status').innerText = 'Searching...';
-            searchDebounce = setTimeout(() => searchItunesSongs(q), 400);
+            searchDebounce = setTimeout(() => searchSongs(q), SEARCH_DEBOUNCE_MS);
         });
     }
 
-    async function searchItunesSongs(query) {
+    function renderTrackResults(tracks) {
         const statusEl = document.getElementById('note-search-status');
         const listEl = document.getElementById('note-search-results');
+        if (!tracks.length) {
+            statusEl.innerText = 'No matching songs found.';
+            listEl.style.display = 'none';
+            return;
+        }
+        statusEl.innerText = 'Tap a song to pick a clip & preview:';
+        listEl.style.display = 'block';
+        listEl.innerHTML = '';
+
+        tracks.forEach(t => {
+            const row = document.createElement('div');
+            row.className = 'note-track-row';
+            row.innerHTML = `
+                <img src="${esc(t.artworkUrl)}" alt="">
+                <div style="min-width:0;flex:1;">
+                    <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.trackName)}</div>
+                    <div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.artistName || '')}</div>
+                </div>
+            `;
+            row.onclick = () => {
+                listEl.querySelectorAll('.note-track-row').forEach(r => r.classList.remove('selected'));
+                row.classList.add('selected');
+                selectTrackForTrimming(t);
+            };
+            listEl.appendChild(row);
+        });
+    }
+
+    async function searchSongs(query) {
+        const statusEl = document.getElementById('note-search-status');
+        const normQuery = query.toLowerCase().trim().replace(/\s+/g, ' ');
+        const localHit = getClientCachedTracks(normQuery);
+        if (localHit) {
+            renderTrackResults(localHit);
+            return;
+        }
+
         try {
-            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
+            const workerUrl = typeof WORKER_ORIGIN !== 'undefined' && WORKER_ORIGIN
+                ? `${WORKER_ORIGIN}/api/notes/search?q=${encodeURIComponent(normQuery)}`
+                : `https://itunes.apple.com/search?term=${encodeURIComponent(normQuery)}&entity=song&limit=10`;
+
+            const res = await fetch(workerUrl);
             if (res.status === 429) {
                 statusEl.innerText = 'Search rate limit reached briefly—wait a few seconds and try again.';
                 return;
             }
             const data = await res.json();
-            const tracks = (data.results || []).filter(t => t.trackId && t.trackName);
-            if (!tracks.length) {
-                statusEl.innerText = 'No matching songs found.';
-                listEl.style.display = 'none';
-                return;
-            }
-            statusEl.innerText = 'Tap a song to pick a clip & preview:';
-            listEl.style.display = 'block';
-            listEl.innerHTML = '';
-
-            tracks.forEach(t => {
-                const artwork = (t.artworkUrl100 || '').replace('100x100', '200x200');
-                const row = document.createElement('div');
-                row.className = 'note-track-row';
-                row.innerHTML = `
-                    <img src="${esc(artwork)}" alt="">
-                    <div style="min-width:0;flex:1;">
-                        <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.trackName)}</div>
-                        <div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.artistName || '')}</div>
-                    </div>
-                `;
-                row.onclick = () => {
-                    listEl.querySelectorAll('.note-track-row').forEach(r => r.classList.remove('selected'));
-                    row.classList.add('selected');
-                    selectTrackForTrimming({
+            const tracks = Array.isArray(data.tracks)
+                ? data.tracks
+                : (data.results || [])
+                    .filter(t => t.trackId && t.trackName)
+                    .map(t => ({
                         trackId: String(t.trackId),
                         trackName: t.trackName,
                         artistName: t.artistName || 'Unknown Artist',
-                        artworkUrl: artwork,
+                        artworkUrl: (t.artworkUrl100 || '').replace('100x100', '200x200'),
                         previewUrl: t.previewUrl || '',
                         trackViewUrl: t.trackViewUrl || '',
                         durationSec: 30
-                    });
-                };
-                listEl.appendChild(row);
-            });
+                    }));
+
+            setClientCachedTracks(normQuery, tracks);
+            renderTrackResults(tracks);
         } catch (err) {
             statusEl.innerText = 'Could not reach song search right now.';
         }
