@@ -21,31 +21,33 @@
         .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
 
         /* Horizontal Stories & Notes Tray */
-        .stories-tray { display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; padding: 4px 0 14px 0; margin-bottom: 6px; border-bottom: 1px solid #eee; scrollbar-width: none; -ms-overflow-style: none; }
+        .stories-tray { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; padding: 6px 0 16px 0; margin-bottom: 6px; border-bottom: 1px solid #eee; scrollbar-width: none; -ms-overflow-style: none; }
         .stories-tray::-webkit-scrollbar { display: none; }
         .story-tray-item,
-        .note-tray-card { display: flex; flex-direction: column; align-items: center; width: clamp(64px, 18vw, 78px); flex-shrink: 0; cursor: pointer; user-select: none; }
+        .note-tray-card { display: flex; flex-direction: column; align-items: center; width: clamp(78px, 21vw, 96px); flex-shrink: 0; cursor: pointer; user-select: none; }
         .story-tray-name,
-        .note-tray-user { font-size: 11px; color: #222; margin-top: 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+        .note-tray-user { font-size: 12px; color: #222; margin-top: 5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
         .story-tray-item.watched .story-tray-name { color: #888; }
 
-        .note-tray-ring { position: relative; width: clamp(50px, 14.5vw, 64px); height: clamp(50px, 14.5vw, 64px); flex-shrink: 0; border-radius: 50%; padding: 2.5px; background: linear-gradient(135deg, #facc15 0%, #eab308 100%); display: flex; align-items: center; justify-content: center; }
-        .note-tray-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; display: block; }
+        .stories-tray .story-ring-wrapper,
+        .note-tray-ring { position: relative; width: clamp(64px, 18vw, 80px); height: clamp(64px, 18vw, 80px); flex-shrink: 0; border-radius: 50%; padding: 3px; display: flex; align-items: center; justify-content: center; }
+        .note-tray-ring { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); }
+        .note-tray-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2.5px solid #fff; display: block; }
         html.dark .note-tray-ring img { border-color: #121212; }
-        .note-tray-song { margin-top: 4px; max-width: 100%; font-size: 10px; font-weight: 600; background: #fef9c3; color: #111; padding: 2px 6px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .note-tray-song { margin-top: 5px; max-width: 100%; font-size: 10.5px; font-weight: 600; background: #fef9c3; color: #111; padding: 2px 7px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .section-title { font-size: 14px; font-weight: bold; margin: 12px 0 8px 0; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; color: #333; }
         .inbox-item { display: flex; align-items: center; gap: 14px; padding: 12px 6px; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; cursor: pointer; border-radius: 8px; transition: background 0.15s ease; }
         .inbox-item:hover { background: #fafafa; }
 
-        /* Preserves original clamp() PFP size + adds story ring and yellow music note ring */
-        .story-ring-wrapper { position: relative; width: clamp(50px, 14.5vw, 64px); height: clamp(50px, 14.5vw, 64px); flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2.5px; cursor: pointer; }
+        /* Bigger PFP size + story ring and yellow music note ring */
+        .story-ring-wrapper { position: relative; width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; cursor: pointer; }
         .story-ring-wrapper.has-story.watched { background: #b5b5b5; }
-        .story-ring-wrapper.has-note:not(.has-story) { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 2.5px; cursor: pointer; }
+        .story-ring-wrapper.has-note:not(.has-story) { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 3px; cursor: pointer; }
         .avatar { width: 100%; height: 100%; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; display: block; flex-shrink: 0; }
         .story-ring-wrapper.has-story .avatar,
-        .story-ring-wrapper.has-note:not(.has-story) .avatar { border: 2px solid #fff; }
+        .story-ring-wrapper.has-note:not(.has-story) .avatar { border: 2.5px solid #fff; }
         html.dark .story-ring-wrapper.has-story .avatar,
         html.dark .story-ring-wrapper.has-note:not(.has-story) .avatar { border-color: #121212; }
         html.dark .story-ring-wrapper.has-story.watched { background: #555; }
@@ -60,7 +62,7 @@
         .drawer-header { height: 48px; flex-shrink: 0; padding: 0 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e5e5; background: #fff; }
         .back-btn { background: none; border: none; padding: 6px; cursor: pointer; color: #111; display: flex; align-items: center; }
         .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-        .drawer-header .story-ring-wrapper { width: clamp(30px, 8.5vw, 38px); height: clamp(30px, 8.5vw, 38px); }
+        .drawer-header .story-ring-wrapper { width: clamp(34px, 9.5vw, 42px); height: clamp(34px, 9.5vw, 42px); }
         .drawer-header .story-ring-wrapper.has-story,
         .drawer-header .story-ring-wrapper.has-note:not(.has-story) { padding: 2px; }
         #drawer-title { font-weight: bold; font-size: clamp(14px, 4vw, 17px); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -296,7 +298,7 @@
             } else {
                 selfNoteItem.innerHTML = `
                     <div class="note-tray-ring" style="background: #f4f4f5; border: 1px dashed #999;">
-                        <div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#111;">♫+</div>
+                        <div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#111;">♫+</div>
                     </div>
                     <div class="note-tray-song" style="background:#f4f4f5;color:#333;">Song Note</div>
                     <div class="note-tray-user">Add Note</div>
