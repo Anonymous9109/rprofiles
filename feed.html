@@ -169,7 +169,7 @@
         </a>
     </footer>
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
     <script>
         const currentUser = requireAuth(true);
         let currentSearchFilter = 'posts';
@@ -516,21 +516,26 @@
         }
 
         async function viewUserStory(email, createdAt) {
+            if (!email) return;
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
-                const data = await res.json();
-                if (res.ok && data.story) {
-                    openStory({
-                        mediaUrl: data.story.media_url,
-                        createdAt: data.story.created_at || createdAt,
-                        ownerEmail: email,
+                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+                let data = null;
+                try { data = await res.json(); } catch (e) { data = null; }
+
+                if (res.ok && data && data.story && data.story.media_url) {
+                    const viewer = typeof getSessionUser === 'function' ? getSessionUser() : null;
+                    const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === String(email).trim().toLowerCase());
+                    showStoryInPlayer(data.story.media_url, {
+                        canDelete: isOwn,
+                        createdAt: data.story.created_at || createdAt || '',
+                        ownerEmail: email.trim().toLowerCase(),
                         onDeleted: loadFeed
                     });
                 } else {
-                    showToast("No active story found.");
+                    showToast((data && data.error) ? data.error : "No active story found.");
                 }
             } catch (err) {
-                showToast("Failed to load story.");
+                showToast("Failed to load story: " + (err && err.message ? err.message : "network error"));
             }
         }
 
