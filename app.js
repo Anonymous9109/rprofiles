@@ -116,12 +116,14 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-author-link { font-weight: 700; font-size: 15px; color: inherit; text-decoration: none; display: inline-flex; align-items: center; }
 .comment-author-link:hover { text-decoration: underline; }
 .comment-content { font-size: 15px; line-height: 1.5; margin-top: 4px; word-break: break-word; text-align: left; }
+.comment-mention-link { font-weight: 700; color: inherit; text-decoration: underline; cursor: pointer; }
 .comment-sticker-box { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; margin-top: 6px; gap: 4px; align-self: flex-start; }
 .comment-sticker-badge { display: inline-block; font-size: 40px; line-height: 1.15; margin-top: 6px; margin-left: 0; margin-right: auto; text-align: left; user-select: none; }
 .comment-sticker-img { display: block; max-width: 132px; max-height: 132px; width: auto; height: auto; object-fit: contain; border-radius: 8px; margin-left: 0; margin-right: auto; user-select: none; }
 .comment-media-img { display: block; max-width: 220px; max-height: 220px; width: auto; height: auto; object-fit: cover; border-radius: 10px; margin-top: 6px; border: 1px solid #e5e5e5; }
 .comment-sticker-save-toggle { font-size: 11px; color: #666; cursor: pointer; font-weight: 600; user-select: none; }
 .comment-sticker-save-toggle.saved { color: #111; font-weight: 700; }
+.comment-sticker-save-toggle:hover { text-decoration: underline; }
 .comment-actions { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; align-items: center; justify-content: flex-start; font-weight: 600; flex-wrap: wrap; width: 100%; }
 .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: #555; font-size: 13px; font-weight: 600; user-select: none; }
 .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
@@ -1209,6 +1211,17 @@ function parseCommentImageContent(raw) {
     return null;
 }
 
+function formatMentionTextHtml(text) {
+    return escapeHtml(text || '').replace(
+        /(^|[\s(])@([a-zA-Z0-9_]+)/g,
+        (match, prefix, uname) => {
+            const safeUname = escapeHtml(uname);
+            const profileUrl = `profile.html?user=${encodeURIComponent(uname)}`;
+            return `${prefix}<a href="${profileUrl}" class="comment-mention-link" onclick="goToProfile('${profileUrl}', event)">@${safeUname}</a>`;
+        }
+    );
+}
+
 function renderCommentBodyHtml(rawContent) {
     const sticker = parseStickerContent(rawContent);
     if (sticker) {
@@ -1229,7 +1242,7 @@ function renderCommentBodyHtml(rawContent) {
         return `<img class="comment-media-img" src="${escapeHtml(commentImgUrl)}" alt="Comment image" loading="lazy">`;
     }
 
-    return `<div class="comment-content">${escapeHtml(rawContent || '')}</div>`;
+    return `<div class="comment-content">${formatMentionTextHtml(rawContent || '')}</div>`;
 }
 
 function setComposerTypingMode(active) {
@@ -2165,85 +2178,96 @@ function ensureStoryPlayer() {
     modal.innerHTML = `
         <div class="story-modal-content">
             <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
-            <div id="story-close-btn" class="story-close-top-left">✕</div>
+            <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
             <div id="story-age" class="story-age"></div>
-            <div id="story-delete-btn" class="story-delete-btn">Delete</div>
-            <video id="story-player" class="story-video" autoplay playsinline></video>
-            <form id="story-reply-bar" class="story-reply-bar">
-                <input type="text" id="story-reply-input" class="story-reply-input" placeholder="Reply to story..." maxlength="300" autocomplete="off">
-                <button type="submit" id="story-reply-send" class="story-reply-send">Send</button>
-            </form>
+            <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
+            <video id="story-video-player" class="story-video" playsinline controls></video>
+            <div id="story-reply-bar" class="story-reply-bar">
+                <input id="story-reply-input" class="story-reply-input" type="text" maxlength="300" placeholder="Reply to story..." autocomplete="off">
+                <button id="story-reply-send" class="story-reply-send" type="button" onclick="sendStoryReply()">Send</button>
+            </div>
         </div>
     `;
     document.body.appendChild(modal);
 
-    const player = document.getElementById('story-player');
+    const player = document.getElementById('story-video-player');
     const fill = document.getElementById('story-progress-fill');
-    const replyInput = document.getElementById('story-reply-input');
-
-    document.getElementById('story-reply-bar').addEventListener('submit', (e) => { e.preventDefault(); sendStoryReply(); });
-    replyInput.addEventListener('focus', () => { player.pause(); });
-    replyInput.addEventListener('blur', () => { if (document.getElementById('story-viewer-modal').classList.contains('open')) player.play().catch(() => {}); });
-
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeStoryModal(); });
-    document.getElementById('story-close-btn').addEventListener('click', closeStoryModal);
-    document.getElementById('story-delete-btn').addEventListener('click', deleteOwnStory);
-    player.addEventListener('timeupdate', () => {
-        if (player.duration) fill.style.width = (player.currentTime / player.duration * 100) + '%';
+    const updateProgress = () => {
+        if (player.duration && isFinite(player.duration)) {
+            fill.style.width = ((player.currentTime / player.duration) * 100) + '%';
+        }
+    };
+    player.addEventListener('timeupdate', updateProgress);
+    player.addEventListener('ended', () => {
+        fill.style.width = '100%';
+        setTimeout(() => closeStoryModal(), 250);
     });
-    player.addEventListener('ended', closeStoryModal);
+
+    const replyInput = document.getElementById('story-reply-input');
+    replyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); sendStoryReply(); }
+    });
+
+    const shiftForKeyboard = () => {
+        const bar = document.getElementById('story-reply-bar');
+        if (!bar || bar.style.display !== 'flex') return;
+        const vv = window.visualViewport;
+        const kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+        bar.style.bottom = kb ? (kb + 12) + 'px' : '10%';
+    };
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', shiftForKeyboard);
+        window.visualViewport.addEventListener('scroll', shiftForKeyboard);
+    }
+
     _storyReady = true;
 }
 
-function openStory({ mediaUrl, createdAt, ownerEmail, onDeleted }) {
-    if (!mediaUrl) return;
+function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
     ensureStoryPlayer();
-    _storyOnDeleted = typeof onDeleted === 'function' ? onDeleted : null;
+    _storyOnDeleted = onDeleted || null;
+    _storyOwnerEmail = (ownerEmail || '').toLowerCase();
 
-    const me = getSessionUser();
-    const isOwner = !!(me && me.email && ownerEmail && me.email.toLowerCase() === String(ownerEmail).toLowerCase());
-    document.getElementById('story-delete-btn').style.display = isOwner ? 'flex' : 'none';
+    const viewer = getSessionUser();
+    const canReply = !canDelete && !!_storyOwnerEmail && !!(viewer && viewer.email && viewer.email.toLowerCase() !== _storyOwnerEmail);
 
-    _storyOwnerEmail = ownerEmail ? String(ownerEmail) : '';
-    document.getElementById('story-reply-bar').style.display = (!isOwner && _storyOwnerEmail) ? 'flex' : 'none';
-    document.getElementById('story-reply-input').value = '';
+    const delBtn = document.getElementById('story-delete-btn');
+    if (delBtn) delBtn.style.display = canDelete ? 'flex' : 'none';
 
-    const label = storyAgeLabel(createdAt);
+    const replyBar = document.getElementById('story-reply-bar');
+    const replyInput = document.getElementById('story-reply-input');
+    if (replyBar) replyBar.style.display = canReply ? 'flex' : 'none';
+    if (replyInput) replyInput.value = '';
+
     const ageEl = document.getElementById('story-age');
-    ageEl.innerText = label;
-    ageEl.style.display = label ? 'flex' : 'none';
+    const age = storyAgeLabel(createdAt);
+    if (ageEl) {
+        ageEl.textContent = age;
+        ageEl.style.display = age ? 'flex' : 'none';
+    }
 
-    const player = document.getElementById('story-player');
-    document.getElementById('story-progress-fill').style.width = '0%';
+    const modal = document.getElementById('story-viewer-modal');
+    const player = document.getElementById('story-video-player');
+    const fill = document.getElementById('story-progress-fill');
+
+    fill.style.width = '0%';
     player.src = mediaUrl;
-    document.getElementById('story-viewer-modal').classList.add('open');
+    modal.classList.add('open');
     player.play().catch(() => {});
-}
-
-function closeStoryModal() {
-    if (!_storyReady) return;
-    const player = document.getElementById('story-player');
-    player.pause();
-    player.removeAttribute('src');
-    player.load();
-    document.getElementById('story-progress-fill').style.width = '0%';
-    document.getElementById('story-viewer-modal').classList.remove('open');
-    document.getElementById('story-reply-input').value = '';
-    document.getElementById('story-reply-input').blur();
 }
 
 async function sendStoryReply() {
     if (_storyReplySending) return;
-    const user = getSessionUser();
-    if (!user) { closeStoryModal(); promptSignup('reply to stories'); return; }
+    const viewer = getSessionUser();
+    if (!viewer) { promptSignup('reply to stories'); return; }
 
     const input = document.getElementById('story-reply-input');
     const btn = document.getElementById('story-reply-send');
-    const content = input.value.trim();
+    const content = (input ? input.value : '').trim();
     if (!content || !_storyOwnerEmail) return;
 
     _storyReplySending = true;
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     try {
         const res = await fetch(`${WORKER_ORIGIN}/api/stories/reply`, {
             method: 'POST',
@@ -2251,95 +2275,68 @@ async function sendStoryReply() {
             body: JSON.stringify({ ownerEmail: _storyOwnerEmail, content })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to send reply');
-        input.value = '';
-        input.blur();
-        showToast("Reply sent");
+        if (!res.ok) throw new Error(data.error || 'Could not send reply');
+        if (input) input.value = '';
+        showToast('Reply sent');
     } catch (err) {
         showToast(err.message);
     } finally {
         _storyReplySending = false;
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
     }
 }
 
-function deleteOwnStory() {
-    showConfirmDialog("Delete Story", "Delete your story? This can't be undone.", "Delete", async () => {
+async function viewUserStory(email, createdAt = '') {
+    if (!email) return;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (!res.ok || !data.story || !data.story.media_url) {
+            showToast("Story expired or unavailable");
+            return;
+        }
+        const viewer = getSessionUser();
+        const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === email.toLowerCase());
+        showStoryInPlayer(data.story.media_url, {
+            canDelete: isOwn,
+            createdAt: createdAt || data.story.created_at || '',
+            ownerEmail: email
+        });
+    } catch (e) {
+        showToast("Could not load story");
+    }
+}
+
+function closeStoryModal() {
+    if (!_storyReady) return;
+    const modal = document.getElementById('story-viewer-modal');
+    const player = document.getElementById('story-video-player');
+    const bar = document.getElementById('story-reply-bar');
+    if (document.activeElement === document.getElementById('story-reply-input')) {
+        document.activeElement.blur();
+    }
+    if (bar) bar.style.bottom = '10%';
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+    modal.classList.remove('open');
+}
+
+function deleteActiveStory() {
+    showConfirmDialog("Delete Story", "Delete your active story?", "Delete", async () => {
         try {
             const res = await fetch(`${WORKER_ORIGIN}/api/stories/delete`, {
                 method: 'POST',
-                headers: authHeaders({ 'Content-Type': 'application/json' })
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({})
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to delete story');
             closeStoryModal();
             showToast("Story deleted");
-            if (_storyOnDeleted) _storyOnDeleted();
+            if (typeof _storyOnDeleted === 'function') _storyOnDeleted();
         } catch (err) {
             showToast(err.message);
         }
     });
 }
-
-window.openStory = openStory;
-window.closeStoryModal = closeStoryModal;
-
-// ===== FCM TOKEN REGISTRATION =====
-let _fcmRegistered = false;
-
-function onFcmTokenReady(fcmToken, authToken) {
-    authToken = authToken || getSessionToken();
-    if (!fcmToken || !authToken || _fcmRegistered) return;
-    _fcmRegistered = true;
-
-    fetch(`${WORKER_ORIGIN}/api/devices/register`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-        },
-        body: JSON.stringify({ fcmToken: fcmToken }),
-        keepalive: true
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Server returned status " + res.status);
-        return res.json();
-    })
-    .then(data => {
-        console.log("FCM token registered in D1:", data);
-    })
-    .catch(e => {
-        _fcmRegistered = false;
-        console.error("FCM fetch error:", e.message);
-    });
-}
-
-function tryRegisterFcmWithRetry(authToken, retries = 5) {
-    try {
-        if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
-            const fcmToken = window.AndroidBridge.getFcmToken();
-            if (fcmToken && fcmToken.trim() !== "") {
-                onFcmTokenReady(fcmToken, authToken);
-                return;
-            }
-        } else {
-            return;
-        }
-
-        if (retries > 0) {
-            setTimeout(() => tryRegisterFcmWithRetry(authToken, retries - 1), 2000);
-        } else {
-            console.error("FCM Error: AndroidBridge returned empty token after retries.");
-        }
-    } catch (e) {
-        console.error("FCM Exception:", e.message);
-    }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    const user = getSessionUser();
-    const token = getSessionToken();
-    if (user && token) {
-        tryRegisterFcmWithRetry(token);
-    }
-});
