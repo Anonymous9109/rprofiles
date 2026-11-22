@@ -55,7 +55,7 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comments-drawer.open { right: 0; }
 .comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; }
 .comments-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
-.comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; }
+.comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; position: relative; }
 .comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; }
 
 #comment-sticker-panel { display: none; flex-direction: column; gap: 8px; padding: 10px; background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; }
@@ -80,10 +80,31 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .sticker-save-badge.saved { background: #000; color: #fff; border-color: #000; }
 .comment-sticker-upload-btn { font-size: 12px; font-weight: 700; padding: 6px 11px; background: #000; color: #fff; border: 1px solid #000; border-radius: 6px; cursor: pointer; }
 .comment-sticker-card:active { transform: scale(0.94); }
-.comment-sticker-toggle { background: #f0f0f0; color: #111; border: 1px solid #ccc; padding: 11px 12px; border-radius: 6px; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 
-#comment-submit-form { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-#comment-input { flex-grow: 1; min-width: 0; padding: 12px 14px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+/* Friend-Only @Mention Dropdown */
+.friend-mention-box { display: none; flex-direction: column; gap: 4px; max-height: 170px; overflow-y: auto; background: #fff; border: 1px solid #d4d4d8; border-radius: 8px; padding: 6px; margin-bottom: 6px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.friend-mention-box.open { display: flex; }
+.friend-mention-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.friend-mention-item:hover, .friend-mention-item.active { background: #f4f4f5; }
+.friend-mention-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; background: #f0f0f0; flex-shrink: 0; }
+
+/* Comment Composer Layout */
+#comment-submit-form { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
+.composer-top-row { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.composer-user-pfp { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; background: #f0f0f0; flex-shrink: 0; }
+#comment-input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; background: #fff; color: #111; }
+.composer-actions-row { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.composer-icon-btn { background: transparent; color: #111; border: none; padding: 7px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
+.composer-icon-btn:hover { background: rgba(0,0,0,0.06); }
+.composer-icon-btn.active { background: #111; color: #fff; }
+.comment-post-btn { display: none; background: #000; color: #fff; padding: 9px 16px; border-radius: 18px; font-weight: 700; cursor: pointer; font-size: 13px; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; border: none; }
+
+/* Typing / Tagging Mode: buttons move to bottom-left, Send appears on far right */
+#comment-submit-form.composer-typing { flex-direction: column; align-items: stretch; gap: 8px; }
+#comment-submit-form.composer-typing .composer-bottom-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+#comment-submit-form:not(.composer-typing) .composer-bottom-bar { display: contents; }
+#comment-submit-form.composer-typing .comment-post-btn { display: inline-flex; }
+
 .comment-item { display: flex; gap: 12px; align-items: flex-start; justify-content: flex-start; border-bottom: 1px solid #eee; padding-bottom: 14px; }
 .comment-item:last-child { border-bottom: none; padding-bottom: 4px; }
 .comment-item.reply { margin-left: 34px; border-left: 2px solid #ddd; padding-left: 12px; }
@@ -98,6 +119,9 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-sticker-box { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; margin-top: 6px; gap: 4px; align-self: flex-start; }
 .comment-sticker-badge { display: inline-block; font-size: 40px; line-height: 1.15; margin-top: 6px; margin-left: 0; margin-right: auto; text-align: left; user-select: none; }
 .comment-sticker-img { display: block; max-width: 132px; max-height: 132px; width: auto; height: auto; object-fit: contain; border-radius: 8px; margin-left: 0; margin-right: auto; user-select: none; }
+.comment-media-img { display: block; max-width: 220px; max-height: 220px; width: auto; height: auto; object-fit: cover; border-radius: 10px; margin-top: 6px; border: 1px solid #e5e5e5; }
+.comment-sticker-save-toggle { font-size: 11px; color: #666; cursor: pointer; font-weight: 600; user-select: none; }
+.comment-sticker-save-toggle.saved { color: #111; font-weight: 700; }
 .comment-actions { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; align-items: center; justify-content: flex-start; font-weight: 600; flex-wrap: wrap; width: 100%; }
 .comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: #555; font-size: 13px; font-weight: 600; user-select: none; }
 .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
@@ -105,7 +129,6 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
 .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
 .comment-delete-btn { cursor: pointer; color: #ef4444; }
-.comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 
 /* Share to Friends & Shared Post Bubble Styles */
 .share-friends-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 50vh; overflow-y: auto; }
@@ -139,7 +162,11 @@ html.dark .btn-app { background:#fff; color:#000; border-color:#fff; }
 html.dark .btn-app-secondary { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark :is(button, div)[style*="background: #000"] { background:#fff !important; color:#000 !important; }
 html.dark .comment-post-btn { background:#fff; color:#000; }
-html.dark .comment-sticker-toggle { background:#222; color:#eee; border-color:#333; }
+html.dark .composer-icon-btn { color:#eee; }
+html.dark .composer-icon-btn:hover { background:rgba(255,255,255,0.08); }
+html.dark .composer-icon-btn.active { background:#fff; color:#000; }
+html.dark .friend-mention-box { background:#181818; border-color:#2a2a2a; }
+html.dark .friend-mention-item:hover, html.dark .friend-mention-item.active { background:#242424; }
 html.dark #comment-sticker-panel { background:#181818; border-color:#2a2a2a; }
 html.dark .sticker-tab-btn { background:#222; color:#ddd; border-color:#333; }
 html.dark .sticker-tab-btn.active { background:#fff; color:#000; border-color:#fff; }
@@ -148,6 +175,8 @@ html.dark .most-used-arrow-btn { background:#222; color:#fff; border-color:#5252
 html.dark .comment-sticker-card { background:#222; border-color:#333; }
 html.dark .sticker-save-badge { background:#222; color:#eee; border-color:#555; }
 html.dark .sticker-save-badge.saved { background:#fff; color:#000; border-color:#fff; }
+html.dark .comment-sticker-save-toggle { color:#a1a1aa; }
+html.dark .comment-sticker-save-toggle.saved { color:#fff; }
 html.dark .comment-sticker-upload-btn { background:#fff !important; color:#000 !important; border-color:#fff !important; }
 html.dark span[style*="color: #000"], html.dark a[style*="color:#000"] { color:#fff !important; }
 html.dark .comments-drawer, html.dark .chat-drawer, html.dark .modal-window, html.dark .ugc-dialog-box, html.dark .search-drawer { background:#121212; border-color:#2a2a2a; color:#eee; }
@@ -370,6 +399,24 @@ const _sharedPostCache = new Map();
 let _shareTargetPost = null;
 let _friendsCache = null;
 
+async function ensureFriendsLoaded(force = false) {
+    const user = getSessionUser();
+    if (!user || !user.email) {
+        _friendsCache = [];
+        return _friendsCache;
+    }
+    if (!force && Array.isArray(_friendsCache)) return _friendsCache;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/friends/list`, { headers: authHeaders() });
+        if (!res.ok) return Array.isArray(_friendsCache) ? _friendsCache : [];
+        const data = await res.json();
+        _friendsCache = Array.isArray(data.friends) ? data.friends : [];
+    } catch (e) {
+        if (!Array.isArray(_friendsCache)) _friendsCache = [];
+    }
+    return _friendsCache;
+}
+
 function parseSharedPostContent(content) {
     if (!content || typeof content !== "string") return null;
 
@@ -558,11 +605,9 @@ async function sharePost(postId) {
     modal.style.display = 'flex';
 
     try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/friends/list`, { headers: authHeaders() });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to load friends");
-        _friendsCache = data.friends || [];
+        const friends = await ensureFriendsLoaded(true);
         renderFriendsInShareModal("");
+        if (!Array.isArray(friends)) throw new Error("Failed to load friends");
     } catch (err) {
         listEl.innerHTML = `<p style="color:#ef4444; text-align:center; padding:12px;">${escapeHtml(err.message)}</p>`;
     }
@@ -778,27 +823,37 @@ window.deletePost = deletePost;
 window.sharePost = sharePost;
 window.blockAuthorFromFeed = blockAuthorFromFeed;
 
-// ===== COMMENTS DRAWER, DELETION & STICKER LIBRARY (CONTROLLED BY APP.JS) =====
+// ===== COMMENTS DRAWER, FRIEND MENTIONING, IMAGE UPLOAD & STICKER LIBRARY =====
 let _activeCommentsPostId = null;
 let _replyingToCommentId = null;
 let _replyingToCommentUsername = null;
 let _commentsViewportBound = false;
 let _stickerUploading = false;
+let _commentImageUploading = false;
+let _composerTypingMode = false;
+let _mentionActiveQuery = null;
+let _mentionMatches = [];
+let _mentionSelectedIdx = 0;
 let _activeStickerTab = 'all'; // 'all' | 'saved' | 'emoji'
 let _browseAllUploaded = false;
 let _sharedStickersCache = [];
 let _mostUsedStickersCache = [];
 let _stickerUseCounts = new Map();
 let _savedStickersSet = new Set();
+let _stickerSaveLockUntil = new Map();
 
 const COMMENT_STICKERS = ["😂", "🔥", "❤️", "😭", "👍", "💀", "🥺", "👏", "🎉", "🤔", "😍", "🙏"];
 const STICKER_PREFIX = "__STICKER__:";
+const COMMENT_IMAGE_PREFIX = "__COMMENT_IMG__:";
 const SHARED_STICKERS_STORAGE_KEY = "nvaritia_shared_stickers_v1";
 const SAVED_STICKERS_STORAGE_KEY = "nvaritia_saved_stickers_v1";
 const STICKER_USAGE_STORAGE_KEY = "nvaritia_sticker_usage_v1";
 
 const COMMENT_LIKE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 const COMMENT_DISLIKE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+const COMPOSER_IMAGE_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+const COMPOSER_AT_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>`;
+const COMPOSER_STICKER_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"></path><path d="M15 3v6h6"></path><circle cx="9.5" cy="13.5" r="1"></circle><circle cx="14.5" cy="13.5" r="1"></circle><path d="M9.5 16.5a3.5 3.5 0 0 0 5 0"></path></svg>`;
 
 function isSafeStickerImageUrl(val) {
     if (typeof val !== "string") return false;
@@ -878,6 +933,35 @@ function getRankedMostUsedStickers() {
         .slice(0, 8);
 }
 
+function syncStickerSaveIndicators() {
+    const savedCount = _savedStickersSet.size;
+
+    document.querySelectorAll('.sticker-tab-btn').forEach(btn => {
+        if ((btn.textContent || '').startsWith('My Collection')) {
+            btn.textContent = `My Collection (${savedCount})`;
+        }
+    });
+
+    document.querySelectorAll('.sticker-save-badge').forEach(badge => {
+        const card = badge.closest('.comment-sticker-card');
+        const img = card && card.querySelector('img');
+        const url = img ? img.getAttribute('src') : '';
+        if (!url) return;
+        const isSaved = _savedStickersSet.has(url);
+        badge.classList.toggle('saved', isSaved);
+        badge.textContent = isSaved ? '★' : '+';
+        badge.title = isSaved ? 'Saved in collection' : 'Save to collection';
+    });
+
+    document.querySelectorAll('.comment-sticker-save-toggle').forEach(el => {
+        const url = el.getAttribute('data-sticker-url') || '';
+        if (!url) return;
+        const isSaved = _savedStickersSet.has(url);
+        el.classList.toggle('saved', isSaved);
+        el.textContent = isSaved ? '★ Saved in collection' : '+ Save sticker';
+    });
+}
+
 async function loadSharedStickers() {
     const user = getSessionUser();
     const email = user && user.email ? user.email : '';
@@ -907,16 +991,36 @@ async function loadSharedStickers() {
             }).filter(isSafeStickerImageUrl)
             : [];
 
-        const serverSaved = Array.isArray(data.savedUrls)
-            ? data.savedUrls.filter(isSafeStickerImageUrl)
-            : [];
+        if (Array.isArray(data.savedUrls)) {
+            const now = Date.now();
+            const mergedSaved = new Set(_savedStickersSet);
+            const serverSavedSet = new Set(data.savedUrls.filter(isSafeStickerImageUrl));
+
+            for (const [lockedUrl, lockUntil] of _stickerSaveLockUntil.entries()) {
+                if (lockUntil <= now) {
+                    _stickerSaveLockUntil.delete(lockedUrl);
+                    continue;
+                }
+                if (_savedStickersSet.has(lockedUrl)) mergedSaved.add(lockedUrl);
+                else mergedSaved.delete(lockedUrl);
+            }
+
+            for (const u of serverSavedSet) {
+                if ((_stickerSaveLockUntil.get(u) || 0) <= now) mergedSaved.add(u);
+            }
+            for (const u of [...mergedSaved]) {
+                if ((_stickerSaveLockUntil.get(u) || 0) <= now && !serverSavedSet.has(u)) {
+                    mergedSaved.delete(u);
+                }
+            }
+
+            _savedStickersSet = mergedSaved;
+        }
 
         _sharedStickersCache = [...new Set([...serverStickers, ..._sharedStickersCache])];
-        if (serverSaved.length || Array.isArray(data.savedUrls)) {
-            _savedStickersSet = new Set(serverSaved);
-        }
         persistLocalStickerState();
         renderStickerPicker();
+        syncStickerSaveIndicators();
     } catch (e) {}
 }
 
@@ -926,6 +1030,7 @@ async function publishStickerToDatabase(url) {
     recordStickerUsage(url);
     persistLocalStickerState();
     renderStickerPicker();
+    syncStickerSaveIndicators();
 
     try {
         await fetch(`${WORKER_ORIGIN}/api/stickers/create`, {
@@ -938,27 +1043,34 @@ async function publishStickerToDatabase(url) {
 }
 
 async function toggleSaveSticker(event, url) {
-    if (event) event.stopPropagation();
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     const user = getSessionUser();
     if (!user) return promptSignup('save stickers to your collection');
     if (!isSafeStickerImageUrl(url)) return;
 
     const currentlySaved = _savedStickersSet.has(url);
-    if (currentlySaved) {
-        _savedStickersSet.delete(url);
-        showToast("Removed from your stickers");
-    } else {
+    const nextSaved = !currentlySaved;
+
+    _stickerSaveLockUntil.set(url, Date.now() + 4000);
+    if (nextSaved) {
         _savedStickersSet.add(url);
         showToast("Saved to your stickers");
+    } else {
+        _savedStickersSet.delete(url);
+        showToast("Removed from your stickers");
     }
     persistLocalStickerState();
     renderStickerPicker();
+    syncStickerSaveIndicators();
 
     try {
         const res = await fetch(`${WORKER_ORIGIN}/api/stickers/save`, {
             method: 'POST',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ url, saved: !currentlySaved })
+            body: JSON.stringify({ url, saved: nextSaved })
         });
         if (res.ok) {
             const data = await res.json();
@@ -967,6 +1079,7 @@ async function toggleSaveSticker(event, url) {
                 else _savedStickersSet.delete(url);
                 persistLocalStickerState();
                 renderStickerPicker();
+                syncStickerSaveIndicators();
             }
         }
     } catch (e) {}
@@ -978,29 +1091,31 @@ function setStickerTab(tabName) {
         _browseAllUploaded = true;
     }
     renderStickerPicker();
+    syncStickerSaveIndicators();
 }
 
 function toggleBrowseAllUploadedStickers(forceState = null) {
     _browseAllUploaded = typeof forceState === 'boolean' ? forceState : !_browseAllUploaded;
     if (_browseAllUploaded) _activeStickerTab = 'all';
     renderStickerPicker();
+    syncStickerSaveIndicators();
 }
 
 function renderStickerCardHtml(item, showSaveBadge = true) {
     if (item.kind === 'image') {
         const isSaved = _savedStickersSet.has(item.value);
         const badgeHtml = showSaveBadge
-            ? `<button type="button" class="sticker-save-badge ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Saved in collection' : 'Save to collection'}" onclick="toggleSaveSticker(event, '${escapeHtml(item.value)}')">${isSaved ? '★' : '+'}</button>`
+            ? `<button type="button" class="sticker-save-badge ${isSaved ? 'saved' : ''}" title="${isSaved ? 'Saved in collection' : 'Save to collection'}" onclick="toggleSaveSticker(event, decodeURIComponent('${encodeURIComponent(item.value)}'))">${isSaved ? '★' : '+'}</button>`
             : '';
         return `
-            <div class="comment-sticker-card img-sticker" title="Post image sticker" onclick="sendImageStickerUrl('${escapeHtml(item.value)}')">
+            <div class="comment-sticker-card img-sticker" title="Post image sticker" onclick="sendImageStickerUrl(decodeURIComponent('${encodeURIComponent(item.value)}'))">
                 <img src="${escapeHtml(item.value)}" alt="Sticker">
                 ${badgeHtml}
             </div>
         `;
     }
     return `
-        <button type="button" class="comment-sticker-card" onclick="sendStickerComment('${escapeHtml(item.value)}')">${escapeHtml(item.value)}</button>
+        <button type="button" class="comment-sticker-card" onclick="sendStickerComment(decodeURIComponent('${encodeURIComponent(item.value)}'))">${escapeHtml(item.value)}</button>
     `;
 }
 
@@ -1085,6 +1200,15 @@ function parseStickerContent(raw) {
     return null;
 }
 
+function parseCommentImageContent(raw) {
+    if (typeof raw !== "string") return null;
+    if (raw.startsWith(COMMENT_IMAGE_PREFIX)) {
+        const value = raw.slice(COMMENT_IMAGE_PREFIX.length).trim();
+        if (isSafeStickerImageUrl(value)) return value;
+    }
+    return null;
+}
+
 function renderCommentBodyHtml(rawContent) {
     const sticker = parseStickerContent(rawContent);
     if (sticker) {
@@ -1093,13 +1217,191 @@ function renderCommentBodyHtml(rawContent) {
             return `
                 <div class="comment-sticker-box">
                     <img class="comment-sticker-img" src="${escapeHtml(sticker.value)}" alt="Sticker" loading="lazy">
-                    <span style="font-size:11px; color:#666; cursor:pointer; font-weight:600;" onclick="toggleSaveSticker(event, '${escapeHtml(sticker.value)}')">${isSaved ? '★ Saved in collection' : '+ Save sticker'}</span>
+                    <span class="comment-sticker-save-toggle ${isSaved ? 'saved' : ''}" data-sticker-url="${escapeHtml(sticker.value)}" onclick="toggleSaveSticker(event, decodeURIComponent('${encodeURIComponent(sticker.value)}'))">${isSaved ? '★ Saved in collection' : '+ Save sticker'}</span>
                 </div>
             `;
         }
         return `<div class="comment-sticker-badge" role="img" aria-label="Sticker">${escapeHtml(sticker.value)}</div>`;
     }
+
+    const commentImgUrl = parseCommentImageContent(rawContent);
+    if (commentImgUrl) {
+        return `<img class="comment-media-img" src="${escapeHtml(commentImgUrl)}" alt="Comment image" loading="lazy">`;
+    }
+
     return `<div class="comment-content">${escapeHtml(rawContent || '')}</div>`;
+}
+
+function setComposerTypingMode(active) {
+    const input = document.getElementById('comment-input');
+    const form = document.getElementById('comment-submit-form');
+    if (!form) return;
+    const hasText = !!(input && input.value.trim().length > 0);
+    const hasMention = _mentionActiveQuery !== null;
+    _composerTypingMode = Boolean(active || hasText || hasMention);
+    form.classList.toggle('composer-typing', _composerTypingMode);
+    syncCommentsDrawerViewport();
+}
+
+function syncComposerUserAvatar() {
+    const img = document.getElementById('composer-user-pfp');
+    if (!img) return;
+    const user = getSessionUser();
+    const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+    img.src = (user && user.pfp_url) ? user.pfp_url : defaultAvatar;
+}
+
+function getFriendUsernamesSet() {
+    const friends = Array.isArray(_friendsCache) ? _friendsCache : [];
+    return new Set(
+        friends
+            .map(f => (f && f.username ? String(f.username).trim().toLowerCase() : ""))
+            .filter(Boolean)
+    );
+}
+
+function validateFriendMentions(text) {
+    const mentionMatches = [...String(text || "").matchAll(/(?:^|\s)@([a-zA-Z0-9_]+)/g)];
+    if (!mentionMatches.length) return { ok: true, invalidUsernames: [] };
+
+    const friendSet = getFriendUsernamesSet();
+    const invalid = [];
+    for (const m of mentionMatches) {
+        const uname = (m[1] || "").toLowerCase();
+        if (!friendSet.has(uname)) {
+            invalid.push(m[1]);
+        }
+    }
+    return { ok: invalid.length === 0, invalidUsernames: invalid };
+}
+
+function closeFriendMentionDropdown() {
+    _mentionActiveQuery = null;
+    _mentionMatches = [];
+    _mentionSelectedIdx = 0;
+    const box = document.getElementById('friend-mention-box');
+    const atBtn = document.getElementById('comment-tag-btn');
+    if (box) {
+        box.classList.remove('open');
+        box.innerHTML = '';
+    }
+    if (atBtn) atBtn.classList.remove('active');
+}
+
+function renderFriendMentionDropdown() {
+    const box = document.getElementById('friend-mention-box');
+    if (!box) return;
+
+    if (_mentionActiveQuery === null) {
+        box.classList.remove('open');
+        box.innerHTML = '';
+        return;
+    }
+
+    const friends = Array.isArray(_friendsCache) ? _friendsCache : [];
+    const q = _mentionActiveQuery.toLowerCase();
+    _mentionMatches = friends.filter(f => {
+        const uname = (f && f.username ? String(f.username) : "").toLowerCase();
+        return uname.startsWith(q) || uname.includes(q);
+    });
+
+    if (_mentionSelectedIdx >= _mentionMatches.length) _mentionSelectedIdx = 0;
+
+    const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+    if (!_mentionMatches.length) {
+        box.innerHTML = `<div style="padding:8px 10px; font-size:12px; color:#666;">${friends.length ? "Only friends can be tagged (no matching friend)." : "You have no friends to tag yet."}</div>`;
+        box.classList.add('open');
+        return;
+    }
+
+    box.innerHTML = _mentionMatches.map((f, idx) => `
+        <div class="friend-mention-item ${idx === _mentionSelectedIdx ? 'active' : ''}" onclick="selectFriendMention(${idx})">
+            <img class="friend-mention-avatar" src="${f.pfp_url || defaultAvatar}" alt="">
+            <span>@${escapeHtml(f.username)}${renderVerifiedBadge(f.verified)}</span>
+        </div>
+    `).join('');
+    box.classList.add('open');
+}
+
+function selectFriendMention(index) {
+    const friend = _mentionMatches[index];
+    const input = document.getElementById('comment-input');
+    if (!friend || !input) return;
+
+    const val = input.value;
+    const caret = typeof input.selectionStart === 'number' ? input.selectionStart : val.length;
+    const beforeCaret = val.slice(0, caret);
+    const afterCaret = val.slice(caret);
+    const atMatch = beforeCaret.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
+
+    if (atMatch) {
+        const startIdx = atMatch.index + (atMatch[0].startsWith(' ') || atMatch[0].startsWith('\n') ? 1 : 0);
+        const replacement = `@${friend.username} `;
+        input.value = val.slice(0, startIdx) + replacement + afterCaret;
+        const nextPos = startIdx + replacement.length;
+        input.focus();
+        try { input.setSelectionRange(nextPos, nextPos); } catch (e) {}
+    } else {
+        input.value = `${val}${val && !val.endsWith(' ') ? ' ' : ''}@${friend.username} `;
+        input.focus();
+    }
+
+    closeFriendMentionDropdown();
+    setComposerTypingMode(true);
+}
+
+async function updateFriendMentionStateFromInput() {
+    const input = document.getElementById('comment-input');
+    if (!input) return;
+    const val = input.value;
+    const caret = typeof input.selectionStart === 'number' ? input.selectionStart : val.length;
+    const beforeCaret = val.slice(0, caret);
+    const match = beforeCaret.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
+
+    if (!match) {
+        closeFriendMentionDropdown();
+        return;
+    }
+
+    _mentionActiveQuery = match[1] || "";
+    const atBtn = document.getElementById('comment-tag-btn');
+    if (atBtn) atBtn.classList.add('active');
+    setComposerTypingMode(true);
+
+    if (!Array.isArray(_friendsCache)) {
+        await ensureFriendsLoaded(false);
+    }
+    renderFriendMentionDropdown();
+}
+
+async function triggerFriendTagMode() {
+    const user = getSessionUser();
+    if (!user) return promptSignup('tag friends');
+    const input = document.getElementById('comment-input');
+    if (!input) return;
+
+    setComposerTypingMode(true);
+    toggleStickerPicker(false);
+
+    const val = input.value;
+    const needsSpace = val.length > 0 && !/\s$/.test(val);
+    const caret = typeof input.selectionStart === 'number' ? input.selectionStart : val.length;
+    const before = val.slice(0, caret);
+    const after = val.slice(caret);
+
+    if (!/(?:^|\s)@[a-zA-Z0-9_]*$/.test(before)) {
+        const insert = `${needsSpace ? ' ' : ''}@`;
+        input.value = before + insert + after;
+        const nextPos = before.length + insert.length;
+        input.focus();
+        try { input.setSelectionRange(nextPos, nextPos); } catch (e) {}
+    } else {
+        input.focus();
+    }
+
+    await ensureFriendsLoaded(false);
+    await updateFriendMentionStateFromInput();
 }
 
 function syncCommentsDrawerViewport() {
@@ -1123,14 +1425,18 @@ function resetCommentsDrawerViewport() {
 
 function toggleStickerPicker(forceState = null) {
     const panel = document.getElementById('comment-sticker-panel');
+    const stickerBtn = document.getElementById('comment-sticker-toggle-btn');
     if (!panel) return;
     const nextOpen = typeof forceState === 'boolean' ? forceState : !panel.classList.contains('open');
     if (nextOpen) {
+        closeFriendMentionDropdown();
         _browseAllUploaded = false;
         renderStickerPicker();
+        syncStickerSaveIndicators();
         loadSharedStickers();
     }
     panel.classList.toggle('open', nextOpen);
+    if (stickerBtn) stickerBtn.classList.toggle('active', nextOpen);
     syncCommentsDrawerViewport();
 }
 
@@ -1139,6 +1445,14 @@ function triggerStickerImagePick() {
     if (!user) return promptSignup('post image stickers');
     if (_stickerUploading) return;
     const input = document.getElementById('comment-sticker-file-input');
+    if (input) input.click();
+}
+
+function triggerCommentImagePick() {
+    const user = getSessionUser();
+    if (!user) return promptSignup('attach images to comments');
+    if (_commentImageUploading) return;
+    const input = document.getElementById('comment-image-file-input');
     if (input) input.click();
 }
 
@@ -1151,7 +1465,7 @@ function blobToDataUrl(blob) {
     });
 }
 
-async function uploadStickerFile(file) {
+async function uploadMediaFile(file, maxDataUrlLen = 520000) {
     const endpoints = [`${WORKER_ORIGIN}/api/comments/sticker`, `${WORKER_ORIGIN}/api/upload`];
     for (const url of endpoints) {
         try {
@@ -1165,7 +1479,7 @@ async function uploadStickerFile(file) {
             });
             if (res.status === 404) continue;
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Sticker upload failed');
+            if (!res.ok) throw new Error(data.error || 'Image upload failed');
             const uploadedUrl = data.url || data.media_url || data.sticker_url || '';
             if (uploadedUrl) return uploadedUrl;
         } catch (err) {
@@ -1175,10 +1489,32 @@ async function uploadStickerFile(file) {
     }
 
     const dataUrl = await blobToDataUrl(file);
-    if (typeof dataUrl === "string" && dataUrl.length <= 420000 && isSafeStickerImageUrl(dataUrl)) {
+    if (typeof dataUrl === "string" && dataUrl.length <= maxDataUrlLen && isSafeStickerImageUrl(dataUrl)) {
         return dataUrl;
     }
-    throw new Error("Sticker image is too large without a worker upload endpoint.");
+    throw new Error("Image is too large without a worker upload endpoint.");
+}
+
+async function handleCommentImageSelected(input) {
+    const rawFile = input && input.files && input.files[0];
+    if (!rawFile) return;
+    input.value = '';
+
+    if (!rawFile.type.startsWith('image/')) {
+        showToast("Please choose an image file.");
+        return;
+    }
+
+    _commentImageUploading = true;
+    try {
+        const prepared = await compressImage(rawFile, 1024, 0.82);
+        const imageUrl = await uploadMediaFile(prepared, 650000);
+        await postCommentPayload(`${COMMENT_IMAGE_PREFIX}${imageUrl}`);
+    } catch (err) {
+        showToast(err.message || "Failed to send image");
+    } finally {
+        _commentImageUploading = false;
+    }
 }
 
 async function handleStickerImageSelected(input) {
@@ -1195,7 +1531,7 @@ async function handleStickerImageSelected(input) {
     renderStickerPicker();
     try {
         const prepared = await compressImage(rawFile, 512, 0.82);
-        const stickerUrl = await uploadStickerFile(prepared);
+        const stickerUrl = await uploadMediaFile(prepared, 420000);
         await publishStickerToDatabase(stickerUrl);
         await postCommentPayload(`${STICKER_PREFIX}${stickerUrl}`);
     } catch (err) {
@@ -1203,6 +1539,7 @@ async function handleStickerImageSelected(input) {
     } finally {
         _stickerUploading = false;
         renderStickerPicker();
+        syncStickerSaveIndicators();
     }
 }
 
@@ -1214,6 +1551,7 @@ async function sendImageStickerUrl(url) {
         }
         recordStickerUsage(url);
         renderStickerPicker();
+        syncStickerSaveIndicators();
         await postCommentPayload(`${STICKER_PREFIX}${url}`);
         fetch(`${WORKER_ORIGIN}/api/stickers/create`, {
             method: 'POST',
@@ -1227,7 +1565,10 @@ async function sendImageStickerUrl(url) {
 
 function ensureCommentsDrawer() {
     let drawer = document.getElementById('comments-drawer');
-    if (drawer) return drawer;
+    if (drawer) {
+        syncComposerUserAvatar();
+        return drawer;
+    }
 
     drawer = document.createElement('div');
     drawer.id = 'comments-drawer';
@@ -1245,24 +1586,91 @@ function ensureCommentsDrawer() {
                 <span id="replying-to-text">Replying...</span>
                 <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
             </div>
+            <div id="friend-mention-box" class="friend-mention-box" role="listbox" aria-label="Tag friends"></div>
+            <input type="file" id="comment-image-file-input" accept="image/*" style="display: none;" onchange="handleCommentImageSelected(this)">
             <input type="file" id="comment-sticker-file-input" accept="image/*" style="display: none;" onchange="handleStickerImageSelected(this)">
             <div id="comment-sticker-panel" aria-label="Stickers"></div>
             <form id="comment-submit-form">
-                <button type="button" class="comment-sticker-toggle" id="comment-sticker-toggle-btn" title="Stickers" aria-label="Stickers" onclick="toggleStickerPicker()">😀</button>
-                <input type="text" id="comment-input" placeholder="Write a comment..." required>
-                <div class="comment-post-btn" id="comment-post-submit-btn">Post</div>
+                <div class="composer-top-row">
+                    <img id="composer-user-pfp" class="composer-user-pfp" src="" alt="Your avatar">
+                    <input type="text" id="comment-input" placeholder="Write a comment..." autocomplete="off">
+                </div>
+                <div class="composer-bottom-bar">
+                    <div class="composer-actions-row">
+                        <button type="button" class="composer-icon-btn" id="comment-image-btn" title="Upload image" aria-label="Upload image" onclick="triggerCommentImagePick()">${COMPOSER_IMAGE_SVG}</button>
+                        <button type="button" class="composer-icon-btn" id="comment-tag-btn" title="Tag a friend" aria-label="Tag a friend" onclick="triggerFriendTagMode()">${COMPOSER_AT_SVG}</button>
+                        <button type="button" class="composer-icon-btn" id="comment-sticker-toggle-btn" title="Stickers" aria-label="Stickers" onclick="toggleStickerPicker()">${COMPOSER_STICKER_SVG}</button>
+                    </div>
+                    <button type="submit" class="comment-post-btn" id="comment-post-submit-btn">Send</button>
+                </div>
             </form>
         </div>
     `;
     document.body.appendChild(drawer);
+    syncComposerUserAvatar();
     renderStickerPicker();
 
-    document.getElementById('comment-submit-form').addEventListener('submit', submitComment);
-    document.getElementById('comment-post-submit-btn').addEventListener('click', submitComment);
-    document.getElementById('comment-input').addEventListener('focus', () => {
+    const form = document.getElementById('comment-submit-form');
+    const input = document.getElementById('comment-input');
+
+    form.addEventListener('submit', submitComment);
+
+    input.addEventListener('focus', () => {
         toggleStickerPicker(false);
+        setComposerTypingMode(true);
+        ensureFriendsLoaded(false);
         syncCommentsDrawerViewport();
         setTimeout(syncCommentsDrawerViewport, 150);
+    });
+
+    input.addEventListener('input', () => {
+        setComposerTypingMode(true);
+        updateFriendMentionStateFromInput();
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (_mentionActiveQuery !== null && _mentionMatches.length) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                _mentionSelectedIdx = (_mentionSelectedIdx + 1) % _mentionMatches.length;
+                renderFriendMentionDropdown();
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                _mentionSelectedIdx = (_mentionSelectedIdx - 1 + _mentionMatches.length) % _mentionMatches.length;
+                renderFriendMentionDropdown();
+                return;
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                selectFriendMention(_mentionSelectedIdx);
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeFriendMentionDropdown();
+                return;
+            }
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const drawerEl = document.getElementById('comments-drawer');
+        if (!drawerEl || !drawerEl.classList.contains('open')) return;
+        const formEl = document.getElementById('comment-submit-form');
+        const mentionBox = document.getElementById('friend-mention-box');
+        const stickerPanel = document.getElementById('comment-sticker-panel');
+        const clickedInsideComposer = formEl && formEl.contains(e.target);
+        const clickedMention = mentionBox && mentionBox.contains(e.target);
+        const clickedSticker = stickerPanel && stickerPanel.contains(e.target);
+
+        if (!clickedMention) {
+            closeFriendMentionDropdown();
+        }
+        if (!clickedInsideComposer && !clickedMention && !clickedSticker) {
+            setComposerTypingMode(false);
+        }
     });
 
     if (!_commentsViewportBound) {
@@ -1281,7 +1689,10 @@ function openCommentsDrawer(postId) {
     const drawer = ensureCommentsDrawer();
     _activeCommentsPostId = postId;
     cancelReply();
+    closeFriendMentionDropdown();
     toggleStickerPicker(false);
+    setComposerTypingMode(false);
+    ensureFriendsLoaded(false);
 
     drawer.classList.remove('open');
     void drawer.offsetWidth;
@@ -1300,7 +1711,9 @@ function closeCommentsDrawer() {
         drawer.classList.remove('open');
         resetCommentsDrawerViewport();
     }
+    closeFriendMentionDropdown();
     toggleStickerPicker(false);
+    setComposerTypingMode(false);
     _activeCommentsPostId = null;
     cancelReply();
 }
@@ -1407,6 +1820,7 @@ async function loadComments() {
 
         listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
         listEl.scrollTop = listEl.scrollHeight;
+        syncStickerSaveIndicators();
     } catch (err) {
         listEl.innerHTML = '<p style="color: #ef4444; font-size: 13px; text-align: center; margin: auto;">Failed to load comments.</p>';
     }
@@ -1422,7 +1836,10 @@ function setReplyingTo(commentId, username) {
     const inputEl = document.getElementById('comment-input');
     if (textEl) textEl.innerText = `Replying to @${username}`;
     if (bannerEl) bannerEl.style.display = 'flex';
-    if (inputEl) inputEl.focus();
+    if (inputEl) {
+        inputEl.focus();
+        setComposerTypingMode(true);
+    }
 }
 
 function cancelReply() {
@@ -1451,6 +1868,7 @@ async function postCommentPayload(content) {
     if (!res.ok) throw new Error(data.error || 'Failed to add comment');
 
     cancelReply();
+    closeFriendMentionDropdown();
     toggleStickerPicker(false);
     incrementPostCommentCount(targetPostId, 1);
     await loadComments();
@@ -1460,6 +1878,7 @@ async function sendStickerComment(sticker) {
     try {
         recordStickerUsage(sticker);
         renderStickerPicker();
+        syncStickerSaveIndicators();
         await postCommentPayload(`${STICKER_PREFIX}${sticker}`);
     } catch (err) {
         showToast(err.message);
@@ -1473,9 +1892,19 @@ async function submitComment(e) {
     const content = input.value.trim();
     if (!content || !_activeCommentsPostId) return;
 
+    if (/(?:^|\s)@[a-zA-Z0-9_]+/.test(content)) {
+        await ensureFriendsLoaded(false);
+        const check = validateFriendMentions(content);
+        if (!check.ok) {
+            showToast(`You can only tag friends (@${check.invalidUsernames.join(', @')} is not your friend).`);
+            return;
+        }
+    }
+
     try {
         await postCommentPayload(content);
         input.value = '';
+        setComposerTypingMode(false);
     } catch (err) {
         showToast(err.message);
     }
@@ -1520,6 +1949,10 @@ window.sendStickerComment = sendStickerComment;
 window.sendImageStickerUrl = sendImageStickerUrl;
 window.triggerStickerImagePick = triggerStickerImagePick;
 window.handleStickerImageSelected = handleStickerImageSelected;
+window.triggerCommentImagePick = triggerCommentImagePick;
+window.handleCommentImageSelected = handleCommentImageSelected;
+window.triggerFriendTagMode = triggerFriendTagMode;
+window.selectFriendMention = selectFriendMention;
 window.toggleStickerPicker = toggleStickerPicker;
 window.setStickerTab = setStickerTab;
 window.toggleBrowseAllUploadedStickers = toggleBrowseAllUploadedStickers;
