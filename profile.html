@@ -180,7 +180,7 @@
             </div>
         </div>
     </div>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
     <script src="music-notes.js"></script>
     <script>
         const loggedUser = requireAuth(true);
@@ -233,7 +233,6 @@
                 if (isOwner) {
                     applyTheme(activeProfileUser.theme);
 
-                    // Hide external payment verification button inside the Android WebView app
                     const isNativeApp = navigator.userAgent.includes("NvaritiaApp");
                     if (!activeProfileUser.verified && !isNativeApp) {
                         verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
