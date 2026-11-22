@@ -836,7 +836,7 @@ let _composerTypingMode = false;
 let _mentionActiveQuery = null;
 let _mentionMatches = [];
 let _mentionSelectedIdx = 0;
-let _activeStickerTab = 'all'; // 'all' | 'saved' | 'emoji'
+let _activeStickerTab = 'all';
 let _browseAllUploaded = false;
 let _sharedStickersCache = [];
 let _mostUsedStickersCache = [];
@@ -2181,7 +2181,7 @@ function ensureStoryPlayer() {
             <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
             <div id="story-age" class="story-age"></div>
             <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
-            <video id="story-video-player" class="story-video" playsinline controls></video>
+            <video id="story-video-player" class="story-video" playsinline controls preload="metadata"></video>
             <div id="story-reply-bar" class="story-reply-bar">
                 <input id="story-reply-input" class="story-reply-input" type="text" maxlength="300" placeholder="Reply to story..." autocomplete="off">
                 <button id="story-reply-send" class="story-reply-send" type="button" onclick="sendStoryReply()">Send</button>
@@ -2201,6 +2201,10 @@ function ensureStoryPlayer() {
     player.addEventListener('ended', () => {
         fill.style.width = '100%';
         setTimeout(() => closeStoryModal(), 250);
+    });
+    player.addEventListener('error', () => {
+        const err = player.error;
+        showToast(`Story playback error (${err ? err.code : '?'}): ${err && err.message ? err.message : 'unable to play video'}`);
     });
 
     const replyInput = document.getElementById('story-reply-input');
@@ -2252,8 +2256,15 @@ function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, crea
 
     fill.style.width = '0%';
     player.src = mediaUrl;
+    player.load();
     modal.classList.add('open');
-    player.play().catch(() => {});
+    player.play().catch((err) => {
+        showToast(`Story play issue: ${err && err.message ? err.message : 'tap video to play'}`);
+    });
+}
+
+function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
+    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail });
 }
 
 async function sendStoryReply() {
@@ -2289,21 +2300,30 @@ async function sendStoryReply() {
 async function viewUserStory(email, createdAt = '') {
     if (!email) return;
     try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        if (!res.ok || !data.story || !data.story.media_url) {
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+        let data = null;
+        try { data = await res.json(); } catch (e) { data = null; }
+
+        if (!res.ok) {
+            showToast((data && data.error) ? data.error : `Story failed to load (${res.status})`);
+            return;
+        }
+
+        const storyObj = data && (data.story || (Array.isArray(data.stories) && data.stories[0]));
+        if (!storyObj || !storyObj.media_url) {
             showToast("Story expired or unavailable");
             return;
         }
+
         const viewer = getSessionUser();
-        const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === email.toLowerCase());
-        showStoryInPlayer(data.story.media_url, {
+        const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === email.trim().toLowerCase());
+        showStoryInPlayer(storyObj.media_url, {
             canDelete: isOwn,
-            createdAt: createdAt || data.story.created_at || '',
-            ownerEmail: email
+            createdAt: createdAt || storyObj.created_at || '',
+            ownerEmail: email.trim().toLowerCase()
         });
-    } catch (e) {
-        showToast("Could not load story");
+    } catch (err) {
+        showToast(`Story failed to load: ${err && err.message ? err.message : 'network error'}`);
     }
 }
 
@@ -2340,3 +2360,10 @@ function deleteActiveStory() {
         }
     });
 }
+
+window.openStory = openStory;
+window.showStoryInPlayer = showStoryInPlayer;
+window.viewUserStory = viewUserStory;
+window.closeStoryModal = closeStoryModal;
+window.deleteActiveStory = deleteActiveStory;
+window.sendStoryReply = sendStoryReply;
