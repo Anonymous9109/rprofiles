@@ -51,28 +51,42 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .reaction-btn.active-dislike .reaction-icon { stroke: #ef4444; fill: #ef4444; }
 
 /* Comments Slide-In Page from Right */
-.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; overflow: hidden; }
+.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow: hidden; will-change: right; }
 .comments-drawer.open { right: 0; }
-.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; }
 .comments-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
 .comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; }
-.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; font-size: 14px; }
+.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; }
+
+#comment-sticker-bar { display: none; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; max-height: 170px; overflow-y: auto; }
+#comment-sticker-bar.open { display: flex; }
+.comment-sticker-option { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 6px 10px; font-size: 24px; line-height: 1.1; cursor: pointer; user-select: none; transition: transform 0.12s ease; display: inline-flex; align-items: center; justify-content: center; }
+.comment-sticker-option.img-sticker { padding: 4px; width: 52px; height: 52px; }
+.comment-sticker-option.img-sticker img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; pointer-events: none; }
+.comment-sticker-option.upload-sticker-btn { font-size: 12px; font-weight: 700; padding: 8px 12px; height: 42px; background: #000; color: #fff; border-color: #000; }
+.comment-sticker-option:active { transform: scale(0.92); }
+.comment-sticker-toggle { background: #f0f0f0; color: #111; border: 1px solid #ccc; padding: 11px 12px; border-radius: 6px; font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
+
 #comment-submit-form { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-#comment-input { flex-grow: 1; min-width: 0; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
-.comment-item { display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.comment-item.reply { margin-left: 28px; border-left: 2px solid #ddd; padding-left: 10px; }
+#comment-input { flex-grow: 1; min-width: 0; padding: 12px 14px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+.comment-item { display: flex; gap: 12px; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 14px; }
+.comment-item:last-child { border-bottom: none; padding-bottom: 4px; }
+.comment-item.reply { margin-left: 34px; border-left: 2px solid #ddd; padding-left: 12px; }
 .comment-avatar-link { flex-shrink: 0; display: inline-block; line-height: 0; }
-.comment-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; cursor: pointer; background: #f0f0f0; }
-.comment-author-link { font-weight: bold; font-size: 13px; color: inherit; text-decoration: none; }
+.comment-avatar { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #ccc; object-fit: cover; cursor: pointer; background: #f0f0f0; }
+.comment-item.reply .comment-avatar { width: 38px; height: 38px; }
+.comment-author-link { font-weight: 700; font-size: 15px; color: inherit; text-decoration: none; }
 .comment-author-link:hover { text-decoration: underline; }
-.comment-content { font-size: 13px; line-height: 1.4; margin-top: 3px; word-break: break-word; }
-.comment-actions { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; align-items: center; font-weight: 600; }
-.comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: #555; font-size: 11px; font-weight: 600; user-select: none; }
+.comment-content { font-size: 15px; line-height: 1.5; margin-top: 4px; word-break: break-word; }
+.comment-sticker-badge { display: inline-block; font-size: 40px; line-height: 1.15; margin-top: 4px; user-select: none; }
+.comment-sticker-img { display: block; max-width: 132px; max-height: 132px; width: auto; height: auto; object-fit: contain; border-radius: 8px; margin-top: 6px; user-select: none; }
+.comment-actions { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; align-items: center; font-weight: 600; }
+.comment-reaction-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: #555; font-size: 13px; font-weight: 600; user-select: none; }
 .comment-reaction-btn.active-like { color: #000; font-weight: bold; }
 .comment-reaction-btn.active-like svg { stroke: #000; fill: #000; }
 .comment-reaction-btn.active-dislike { color: #ef4444; font-weight: bold; }
 .comment-reaction-btn.active-dislike svg { stroke: #ef4444; fill: #ef4444; }
-.comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
+.comment-post-btn { background: #000; color: #fff; padding: 12px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 
 /* Share to Friends & Shared Post Bubble Styles */
 .share-friends-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 50vh; overflow-y: auto; }
@@ -106,6 +120,10 @@ html.dark .btn-app { background:#fff; color:#000; border-color:#fff; }
 html.dark .btn-app-secondary { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark :is(button, div)[style*="background: #000"] { background:#fff !important; color:#000 !important; }
 html.dark .comment-post-btn { background:#fff; color:#000; }
+html.dark .comment-sticker-toggle { background:#222; color:#eee; border-color:#333; }
+html.dark #comment-sticker-bar { background:#181818; border-color:#2a2a2a; }
+html.dark .comment-sticker-option { background:#222; border-color:#333; }
+html.dark .comment-sticker-option.upload-sticker-btn { background:#fff !important; color:#000 !important; border-color:#fff !important; }
 html.dark span[style*="color: #000"], html.dark a[style*="color:#000"] { color:#fff !important; }
 html.dark .comments-drawer, html.dark .chat-drawer, html.dark .modal-window, html.dark .ugc-dialog-box, html.dark .search-drawer { background:#121212; border-color:#2a2a2a; color:#eee; }
 html.dark .comments-drawer .drawer-header, html.dark .search-drawer-header, html.dark .drawer-header, html.dark .modal-header, html.dark .ugc-dialog-head { background:#181818; border-color:#2a2a2a; color:#eee; }
@@ -535,6 +553,19 @@ const POST_DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d
 const POST_COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 const POST_SHARE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
 
+function updatePostCommentCount(postId, count) {
+    const safeCount = Math.max(0, Number(count) || 0);
+    document.querySelectorAll(`.post-box[data-post-id="${postId}"] .comments-count`).forEach(el => {
+        el.innerText = safeCount;
+    });
+}
+
+function incrementPostCommentCount(postId, delta = 1) {
+    const first = document.querySelector(`.post-box[data-post-id="${postId}"] .comments-count`);
+    const current = first ? (parseInt(first.innerText, 10) || 0) : 0;
+    updatePostCommentCount(postId, current + delta);
+}
+
 function blockAuthorFromFeed(authorEmail, authorUsername) {
     blockUser(authorEmail, authorUsername, () => {
         document.querySelectorAll(`[data-author="${authorEmail.toLowerCase()}"]`).forEach(el => el.remove());
@@ -625,6 +656,7 @@ async function renderPosts(posts, container, options = {}) {
         const authorUsername = post.username || (fallbackAuthor && fallbackAuthor.username) || '';
         const authorPfp = post.pfp_url || (fallbackAuthor && fallbackAuthor.pfp_url) || defaultAvatar;
         const authorVerified = post.verified !== undefined ? post.verified : (fallbackAuthor && fallbackAuthor.verified);
+        const initialCommentsCount = post.comments_count ?? post.comment_count ?? post.commentsCount ?? 0;
 
         _sharedPostCache.set(post.id, {
             id: post.id,
@@ -695,7 +727,7 @@ async function renderPosts(posts, container, options = {}) {
                         ${POST_DISLIKE_SVG} <span class="dislikes-count">${rxData.dislikes}</span>
                     </div>
                     <div class="reaction-btn" aria-label="Comments" onclick="event.stopPropagation(); openCommentsDrawer('${post.id}')">
-                        ${POST_COMMENT_SVG}
+                        ${POST_COMMENT_SVG} <span class="comments-count">${initialCommentsCount}</span>
                     </div>
                 </div>
                 <div class="reaction-btn" aria-label="Share" onclick="event.stopPropagation(); sharePost('${post.id}')">
@@ -726,9 +758,83 @@ let _activeCommentsPostId = null;
 let _replyingToCommentId = null;
 let _replyingToCommentUsername = null;
 let _commentsViewportBound = false;
+let _stickerUploading = false;
 
-const COMMENT_LIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
-const COMMENT_DISLIKE_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+const COMMENT_STICKERS = ["😂", "🔥", "❤️", "😭", "👍", "💀", "🥺", "👏", "🎉", "🤔", "😍", "🙏"];
+const STICKER_PREFIX = "__STICKER__:";
+const CUSTOM_STICKERS_STORAGE_KEY = "nvaritia_custom_stickers_v1";
+
+const COMMENT_LIKE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+const COMMENT_DISLIKE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>`;
+
+function isSafeStickerImageUrl(val) {
+    if (typeof val !== "string") return false;
+    const trimmed = val.trim();
+    if (/^https?:\/\//i.test(trimmed)) return true;
+    if (/^data:image\/(webp|png|jpeg|jpg|gif);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) return true;
+    return false;
+}
+
+function getSavedImageStickers() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(CUSTOM_STICKERS_STORAGE_KEY) || "[]");
+        return Array.isArray(raw) ? raw.filter(isSafeStickerImageUrl) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveImageStickerToLibrary(url) {
+    if (!isSafeStickerImageUrl(url)) return;
+    const current = getSavedImageStickers().filter(item => item !== url);
+    current.unshift(url);
+    try {
+        localStorage.setItem(CUSTOM_STICKERS_STORAGE_KEY, JSON.stringify(current.slice(0, 12)));
+    } catch (e) {}
+    renderStickerBarItems();
+}
+
+function renderStickerBarItems() {
+    const bar = document.getElementById('comment-sticker-bar');
+    if (!bar) return;
+
+    const savedImgs = getSavedImageStickers();
+    const uploadBtnHtml = `<button type="button" class="comment-sticker-option upload-sticker-btn" id="comment-sticker-upload-btn" onclick="triggerStickerImagePick()">${_stickerUploading ? 'Uploading...' : '+ Image'}</button>`;
+    const imgStickersHtml = savedImgs.map(url => `
+        <button type="button" class="comment-sticker-option img-sticker" title="Send image sticker" onclick="sendImageStickerUrl('${escapeHtml(url)}')">
+            <img src="${escapeHtml(url)}" alt="Sticker">
+        </button>
+    `).join('');
+    const emojiStickersHtml = COMMENT_STICKERS.map(st => `
+        <button type="button" class="comment-sticker-option" onclick="sendStickerComment('${escapeHtml(st)}')">${escapeHtml(st)}</button>
+    `).join('');
+
+    bar.innerHTML = uploadBtnHtml + imgStickersHtml + emojiStickersHtml;
+}
+
+function parseStickerContent(raw) {
+    if (typeof raw !== "string") return null;
+    if (raw.startsWith(STICKER_PREFIX)) {
+        const value = raw.slice(STICKER_PREFIX.length).trim();
+        if (!value) return null;
+        if (isSafeStickerImageUrl(value)) {
+            return { type: "image", value };
+        }
+        return { type: "emoji", value };
+    }
+    return null;
+}
+
+function renderCommentBodyHtml(rawContent) {
+    const sticker = parseStickerContent(rawContent);
+    if (sticker) {
+        if (sticker.type === "image") {
+            return `<img class="comment-sticker-img" src="${escapeHtml(sticker.value)}" alt="Sticker" loading="lazy">`;
+        }
+        return `<div class="comment-sticker-badge" role="img" aria-label="Sticker">${escapeHtml(sticker.value)}</div>`;
+    }
+    return `<div class="comment-content">${escapeHtml(rawContent || '')}</div>`;
+}
 
 function syncCommentsDrawerViewport() {
     const drawer = document.getElementById('comments-drawer');
@@ -749,6 +855,98 @@ function resetCommentsDrawerViewport() {
     drawer.style.top = '';
 }
 
+function toggleStickerPicker(forceState = null) {
+    const bar = document.getElementById('comment-sticker-bar');
+    if (!bar) return;
+    const nextOpen = typeof forceState === 'boolean' ? forceState : !bar.classList.contains('open');
+    if (nextOpen) renderStickerBarItems();
+    bar.classList.toggle('open', nextOpen);
+    syncCommentsDrawerViewport();
+}
+
+function triggerStickerImagePick() {
+    const user = getSessionUser();
+    if (!user) return promptSignup('post image stickers');
+    if (_stickerUploading) return;
+    const input = document.getElementById('comment-sticker-file-input');
+    if (input) input.click();
+}
+
+function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Could not read image"));
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function uploadStickerFile(file) {
+    const endpoints = [`${WORKER_ORIGIN}/api/comments/sticker`, `${WORKER_ORIGIN}/api/upload`];
+    for (const url of endpoints) {
+        try {
+            const fd = new FormData();
+            fd.append('media', file);
+            fd.append('file', file);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: fd
+            });
+            if (res.status === 404) continue;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Sticker upload failed');
+            const uploadedUrl = data.url || data.media_url || data.sticker_url || '';
+            if (uploadedUrl) return uploadedUrl;
+        } catch (err) {
+            if (/404/.test(err.message)) continue;
+            throw err;
+        }
+    }
+
+    // Fallback for workers without a dedicated sticker upload route: compact WebP data URL
+    const dataUrl = await blobToDataUrl(file);
+    if (typeof dataUrl === "string" && dataUrl.length <= 420000 && isSafeStickerImageUrl(dataUrl)) {
+        return dataUrl;
+    }
+    throw new Error("Sticker image is too large without a worker upload endpoint.");
+}
+
+async function handleStickerImageSelected(input) {
+    const rawFile = input && input.files && input.files[0];
+    if (!rawFile) return;
+    input.value = '';
+
+    if (!rawFile.type.startsWith('image/')) {
+        showToast("Please choose an image file.");
+        return;
+    }
+
+    _stickerUploading = true;
+    renderStickerBarItems();
+    try {
+        const prepared = await compressImage(rawFile, 512, 0.82);
+        const stickerUrl = await uploadStickerFile(prepared);
+        saveImageStickerToLibrary(stickerUrl);
+        await postCommentPayload(`${STICKER_PREFIX}${stickerUrl}`);
+    } catch (err) {
+        showToast(err.message || "Failed to send image sticker");
+    } finally {
+        _stickerUploading = false;
+        renderStickerBarItems();
+    }
+}
+
+async function sendImageStickerUrl(url) {
+    if (!isSafeStickerImageUrl(url)) return;
+    try {
+        saveImageStickerToLibrary(url);
+        await postCommentPayload(`${STICKER_PREFIX}${url}`);
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
 function ensureCommentsDrawer() {
     let drawer = document.getElementById('comments-drawer');
     if (drawer) return drawer;
@@ -759,27 +957,32 @@ function ensureCommentsDrawer() {
     drawer.innerHTML = `
         <div class="drawer-header">
             <button type="button" class="comments-back-btn" onclick="closeCommentsDrawer()" aria-label="Back">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
-            <span>Comments</span>
+            <span id="comments-drawer-title">Comments</span>
         </div>
         <div class="drawer-body">
             <div class="comments-container" id="comments-list">Loading comments...</div>
-            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 6px 10px; font-size: 11px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px; flex-shrink: 0;">
+            <div id="replying-banner" style="display: none; background: #f0f0f0; padding: 7px 10px; font-size: 12px; font-weight: bold; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 6px; flex-shrink: 0;">
                 <span id="replying-to-text">Replying...</span>
                 <span style="cursor: pointer; color: #666;" onclick="cancelReply()">Cancel</span>
             </div>
+            <input type="file" id="comment-sticker-file-input" accept="image/*" style="display: none;" onchange="handleStickerImageSelected(this)">
+            <div id="comment-sticker-bar" aria-label="Stickers"></div>
             <form id="comment-submit-form">
+                <button type="button" class="comment-sticker-toggle" id="comment-sticker-toggle-btn" title="Stickers" aria-label="Stickers" onclick="toggleStickerPicker()">😀</button>
                 <input type="text" id="comment-input" placeholder="Write a comment..." required>
                 <div class="comment-post-btn" id="comment-post-submit-btn">Post</div>
             </form>
         </div>
     `;
     document.body.appendChild(drawer);
+    renderStickerBarItems();
 
     document.getElementById('comment-submit-form').addEventListener('submit', submitComment);
     document.getElementById('comment-post-submit-btn').addEventListener('click', submitComment);
     document.getElementById('comment-input').addEventListener('focus', () => {
+        toggleStickerPicker(false);
         syncCommentsDrawerViewport();
         setTimeout(syncCommentsDrawerViewport, 150);
     });
@@ -800,8 +1003,15 @@ function openCommentsDrawer(postId) {
     const drawer = ensureCommentsDrawer();
     _activeCommentsPostId = postId;
     cancelReply();
-    drawer.classList.add('open');
-    syncCommentsDrawerViewport();
+    toggleStickerPicker(false);
+
+    drawer.classList.remove('open');
+    void drawer.offsetWidth;
+    requestAnimationFrame(() => {
+        drawer.classList.add('open');
+        syncCommentsDrawerViewport();
+    });
+
     loadComments();
 }
 
@@ -811,12 +1021,14 @@ function closeCommentsDrawer() {
         drawer.classList.remove('open');
         resetCommentsDrawerViewport();
     }
+    toggleStickerPicker(false);
     _activeCommentsPostId = null;
     cancelReply();
 }
 
 async function loadComments() {
     const listEl = document.getElementById('comments-list');
+    const titleEl = document.getElementById('comments-drawer-title');
     if (!listEl || !_activeCommentsPostId) return;
     listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#666; font-weight:600;">Loading comments...</div>';
 
@@ -828,20 +1040,24 @@ async function loadComments() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to load comments');
 
-        if (!data.comments || !data.comments.length) {
-            listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 13px; margin: auto;">No comments yet.</p>';
+        const comments = Array.isArray(data.comments) ? data.comments : [];
+        if (titleEl) titleEl.innerText = `Comments (${comments.length})`;
+        updatePostCommentCount(_activeCommentsPostId, comments.length);
+
+        if (!comments.length) {
+            listEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 14px; margin: auto;">No comments yet.</p>';
             return;
         }
 
         const commentMap = new Map();
         const rootComments = [];
 
-        data.comments.forEach(c => {
+        comments.forEach(c => {
             c.replies = [];
             commentMap.set(c.id, c);
         });
 
-        data.comments.forEach(c => {
+        comments.forEach(c => {
             if (c.parent_id && commentMap.has(c.parent_id)) {
                 commentMap.get(c.parent_id).replies.push(c);
             } else if (!c.parent_id) {
@@ -852,7 +1068,7 @@ async function loadComments() {
         function renderCommentNode(c, isReply = false) {
             const isMe = !!(user && user.email && c.user_email && c.user_email.toLowerCase() === user.email.toLowerCase());
             const profileUrl = `profile.html?user=${encodeURIComponent(c.username || c.user_email)}`;
-            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
 
             return `
                 <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
@@ -861,7 +1077,7 @@ async function loadComments() {
                     </a>
                     <div style="flex-grow: 1;">
                         <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
-                        <div class="comment-content">${escapeHtml(c.content)}</div>
+                        ${renderCommentBodyHtml(c.content)}
                         <div class="comment-actions">
                             <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
                                 ${COMMENT_LIKE_SVG} <span class="c-likes-count">${c.likes}</span>
@@ -881,7 +1097,7 @@ async function loadComments() {
         listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
         listEl.scrollTop = listEl.scrollHeight;
     } catch (err) {
-        listEl.innerHTML = '<p style="color: #ef4444; font-size: 12px; text-align: center; margin: auto;">Failed to load comments.</p>';
+        listEl.innerHTML = '<p style="color: #ef4444; font-size: 13px; text-align: center; margin: auto;">Failed to load comments.</p>';
     }
 }
 
@@ -905,32 +1121,48 @@ function cancelReply() {
     if (bannerEl) bannerEl.style.display = 'none';
 }
 
-async function submitComment(e) {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+async function postCommentPayload(content) {
     const user = getSessionUser();
     if (!user) return promptSignup('comment');
+    if (!content || !_activeCommentsPostId) return;
 
+    const targetPostId = _activeCommentsPostId;
+    const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+            postId: targetPostId,
+            content,
+            parentId: _replyingToCommentId
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to add comment');
+
+    cancelReply();
+    toggleStickerPicker(false);
+    incrementPostCommentCount(targetPostId, 1);
+    await loadComments();
+}
+
+async function sendStickerComment(sticker) {
+    try {
+        await postCommentPayload(`${STICKER_PREFIX}${sticker}`);
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
+async function submitComment(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     const input = document.getElementById('comment-input');
     if (!input) return;
     const content = input.value.trim();
     if (!content || !_activeCommentsPostId) return;
 
     try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-                postId: _activeCommentsPostId,
-                content,
-                parentId: _replyingToCommentId
-            })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to add comment');
-
+        await postCommentPayload(content);
         input.value = '';
-        cancelReply();
-        loadComments();
     } catch (err) {
         showToast(err.message);
     }
@@ -970,6 +1202,11 @@ window.loadComments = loadComments;
 window.setReplyingTo = setReplyingTo;
 window.cancelReply = cancelReply;
 window.submitComment = submitComment;
+window.sendStickerComment = sendStickerComment;
+window.sendImageStickerUrl = sendImageStickerUrl;
+window.triggerStickerImagePick = triggerStickerImagePick;
+window.handleStickerImageSelected = handleStickerImageSelected;
+window.toggleStickerPicker = toggleStickerPicker;
 window.toggleCommentReaction = toggleCommentReaction;
 
 // ===== UGC REPORT MODAL & SAFETY HELPERS =====
