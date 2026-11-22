@@ -853,14 +853,12 @@ function recordStickerUsage(stickerKey) {
 function getRankedMostUsedStickers() {
     const candidateMap = new Map();
 
-    // Server-ranked most used stickers first
     for (const item of _mostUsedStickersCache) {
         if (!item || !item.url || !isSafeStickerImageUrl(item.url)) continue;
         const count = Math.max(Number(item.use_count) || 1, _stickerUseCounts.get(item.url) || 0);
         candidateMap.set(item.url, { kind: 'image', value: item.url, count });
     }
 
-    // All uploaded/saved image stickers
     for (const url of [..._savedStickersSet, ..._sharedStickersCache]) {
         if (!isSafeStickerImageUrl(url)) continue;
         const count = _stickerUseCounts.get(url) || 1;
@@ -870,7 +868,6 @@ function getRankedMostUsedStickers() {
         }
     }
 
-    // Quick emoji stickers ranked by usage too
     for (const em of COMMENT_STICKERS) {
         const count = _stickerUseCounts.get(em) || 1;
         candidateMap.set(em, { kind: 'emoji', value: em, count });
@@ -926,7 +923,6 @@ async function loadSharedStickers() {
 async function publishStickerToDatabase(url) {
     if (!isSafeStickerImageUrl(url)) return;
     _sharedStickersCache = [url, ..._sharedStickersCache.filter(u => u !== url)];
-    _savedStickersSet.add(url);
     recordStickerUsage(url);
     persistLocalStickerState();
     renderStickerPicker();
@@ -1213,7 +1209,6 @@ async function handleStickerImageSelected(input) {
 async function sendImageStickerUrl(url) {
     if (!isSafeStickerImageUrl(url)) return;
     try {
-        _savedStickersSet.add(url);
         if (!_sharedStickersCache.includes(url)) {
             _sharedStickersCache.unshift(url);
         }
