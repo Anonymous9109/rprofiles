@@ -2127,12 +2127,13 @@ async function compressVideo(file) {
     return file;
 }
 
-// ===== SHARED STORY PLAYER (NO BROWSER VIDEO PLAYER) =====
+// ===== SHARED STORY PLAYER =====
 const STORY_CSS = `
 .story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 .story-modal.open { opacity: 1; pointer-events: auto; }
 .story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .story-modal.open .story-modal-content { transform: translateX(0); }
+.story-video { width: 100%; height: 100%; max-width: 100vw; max-height: 100vh; object-fit: contain; background: #000; }
 .story-progress-container { position: absolute; top: 40px; left: 24px; right: 24px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; z-index: 20; overflow: hidden; }
 .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
 .story-close-top-left { position: absolute; top: 52px; left: 24px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 20; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
@@ -2147,14 +2148,10 @@ html.dark .story-reply-input { background: rgba(0,0,0,0.4); color: #fff; border-
 #ugc-confirm-overlay { z-index: 10001; }
 `;
 
-const STORY_DURATION_MS = 10000;
-
 let _storyReady = false;
 let _storyOnDeleted = null;
 let _storyOwnerEmail = '';
 let _storyReplySending = false;
-let _storyProgressTimer = null;
-let _storyCloseTimer = null;
 
 function storyAgeLabel(createdAt) {
     if (!createdAt) return '';
@@ -2167,39 +2164,6 @@ function storyAgeLabel(createdAt) {
     const min = Math.floor(sec / 60);
     if (min < 60) return min + 'm';
     return Math.floor(min / 60) + 'h';
-}
-
-function clearStoryTimers() {
-    if (_storyProgressTimer) {
-        clearInterval(_storyProgressTimer);
-        _storyProgressTimer = null;
-    }
-    if (_storyCloseTimer) {
-        clearTimeout(_storyCloseTimer);
-        _storyCloseTimer = null;
-    }
-}
-
-function startStoryProgress(durationMs = STORY_DURATION_MS) {
-    clearStoryTimers();
-    const fill = document.getElementById('story-progress-fill');
-    if (fill) fill.style.width = '0%';
-
-    const startedAt = Date.now();
-    _storyProgressTimer = setInterval(() => {
-        const elapsed = Date.now() - startedAt;
-        const pct = Math.min(100, (elapsed / durationMs) * 100);
-        if (fill) fill.style.width = pct + '%';
-        if (pct >= 100) {
-            clearInterval(_storyProgressTimer);
-            _storyProgressTimer = null;
-        }
-    }, 100);
-
-    _storyCloseTimer = setTimeout(() => {
-        if (fill) fill.style.width = '100%';
-        setTimeout(() => closeStoryModal(), 250);
-    }, durationMs);
 }
 
 function ensureStoryPlayer() {
@@ -2217,6 +2181,7 @@ function ensureStoryPlayer() {
             <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
             <div id="story-age" class="story-age"></div>
             <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
+            <video id="story-video-player" class="story-video" playsinline controls preload="metadata"></video>
             <div id="story-reply-bar" class="story-reply-bar">
                 <input id="story-reply-input" class="story-reply-input" type="text" maxlength="300" placeholder="Reply to story..." autocomplete="off">
                 <button id="story-reply-send" class="story-reply-send" type="button" onclick="sendStoryReply()">Send</button>
@@ -2224,6 +2189,27 @@ function ensureStoryPlayer() {
         </div>
     `;
     document.body.appendChild(modal);
+
+    const player = document.getElementById('story-video-player');
+    const fill = document.getElementById('story-progress-fill');
+
+    player.addEventListener('timeupdate', () => {
+        if (player.duration && isFinite(player.duration) && player.duration > 0) {
+            fill.style.width = ((player.currentTime / player.duration) * 100) + '%';
+        }
+    });
+
+    player.addEventListener('ended', () => {
+        fill.style.width = '100%';
+        setTimeout(() => closeStoryModal(), 250);
+    });
+
+    player.addEventListener('error', () => {
+        const err = player.error;
+        const code = err ? err.code : 0;
+        const msg = err && err.message ? err.message : '';
+        showToast(`Story video error (${code})${msg ? `: ${msg}` : ''}`);
+    });
 
     const replyInput = document.getElementById('story-reply-input');
     replyInput.addEventListener('keydown', (e) => {
@@ -2245,7 +2231,7 @@ function ensureStoryPlayer() {
     _storyReady = true;
 }
 
-function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', durationMs = STORY_DURATION_MS } = {}) {
+function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
     ensureStoryPlayer();
     _storyOnDeleted = onDeleted || null;
     _storyOwnerEmail = (ownerEmail || '').toLowerCase();
@@ -2269,12 +2255,19 @@ function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, crea
     }
 
     const modal = document.getElementById('story-viewer-modal');
+    const player = document.getElementById('story-video-player');
+    const fill = document.getElementById('story-progress-fill');
+    fill.style.width = '0%';
+    player.src = mediaUrl;
+    player.load();
     modal.classList.add('open');
-    startStoryProgress(durationMs);
+    player.play().catch((err) => {
+        showToast(`Story play issue: ${err && err.message ? err.message : 'playback blocked'}`);
+    });
 }
 
-function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', durationMs = STORY_DURATION_MS } = {}) {
-    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail, durationMs });
+function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
+    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail });
 }
 
 async function sendStoryReply() {
@@ -2339,15 +2332,18 @@ async function viewUserStory(email, createdAt = '') {
 
 function closeStoryModal() {
     if (!_storyReady) return;
-    clearStoryTimers();
     const modal = document.getElementById('story-viewer-modal');
+    const player = document.getElementById('story-video-player');
     const fill = document.getElementById('story-progress-fill');
     const bar = document.getElementById('story-reply-bar');
     if (document.activeElement === document.getElementById('story-reply-input')) {
         document.activeElement.blur();
     }
     if (bar) bar.style.bottom = '10%';
-    if (fill) fill.style.width = '0%';
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+    fill.style.width = '0%';
     modal.classList.remove('open');
 }
 
