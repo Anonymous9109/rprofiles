@@ -2181,7 +2181,7 @@ function ensureStoryPlayer() {
             <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
             <div id="story-age" class="story-age"></div>
             <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
-            <video id="story-video-player" class="story-video" playsinline controls preload="metadata"></video>
+            <video id="story-video-player" class="story-video" playsinline preload="metadata"></video>
             <div id="story-reply-bar" class="story-reply-bar">
                 <input id="story-reply-input" class="story-reply-input" type="text" maxlength="300" placeholder="Reply to story..." autocomplete="off">
                 <button id="story-reply-send" class="story-reply-send" type="button" onclick="sendStoryReply()">Send</button>
@@ -2192,6 +2192,11 @@ function ensureStoryPlayer() {
 
     const player = document.getElementById('story-video-player');
     const fill = document.getElementById('story-progress-fill');
+
+    player.addEventListener('click', () => {
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+    });
 
     player.addEventListener('timeupdate', () => {
         if (player.duration && isFinite(player.duration) && player.duration > 0) {
