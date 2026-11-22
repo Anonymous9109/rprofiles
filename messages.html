@@ -144,7 +144,7 @@
         </a>
     </footer>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=5"></script>
     <script src="music-notes.js"></script>
     <script>
         const currentUser = requireAuth();
@@ -156,7 +156,6 @@
         let inboxLoadedOnce = false;
         let inboxLastMessages = {};
 
-        // Shared audio player unlocked on user click so autoplay works reliably
         const noteAudioPlayer = window.__nvaritiaNoteAudio || (window.__nvaritiaNoteAudio = new Audio());
         noteAudioPlayer.preload = 'auto';
         function triggerNoteAudio(note) {
@@ -172,14 +171,12 @@
             }
         }
 
-        // Cache active stories & music notes by lowercase email or username
         const storyCache = new Map();
         const noteCache = new Map();
         let friendStoriesList = [];
         let friendNotesList = [];
         let myActiveNote = null;
 
-        // Watched stories persistence (keyed by story ID so new stories reset automatically)
         const WATCHED_STORIES_KEY = `nvaritia_watched_stories_${(currentUser.email || '').toLowerCase()}`;
         function getWatchedStoryIds() {
             try {
@@ -211,7 +208,6 @@
 
         const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
 
-        // Load own active music note
         async function loadMyNote() {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/notes/get?email=${encodeURIComponent(currentUser.email)}`);
@@ -223,7 +219,6 @@
             } catch (e) {}
         }
 
-        // Load horizontal row of friends' stories
         async function loadFriendStories() {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/stories/friends`, { headers: authHeaders() });
@@ -242,7 +237,6 @@
             } catch (e) {}
         }
 
-        // Load friends' 24h music notes
         async function loadFriendNotes() {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/notes/friends`, { headers: authHeaders() });
@@ -277,7 +271,6 @@
             tray.style.display = 'flex';
             tray.innerHTML = '';
 
-            // Your own Music Note slot (post or view/edit)
             const selfNoteItem = document.createElement('div');
             selfNoteItem.className = 'note-tray-card';
             if (myActiveNote) {
@@ -312,7 +305,6 @@
             }
             tray.appendChild(selfNoteItem);
 
-            // Friends' 24h Music Notes (yellow ring)
             for (const n of friendNotesList) {
                 const item = document.createElement('div');
                 item.className = 'note-tray-card';
@@ -330,7 +322,6 @@
                 tray.appendChild(item);
             }
 
-            // Friends' Stories
             for (const s of ordered) {
                 const isWatched = watchedSet.has(s.id);
                 const item = document.createElement('div');
@@ -359,7 +350,6 @@
             }
         }
 
-        // Hydrates story rings & yellow music note rings on any .story-ring-wrapper[data-story-user]
         async function hydrateStoryRings(rootEl = document) {
             const wrappers = Array.from(rootEl.querySelectorAll('.story-ring-wrapper[data-story-user]'));
             const uniqueUsers = [...new Set(wrappers.map(w => w.getAttribute('data-story-user')).filter(Boolean))];
