@@ -1422,11 +1422,7 @@ function focusCommentInput(caretPos = null) {
     input.disabled = false;
     input.readOnly = false;
     input.style.pointerEvents = 'auto';
-    try {
-        input.focus({ preventScroll: true });
-    } catch (e) {
-        input.focus();
-    }
+    input.focus();
     if (typeof caretPos === 'number') {
         try { input.setSelectionRange(caretPos, caretPos); } catch (e) {}
     }
@@ -1602,6 +1598,7 @@ function ensureCommentsDrawer() {
         if (existingInput) {
             existingInput.disabled = false;
             existingInput.readOnly = false;
+            existingInput.setAttribute('inputmode', 'text');
             existingInput.style.pointerEvents = 'auto';
         }
         return drawer;
@@ -1630,7 +1627,7 @@ function ensureCommentsDrawer() {
             <form id="comment-submit-form">
                 <div class="composer-top-row">
                     <img id="composer-user-pfp" class="composer-user-pfp" src="" alt="Your avatar">
-                    <input type="text" id="comment-input" placeholder="Write a comment..." autocomplete="off">
+                    <input type="text" id="comment-input" inputmode="text" enterkeyhint="send" placeholder="Write a comment..." autocomplete="off">
                 </div>
                 <div class="composer-bottom-bar">
                     <div class="composer-actions-row">
@@ -1653,35 +1650,31 @@ function ensureCommentsDrawer() {
     form.addEventListener('submit', submitComment);
 
     const activateInput = () => {
-        if (input.disabled || input.readOnly) {
-            input.disabled = false;
-            input.readOnly = false;
+        input.disabled = false;
+        input.readOnly = false;
+        const stickerPanel = document.getElementById('comment-sticker-panel');
+        if (stickerPanel && stickerPanel.classList.contains('open')) {
+            stickerPanel.classList.remove('open');
+            const stickerBtn = document.getElementById('comment-sticker-toggle-btn');
+            if (stickerBtn) stickerBtn.classList.remove('active');
         }
-        toggleStickerPicker(false);
         setComposerTypingMode(true);
-        ensureFriendsLoaded(false);
+        if (document.activeElement !== input) {
+            input.focus();
+        }
     };
 
-    input.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        activateInput();
-    });
-
-    input.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-        activateInput();
-    }, { passive: true });
-
-    input.addEventListener('click', (e) => {
-        e.stopPropagation();
-        activateInput();
-        if (document.activeElement !== input) {
-            focusCommentInput();
-        }
-    });
+    input.addEventListener('pointerdown', activateInput);
+    input.addEventListener('touchstart', activateInput, { passive: true });
+    input.addEventListener('click', activateInput);
 
     input.addEventListener('focus', () => {
-        activateInput();
+        input.disabled = false;
+        input.readOnly = false;
+        setComposerTypingMode(true);
+        if (!Array.isArray(_friendsCache)) {
+            ensureFriendsLoaded(false);
+        }
     });
 
     input.addEventListener('input', () => {
@@ -1719,6 +1712,8 @@ function ensureCommentsDrawer() {
     document.addEventListener('pointerdown', (e) => {
         const drawerEl = document.getElementById('comments-drawer');
         if (!drawerEl || !drawerEl.classList.contains('open')) return;
+        const inputEl = document.getElementById('comment-input');
+        if (inputEl && e.target === inputEl) return;
         const formEl = document.getElementById('comment-submit-form');
         const mentionBox = document.getElementById('friend-mention-box');
         const stickerPanel = document.getElementById('comment-sticker-panel');
@@ -1732,7 +1727,7 @@ function ensureCommentsDrawer() {
         if (!clickedInsideComposer && !clickedMention && !clickedSticker) {
             setComposerTypingMode(false);
         }
-    }, true);
+    });
 
     if (!_commentsViewportBound) {
         _commentsViewportBound = true;
