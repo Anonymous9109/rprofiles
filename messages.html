@@ -70,9 +70,18 @@
         .chat-container { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
         .drawer-body form { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e5e5e5; background: #fff; }
 
-        .chat-bubble { max-width: min(80%, 460px); padding: 9px 14px; border-radius: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.35; word-break: break-word; }
-        .chat-bubble.sent { align-self: flex-end; background: #000; color: #fff; }
-        .chat-bubble.received { align-self: flex-start; background: #eee; color: #111; }
+        .chat-row { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
+        .chat-row.received { justify-content: flex-start; }
+        .chat-row.sent { justify-content: flex-end; }
+        .chat-row.no-pfp.received { padding-left: 36px; }
+        .chat-row.no-pfp.sent { padding-right: 0; }
+        .msg-pfp-link { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; text-decoration: none; }
+        .msg-pfp { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; cursor: pointer; }
+        html.dark .msg-pfp { border-color: #333; background: #1c1c1c; }
+
+        .chat-bubble { max-width: min(76%, 440px); padding: 9px 14px; border-radius: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.35; word-break: break-word; }
+        .chat-bubble.sent { background: #000; color: #fff; }
+        .chat-bubble.received { background: #eee; color: #111; }
         .receipt { align-self: flex-end; font-size: clamp(11px, 3vw, 12px); color: #888; margin-top: -2px; }
         .receipt.seen { color: #2563eb; font-weight: 600; }
 
@@ -207,6 +216,23 @@
         }
 
         const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+        function getMessageSenderProfile(isSent, peer) {
+            if (isSent) {
+                const identifier = currentUser.username || currentUser.email || '';
+                return {
+                    pfpUrl: currentUser.pfp_url || AVATAR_PLACEHOLDER,
+                    profileUrl: `profile.html?user=${encodeURIComponent(identifier)}`,
+                    label: currentUser.username ? `@${currentUser.username}` : 'Your profile'
+                };
+            }
+            const identifier = (peer && (peer.username || peer.email)) || '';
+            return {
+                pfpUrl: (peer && peer.pfp_url) || AVATAR_PLACEHOLDER,
+                profileUrl: `profile.html?user=${encodeURIComponent(identifier)}`,
+                label: peer && peer.username ? `@${peer.username}` : 'User profile'
+            };
+        }
 
         async function loadMyNote() {
             try {
@@ -602,11 +628,28 @@
                 data.messages.forEach((m, i) => { if (m.sender_email.toLowerCase() === me) lastSentIdx = i; });
 
                 chatContainer.innerHTML = data.messages.map((m, i) => {
-                    const isSent = m.sender_email.toLowerCase() === me;
+                    const senderEmail = (m.sender_email || '').toLowerCase();
+                    const isSent = senderEmail === me;
+                    const nextMsg = data.messages[i + 1];
+                    const nextSenderEmail = nextMsg ? (nextMsg.sender_email || '').toLowerCase() : null;
+                    const showPfp = nextSenderEmail !== senderEmail;
+
+                    const senderMeta = getMessageSenderProfile(isSent, peerAtRequest);
                     const shared = parseSharedPostContent(m.content);
-                    let html = shared
+                    const bubbleHtml = shared
                         ? renderSharedPostBubbleHtml(shared, isSent)
                         : `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
+
+                    const pfpHtml = showPfp
+                        ? `<a href="${senderMeta.profileUrl}" class="msg-pfp-link" title="View ${escapeHtml(senderMeta.label)}'s profile" onclick="goToProfile('${senderMeta.profileUrl}', event)"><img class="msg-pfp" src="${senderMeta.pfpUrl}" alt=""></a>`
+                        : '';
+
+                    let html = `
+                        <div class="chat-row ${isSent ? 'sent' : 'received'} ${showPfp ? '' : 'no-pfp'}">
+                            ${pfpHtml}
+                            ${bubbleHtml}
+                        </div>
+                    `;
 
                     if (isSent && i === lastSentIdx) {
                         if (m.read_at && m.read_at !== "") {
