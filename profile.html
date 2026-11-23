@@ -83,6 +83,45 @@
         .mutual-name { font-size: 10px; font-weight: 600; margin-top: 4px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
+
+        /* Friendship Status Bar */
+        .friendship-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+        .friendship-bar-text { font-size: 13px; font-weight: 600; color: #111; }
+        .friendship-view-btn { background: #000; color: #fff; border: 1px solid #000; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
+        .friendship-view-btn:active { transform: scale(0.97); }
+
+        /* Friendship Slide-In Drawer from Right */
+        .friendship-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; background: #fff; z-index: 2200; transition: right 0.3s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow-y: auto; }
+        .friendship-drawer.open { right: 0; }
+        .friendship-drawer-header { height: 52px; padding: 0 16px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 16px; flex-shrink: 0; background: #fff; position: sticky; top: 0; z-index: 5; }
+        .friendship-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; color: inherit; border-radius: 50%; }
+        .friendship-drawer-body { width: 100%; max-width: 520px; margin: 0 auto; padding: 28px 20px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; flex-grow: 1; }
+
+        /* Diagonal Overlapping PFPs meeting at '&' */
+        .friendship-pfp-duo { position: relative; width: 224px; height: 204px; margin: 4px auto 18px; }
+        .friendship-pfp-large { position: absolute; width: 122px; height: 122px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.14); background: #f0f0f0; }
+        .friendship-pfp-left { top: 0; left: 4px; z-index: 1; }
+        .friendship-pfp-right { bottom: 0; right: 4px; z-index: 2; }
+        .friendship-amp-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: #000; color: #fff; border: 3px solid #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 3; box-shadow: 0 4px 14px rgba(0,0,0,0.22); user-select: none; }
+
+        .friendship-since-heading { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 22px; }
+        .friendship-stats-stack { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .friendship-stat-card { width: 100%; border: 1px solid #e5e5e5; background: #fafafa; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease; }
+        .friendship-stat-card.visible { opacity: 1; transform: translateY(0); }
+        .friendship-stat-number { font-size: 26px; font-weight: 800; color: #111; line-height: 1.15; letter-spacing: -0.02em; }
+        .friendship-stat-label { font-size: 12px; font-weight: 600; color: #666; }
+
+        /* Dark Mode Support */
+        html.dark .friendship-bar { background: #1c1c1c; border-color: #2a2a2a; }
+        html.dark .friendship-bar-text { color: #eee; }
+        html.dark .friendship-view-btn { background: #fff; color: #000; border-color: #fff; }
+        html.dark .friendship-drawer, html.dark .friendship-drawer-header { background: #121212; border-color: #2a2a2a; color: #eee; }
+        html.dark .friendship-pfp-large { border-color: #121212; background: #1c1c1c; }
+        html.dark .friendship-amp-badge { background: #fff; color: #000; border-color: #121212; }
+        html.dark .friendship-since-heading { color: #eee; }
+        html.dark .friendship-stat-card { background: #1c1c1c; border-color: #2a2a2a; }
+        html.dark .friendship-stat-number { color: #fff; }
+        html.dark .friendship-stat-label { color: #a1a1aa; }
     </style>
 </head>
 <body>
@@ -116,6 +155,7 @@
             <div class="panel-content" id="bio-display">No bio provided.</div>
         </div>
         <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
+        <div id="friendship-bar" class="friendship-bar"></div>
         <div id="mutual-friends" style="display: none;"></div>
         <div class="panel">
             <div class="panel-header" id="posts-header">Posts</div>
@@ -128,6 +168,15 @@
             <span style="cursor: pointer; font-size: 18px;" onclick="closeUsersDrawer()">✕</span>
         </div>
         <div class="users-drawer-body" id="users-drawer-list"><div class="loading-spinner">Loading...</div></div>
+    </div>
+    <div id="friendship-drawer" class="friendship-drawer">
+        <div class="friendship-drawer-header">
+            <button type="button" class="friendship-back-btn" onclick="closeFriendshipDrawer()" aria-label="Back">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <span>Friendship</span>
+        </div>
+        <div class="friendship-drawer-body" id="friendship-drawer-body"></div>
     </div>
     <footer>
         <a href="feed.html" class="footer-tab">
@@ -191,11 +240,16 @@
         let activeProfileUser = null;
         let activeStory = null;
         let activeNote = null;
+        let activeFriendsSince = null;
         let isFollowingActiveUser = false;
         let profileFollowData = { followers: [], following: [] };
 
         async function loadProfile() {
             document.getElementById('mutual-friends').style.display = 'none';
+            const fBar = document.getElementById('friendship-bar');
+            if (fBar) { fBar.style.display = 'none'; fBar.innerHTML = ''; }
+            activeFriendsSince = null;
+
             try {
                 const viewerParam = loggedUser && !loggedUser.guest ? `?viewer=${encodeURIComponent(loggedUser.email)}` : '';
                 const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}${viewerParam}`);
@@ -255,10 +309,15 @@
                         return;
                     } else {
                         let fStatus = 'none';
+                        let fSince = null;
                         if (!loggedUser.guest) {
                             try {
                                 const fr = await fetch(`${WORKER_ORIGIN}/api/friends/status?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
-                                if (fr.ok) fStatus = (await fr.json()).status;
+                                if (fr.ok) {
+                                    const fData = await fr.json();
+                                    fStatus = fData.status;
+                                    fSince = fData.friendsSince || null;
+                                }
                             } catch (e) {}
                         }
                         const followBtnText = isFollowingActiveUser ? 'Unfollow' : 'Follow';
@@ -267,10 +326,9 @@
                         controlsEl.innerHTML = `
                             <button type="button" id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
                             <button type="button" id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
-                            ${activeNote ? `<button type="button" class="btn-app-secondary" style="padding: 8px; border-color: #eab308; background: #fef9c3; color: #111;" onclick="openNoteViewer(activeNote, '@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}\\'s', false)">♫ Note</button>` : ''}
                             <button type="button" class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
                         `;
-                        setFriendButton(fStatus);
+                        setFriendButton(fStatus, fSince);
                         if (!loggedUser.guest) loadMutualFriends();
                     }
                 }
@@ -404,20 +462,169 @@
             if (isOwner) triggerStoryUpload();
         }
 
-        function setFriendButton(status) {
+        function formatFriendshipDate(isoStr) {
+            if (!isoStr) return 'Recently';
+            let s = String(isoStr).trim();
+            if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return 'Recently';
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatFriendshipDuration(isoStr) {
+            if (!isoStr) return '0 days';
+            let s = String(isoStr).trim();
+            if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+            const start = Date.parse(s);
+            if (isNaN(start)) return '0 days';
+            const diffMs = Math.max(0, Date.now() - start);
+            const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (totalDays < 1) {
+                const hours = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
+                return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+            }
+            const years = Math.floor(totalDays / 365);
+            const remAfterYears = totalDays % 365;
+            const months = Math.floor(remAfterYears / 30);
+            const days = remAfterYears % 30;
+            const parts = [];
+            if (years) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+            if (months) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+            if (days || !parts.length) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+            return parts.slice(0, 2).join(', ');
+        }
+
+        function animateCountUp(el, target, duration = 900) {
+            if (!el) return;
+            const endVal = Math.max(0, Number(target) || 0);
+            if (endVal === 0) {
+                el.innerText = '0';
+                return;
+            }
+            const startTime = performance.now();
+            function tick(now) {
+                const progress = Math.min(1, (now - startTime) / duration);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.innerText = Math.round(eased * endVal).toLocaleString();
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        function setFriendButton(status, friendsSince = null) {
             const btn = document.getElementById('friend-btn');
+            const fBar = document.getElementById('friendship-bar');
             if (!btn || !activeProfileUser) return;
             btn.disabled = false; btn.style.opacity = '1';
+
             if (status === 'friends') {
+                activeFriendsSince = friendsSince || activeFriendsSince || new Date().toISOString();
                 btn.innerText = 'Message';
                 btn.onclick = () => { location.href = `messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}`; };
-            } else if (status === 'sent') {
-                btn.innerText = 'Request Sent'; btn.disabled = true; btn.style.opacity = '0.6'; btn.onclick = null;
-            } else if (status === 'received') {
-                btn.innerText = 'Respond to Request'; btn.onclick = () => { location.href = 'messages.html'; };
+
+                if (fBar) {
+                    fBar.innerHTML = `
+                        <span class="friendship-bar-text">Friends since ${escapeHtml(formatFriendshipDate(activeFriendsSince))}</span>
+                        <button type="button" class="friendship-view-btn" onclick="openFriendshipDrawer()">
+                            <span>View</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
+                    `;
+                    fBar.style.display = 'flex';
+                }
             } else {
-                btn.innerText = 'Friend Request'; btn.onclick = sendFriendRequest;
+                activeFriendsSince = null;
+                if (fBar) { fBar.style.display = 'none'; fBar.innerHTML = ''; }
+                if (status === 'sent') {
+                    btn.innerText = 'Request Sent'; btn.disabled = true; btn.style.opacity = '0.6'; btn.onclick = null;
+                } else if (status === 'received') {
+                    btn.innerText = 'Respond to Request'; btn.onclick = () => { location.href = 'messages.html'; };
+                } else {
+                    btn.innerText = 'Friend Request'; btn.onclick = sendFriendRequest;
+                }
             }
+        }
+
+        async function openFriendshipDrawer() {
+            if (!activeProfileUser || loggedUser.guest) return;
+            const drawer = document.getElementById('friendship-drawer');
+            const body = document.getElementById('friendship-drawer-body');
+            if (!drawer || !body) return;
+
+            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='122' height='122'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+            const myPfp = loggedUser.pfp_url || defaultAvatar;
+            const friendPfp = activeProfileUser.pfp_url || defaultAvatar;
+            const initialDateLabel = formatFriendshipDate(activeFriendsSince);
+
+            body.innerHTML = `
+                <div class="friendship-pfp-duo">
+                    <img class="friendship-pfp-large friendship-pfp-left" src="${myPfp}" alt="Your profile picture">
+                    <div class="friendship-amp-badge">&amp;</div>
+                    <img class="friendship-pfp-large friendship-pfp-right" src="${friendPfp}" alt="Friend profile picture">
+                </div>
+                <div class="friendship-since-heading" id="fs-since-label">Friends since ${escapeHtml(initialDateLabel)}</div>
+                <div class="friendship-stats-stack">
+                    <div class="friendship-stat-card" id="fs-card-messages">
+                        <div class="friendship-stat-number" id="fs-messages-count">0</div>
+                        <div class="friendship-stat-label">Messages exchanged</div>
+                    </div>
+                    <div class="friendship-stat-card" id="fs-card-posts">
+                        <div class="friendship-stat-number" id="fs-posts-count">0</div>
+                        <div class="friendship-stat-label">Posts shared in chat</div>
+                    </div>
+                    <div class="friendship-stat-card" id="fs-card-duration">
+                        <div class="friendship-stat-number" id="fs-duration-text" style="font-size: 20px;">${escapeHtml(formatFriendshipDuration(activeFriendsSince))}</div>
+                        <div class="friendship-stat-label">Friendship duration</div>
+                    </div>
+                </div>
+            `;
+
+            requestAnimationFrame(() => drawer.classList.add('open'));
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/friendship-details?target=${encodeURIComponent(activeProfileUser.email)}`, {
+                    headers: authHeaders()
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load friendship details');
+
+                const sinceIso = data.friendsSince || activeFriendsSince;
+                activeFriendsSince = sinceIso;
+
+                const sinceEl = document.getElementById('fs-since-label');
+                const durEl = document.getElementById('fs-duration-text');
+                if (sinceEl) sinceEl.innerText = `Friends since ${formatFriendshipDate(sinceIso)}`;
+                if (durEl) durEl.innerText = formatFriendshipDuration(sinceIso);
+
+                const c1 = document.getElementById('fs-card-messages');
+                const c2 = document.getElementById('fs-card-posts');
+                const c3 = document.getElementById('fs-card-duration');
+
+                setTimeout(() => {
+                    if (c1) c1.classList.add('visible');
+                    animateCountUp(document.getElementById('fs-messages-count'), data.messagesCount || 0, 900);
+                }, 80);
+
+                setTimeout(() => {
+                    if (c2) c2.classList.add('visible');
+                    animateCountUp(document.getElementById('fs-posts-count'), data.sharedPostsCount || 0, 900);
+                }, 220);
+
+                setTimeout(() => {
+                    if (c3) c3.classList.add('visible');
+                }, 360);
+            } catch (err) {
+                ['fs-card-messages', 'fs-card-posts', 'fs-card-duration'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('visible');
+                });
+                showToast(err.message);
+            }
+        }
+
+        function closeFriendshipDrawer() {
+            const drawer = document.getElementById('friendship-drawer');
+            if (drawer) drawer.classList.remove('open');
         }
 
         async function sendFriendRequest() {
@@ -432,7 +639,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-                setFriendButton(data.status);
+                setFriendButton(data.status, data.friendsSince || new Date().toISOString());
                 if (data.status === 'friends') loadMutualFriends();
             } catch (err) { setFriendButton('none'); showToast(err.message); }
         }
