@@ -2134,15 +2134,16 @@ const STORY_CSS = `
 .story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .story-modal.open .story-modal-content { transform: translateX(0); }
 .story-video { width: 100%; height: 100%; max-width: 100vw; max-height: 100vh; object-fit: contain; background: #000; }
-.story-top-hud { position: absolute; top: 40px; left: 24px; right: 24px; z-index: 20; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+.story-top-hud { position: absolute; top: 40px; left: 20px; right: 20px; z-index: 30; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
 .story-progress-container { width: 100%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
 .story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
 .story-action-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .story-left-controls { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
-.story-right-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; pointer-events: auto; }
-.story-close-top-left { color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.5); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; }
-.story-age { height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.5); border-radius: 17px; display: none; align-items: center; user-select: none; }
-.story-delete-btn { height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; background: #ef4444; border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-right-controls { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; pointer-events: auto; }
+.story-close-btn { color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.55); width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; user-select: none; }
+.story-age { height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.55); border-radius: 17px; display: none; align-items: center; user-select: none; }
+.story-delete-btn { height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; background: #ef4444; border-radius: 17px; display: none; align-items: center; justify-content: center; user-select: none; }
+.story-delete-btn.visible { display: inline-flex; }
 .story-reply-bar { position: absolute; left: 0; right: 0; bottom: 10%; z-index: 20; display: none; gap: 8px; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); }
 .story-reply-input { flex-grow: 1; min-width: 0; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.6); border-radius: 22px; background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; outline: none; }
 .story-reply-input::placeholder { color: rgba(255,255,255,0.7); }
@@ -2170,6 +2171,19 @@ function storyAgeLabel(createdAt) {
     return Math.floor(min / 60) + 'h';
 }
 
+function isViewerStoryOwner(viewer, ownerEmail = '', ownerUsername = '') {
+    if (!viewer) return false;
+    const vEmail = (viewer.email || '').trim().toLowerCase();
+    const oEmail = (ownerEmail || '').trim().toLowerCase();
+    if (vEmail && oEmail && vEmail === oEmail) return true;
+
+    const vUser = (viewer.username || '').trim().toLowerCase();
+    const oUser = (ownerUsername || '').trim().toLowerCase();
+    if (vUser && oUser && vUser === oUser) return true;
+
+    return false;
+}
+
 function ensureStoryPlayer() {
     if (_storyReady) return;
     const style = document.createElement('style');
@@ -2185,11 +2199,11 @@ function ensureStoryPlayer() {
                 <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
                 <div class="story-action-row">
                     <div class="story-left-controls">
-                        <div class="story-close-top-left" onclick="closeStoryModal()">✕</div>
                         <div id="story-age" class="story-age"></div>
                     </div>
                     <div class="story-right-controls">
                         <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
+                        <div class="story-close-btn" onclick="closeStoryModal()">✕</div>
                     </div>
                 </div>
             </div>
@@ -2248,16 +2262,17 @@ function ensureStoryPlayer() {
     _storyReady = true;
 }
 
-function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
+function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', ownerUsername = '' } = {}) {
     ensureStoryPlayer();
     _storyOnDeleted = onDeleted || null;
-    _storyOwnerEmail = (ownerEmail || '').toLowerCase();
+    _storyOwnerEmail = (ownerEmail || '').trim().toLowerCase();
 
     const viewer = getSessionUser();
-    const canReply = !canDelete && !!_storyOwnerEmail && !!(viewer && viewer.email && viewer.email.toLowerCase() !== _storyOwnerEmail);
+    const resolvedCanDelete = Boolean(canDelete) || isViewerStoryOwner(viewer, _storyOwnerEmail, ownerUsername);
+    const canReply = !resolvedCanDelete && !!_storyOwnerEmail && !!(viewer && viewer.email && viewer.email.toLowerCase() !== _storyOwnerEmail);
 
     const delBtn = document.getElementById('story-delete-btn');
-    if (delBtn) delBtn.style.display = canDelete ? 'flex' : 'none';
+    if (delBtn) delBtn.classList.toggle('visible', resolvedCanDelete);
 
     const replyBar = document.getElementById('story-reply-bar');
     const replyInput = document.getElementById('story-reply-input');
@@ -2268,7 +2283,7 @@ function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, crea
     const age = storyAgeLabel(createdAt);
     if (ageEl) {
         ageEl.textContent = age;
-        ageEl.style.display = age ? 'flex' : 'none';
+        ageEl.style.display = age ? 'inline-flex' : 'none';
     }
 
     const modal = document.getElementById('story-viewer-modal');
@@ -2283,8 +2298,8 @@ function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, crea
     });
 }
 
-function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '' } = {}) {
-    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail });
+function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', ownerUsername = '' } = {}) {
+    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail, ownerUsername });
 }
 
 async function sendStoryReply() {
@@ -2336,11 +2351,15 @@ async function viewUserStory(email, createdAt = '') {
         }
 
         const viewer = getSessionUser();
-        const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === email.trim().toLowerCase());
+        const storyEmail = (storyObj.user_email || email || '').trim().toLowerCase();
+        const storyUsername = (storyObj.username || '').trim().toLowerCase();
+        const isOwn = isViewerStoryOwner(viewer, storyEmail, storyUsername);
+
         showStoryInPlayer(storyObj.media_url, {
             canDelete: isOwn,
             createdAt: createdAt || storyObj.created_at || '',
-            ownerEmail: email.trim().toLowerCase()
+            ownerEmail: storyEmail,
+            ownerUsername: storyUsername
         });
     } catch (err) {
         showToast(`Story failed to load: ${err && err.message ? err.message : 'network error'}`);
