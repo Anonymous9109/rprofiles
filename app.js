@@ -51,14 +51,14 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .reaction-btn.active-dislike .reaction-icon { stroke: #ef4444; fill: #ef4444; }
 
 /* Comments Slide-In Page from Right */
-.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow: hidden; will-change: right; }
-.comments-drawer.open { right: 0; }
-.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+.comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow: hidden; will-change: right; pointer-events: auto; }
+.comments-drawer.open { right: 0; pointer-events: auto; }
+.comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; position: relative; z-index: 2; }
 .comments-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
-.comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; position: relative; }
-.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; }
+.comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; position: relative; z-index: 3; pointer-events: auto; }
+.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; position: relative; z-index: 1; }
 
-#comment-sticker-panel { display: none; flex-direction: column; gap: 8px; padding: 10px; background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; }
+#comment-sticker-panel { display: none; flex-direction: column; gap: 8px; padding: 10px; background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; position: relative; z-index: 4; }
 #comment-sticker-panel.open { display: flex; }
 .sticker-tabs-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
 .sticker-tab-group { display: flex; gap: 6px; }
@@ -82,17 +82,18 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comment-sticker-card:active { transform: scale(0.94); }
 
 /* Friend-Only @Mention Dropdown */
-.friend-mention-box { display: none; flex-direction: column; gap: 4px; max-height: 170px; overflow-y: auto; background: #fff; border: 1px solid #d4d4d8; border-radius: 8px; padding: 6px; margin-bottom: 6px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.friend-mention-box { display: none; flex-direction: column; gap: 4px; max-height: 170px; overflow-y: auto; background: #fff; border: 1px solid #d4d4d8; border-radius: 8px; padding: 6px; margin-bottom: 6px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; z-index: 5; }
 .friend-mention-box.open { display: flex; }
 .friend-mention-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .friend-mention-item:hover, .friend-mention-item.active { background: #f4f4f5; }
 .friend-mention-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; background: #f0f0f0; flex-shrink: 0; }
 
 /* Comment Composer Layout */
-#comment-submit-form { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
-.composer-top-row { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
-.composer-user-pfp { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; background: #f0f0f0; flex-shrink: 0; }
-#comment-input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; background: #fff; color: #111; }
+#comment-submit-form { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; position: relative; z-index: 6; pointer-events: auto; touch-action: manipulation; }
+.composer-top-row { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; position: relative; z-index: 7; pointer-events: auto; }
+.composer-user-pfp { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; background: #f0f0f0; flex-shrink: 0; pointer-events: none; }
+#comment-input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; background: #fff; color: #111; position: relative; z-index: 8; pointer-events: auto !important; touch-action: manipulation !important; user-select: text !important; -webkit-user-select: text !important; cursor: text; }
+#comment-input:focus { outline: none; border-color: #111; }
 .composer-actions-row { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .composer-icon-btn { background: transparent; color: #111; border: none; padding: 7px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
 .composer-icon-btn:hover { background: rgba(0,0,0,0.06); }
@@ -199,6 +200,7 @@ html.dark .chat-bubble.sent { background:#fff; color:#000; }
 html.dark .inbox-item, html.dark .activity-item { border-color:#2a2a2a; }
 html.dark .inbox-item:hover, html.dark .activity-item:hover { background:#1c1c1c; }
 html.dark input, html.dark textarea, html.dark select { background:#1c1c1c; color:#eee; border-color:#333; }
+html.dark #comment-input { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark .custom-file-upload { background:#1c1c1c; color:#eee; border-color:#333; }
 html.dark [style*="background: #f0f0f0"] { background:#2a2a2a !important; color:#eee !important; }
 html.dark .report-option { background:#222; border-color:#333; color:#eee; }
@@ -1253,7 +1255,6 @@ function setComposerTypingMode(active) {
     const hasMention = _mentionActiveQuery !== null;
     _composerTypingMode = Boolean(active || hasText || hasMention);
     form.classList.toggle('composer-typing', _composerTypingMode);
-    syncCommentsDrawerViewport();
 }
 
 function syncComposerUserAvatar() {
@@ -1353,11 +1354,10 @@ function selectFriendMention(index) {
         const replacement = `@${friend.username} `;
         input.value = val.slice(0, startIdx) + replacement + afterCaret;
         const nextPos = startIdx + replacement.length;
-        input.focus();
-        try { input.setSelectionRange(nextPos, nextPos); } catch (e) {}
+        focusCommentInput(nextPos);
     } else {
         input.value = `${val}${val && !val.endsWith(' ') ? ' ' : ''}@${friend.username} `;
-        input.focus();
+        focusCommentInput();
     }
 
     closeFriendMentionDropdown();
@@ -1407,19 +1407,37 @@ async function triggerFriendTagMode() {
         const insert = `${needsSpace ? ' ' : ''}@`;
         input.value = before + insert + after;
         const nextPos = before.length + insert.length;
-        input.focus();
-        try { input.setSelectionRange(nextPos, nextPos); } catch (e) {}
+        focusCommentInput(nextPos);
     } else {
-        input.focus();
+        focusCommentInput();
     }
 
     await ensureFriendsLoaded(false);
     await updateFriendMentionStateFromInput();
 }
 
+function focusCommentInput(caretPos = null) {
+    const input = document.getElementById('comment-input');
+    if (!input) return;
+    input.disabled = false;
+    input.readOnly = false;
+    input.style.pointerEvents = 'auto';
+    try {
+        input.focus({ preventScroll: true });
+    } catch (e) {
+        input.focus();
+    }
+    if (typeof caretPos === 'number') {
+        try { input.setSelectionRange(caretPos, caretPos); } catch (e) {}
+    }
+}
+
 function syncCommentsDrawerViewport() {
     const drawer = document.getElementById('comments-drawer');
     if (!drawer || !drawer.classList.contains('open')) return;
+    const input = document.getElementById('comment-input');
+    if (input && document.activeElement === input) return;
+
     if (window.visualViewport) {
         drawer.style.height = `${window.visualViewport.height}px`;
         drawer.style.top = `${window.visualViewport.offsetTop}px`;
@@ -1580,6 +1598,12 @@ function ensureCommentsDrawer() {
     let drawer = document.getElementById('comments-drawer');
     if (drawer) {
         syncComposerUserAvatar();
+        const existingInput = document.getElementById('comment-input');
+        if (existingInput) {
+            existingInput.disabled = false;
+            existingInput.readOnly = false;
+            existingInput.style.pointerEvents = 'auto';
+        }
         return drawer;
     }
 
@@ -1628,12 +1652,36 @@ function ensureCommentsDrawer() {
 
     form.addEventListener('submit', submitComment);
 
-    input.addEventListener('focus', () => {
+    const activateInput = () => {
+        if (input.disabled || input.readOnly) {
+            input.disabled = false;
+            input.readOnly = false;
+        }
         toggleStickerPicker(false);
         setComposerTypingMode(true);
         ensureFriendsLoaded(false);
-        syncCommentsDrawerViewport();
-        setTimeout(syncCommentsDrawerViewport, 150);
+    };
+
+    input.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        activateInput();
+    });
+
+    input.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        activateInput();
+    }, { passive: true });
+
+    input.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activateInput();
+        if (document.activeElement !== input) {
+            focusCommentInput();
+        }
+    });
+
+    input.addEventListener('focus', () => {
+        activateInput();
     });
 
     input.addEventListener('input', () => {
@@ -1668,7 +1716,7 @@ function ensureCommentsDrawer() {
         }
     });
 
-    document.addEventListener('click', (e) => {
+    document.addEventListener('pointerdown', (e) => {
         const drawerEl = document.getElementById('comments-drawer');
         if (!drawerEl || !drawerEl.classList.contains('open')) return;
         const formEl = document.getElementById('comment-submit-form');
@@ -1684,7 +1732,7 @@ function ensureCommentsDrawer() {
         if (!clickedInsideComposer && !clickedMention && !clickedSticker) {
             setComposerTypingMode(false);
         }
-    });
+    }, true);
 
     if (!_commentsViewportBound) {
         _commentsViewportBound = true;
@@ -1706,6 +1754,13 @@ function openCommentsDrawer(postId) {
     toggleStickerPicker(false);
     setComposerTypingMode(false);
     ensureFriendsLoaded(false);
+
+    const input = document.getElementById('comment-input');
+    if (input) {
+        input.disabled = false;
+        input.readOnly = false;
+        input.style.pointerEvents = 'auto';
+    }
 
     drawer.classList.remove('open');
     void drawer.offsetWidth;
@@ -1846,13 +1901,10 @@ function setReplyingTo(commentId, username) {
     _replyingToCommentUsername = username;
     const textEl = document.getElementById('replying-to-text');
     const bannerEl = document.getElementById('replying-banner');
-    const inputEl = document.getElementById('comment-input');
     if (textEl) textEl.innerText = `Replying to @${username}`;
     if (bannerEl) bannerEl.style.display = 'flex';
-    if (inputEl) {
-        inputEl.focus();
-        setComposerTypingMode(true);
-    }
+    setComposerTypingMode(true);
+    focusCommentInput();
 }
 
 function cancelReply() {
