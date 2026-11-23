@@ -342,10 +342,48 @@ function getSessionUser() {
     }
 }
 
+async function syncAndroidFcmToken(retries = 6) {
+    const user = getSessionUser();
+    const authToken = getSessionToken();
+    if (!user || !user.email || !authToken) return;
+    if (!window.AndroidBridge || typeof window.AndroidBridge.getFcmToken !== 'function') return;
+
+    let fcmToken = '';
+    try {
+        fcmToken = String(window.AndroidBridge.getFcmToken() || '').trim();
+    } catch (e) {}
+
+    if (!fcmToken) {
+        if (retries > 0) {
+            setTimeout(() => syncAndroidFcmToken(retries - 1), 1500);
+        }
+        return;
+    }
+
+    const syncKey = `nvaritia_fcm_synced_${user.email.toLowerCase()}`;
+    try {
+        if (localStorage.getItem(syncKey) === fcmToken) return;
+    } catch (e) {}
+
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/devices/register`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ fcmToken })
+        });
+        if (res.ok) {
+            try { localStorage.setItem(syncKey, fcmToken); } catch (e) {}
+        }
+    } catch (e) {}
+}
+
+window.syncAndroidFcmToken = syncAndroidFcmToken;
+
 function setSessionUser(user, token) {
     if (user && user.theme) applyTheme(user.theme);
     localStorage.setItem('Nvaritia_session', JSON.stringify(user));
     if (token) setSessionToken(token);
+    syncAndroidFcmToken();
 }
 
 async function refreshSession() {
@@ -376,6 +414,7 @@ function requireAuth(allowGuest = false) {
         return null;
     }
     if (user.theme) applyTheme(user.theme);
+    syncAndroidFcmToken();
     return user;
 }
 
