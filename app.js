@@ -56,7 +56,7 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .comments-drawer .drawer-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; position: relative; z-index: 2; }
 .comments-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
 .comments-drawer .drawer-body { padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-width: 680px; width: 100%; margin: 0 auto; position: relative; z-index: 3; pointer-events: auto; }
-.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; position: relative; z-index: 1; }
+.comments-container { flex-grow: 1; min-height: 0; overflow-y: auto; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 14px; background: #fafafa; font-size: 15px; position: relative; z-index: 1; -webkit-overflow-scrolling: touch; }
 
 #comment-sticker-panel { display: none; flex-direction: column; gap: 8px; padding: 10px; background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; position: relative; z-index: 4; }
 #comment-sticker-panel.open { display: flex; }
@@ -92,13 +92,13 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 #comment-submit-form { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; position: relative; z-index: 6; pointer-events: auto; touch-action: manipulation; }
 .composer-top-row { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; position: relative; z-index: 7; pointer-events: auto; }
 .composer-user-pfp { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; background: #f0f0f0; flex-shrink: 0; pointer-events: none; }
-#comment-input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; background: #fff; color: #111; position: relative; z-index: 8; pointer-events: auto !important; touch-action: manipulation !important; user-select: text !important; -webkit-user-select: text !important; cursor: text; }
+#comment-input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; line-height: 1.25; background: #fff; color: #111; position: relative; z-index: 8; pointer-events: auto !important; touch-action: manipulation !important; user-select: text !important; -webkit-user-select: text !important; cursor: text; }
 #comment-input:focus { outline: none; border-color: #111; }
 .composer-actions-row { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.composer-icon-btn { background: transparent; color: #111; border: none; padding: 7px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; }
+.composer-icon-btn { background: transparent; color: #111; border: none; padding: 7px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; flex-shrink: 0; }
 .composer-icon-btn:hover { background: rgba(0,0,0,0.06); }
 .composer-icon-btn.active { background: #111; color: #fff; }
-.comment-post-btn { display: none; background: #000; color: #fff; padding: 9px 16px; border-radius: 18px; font-weight: 700; cursor: pointer; font-size: 13px; align-items: center; justify-content: center; user-select: none; flex-shrink: 0; border: none; }
+.comment-post-btn { display: none; background: #000; color: #fff; padding: 9px 16px; border-radius: 18px; font-weight: 700; cursor: pointer; font-size: 13px; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; flex-shrink: 0; border: none; }
 
 /* Typing / Tagging Mode: buttons move to bottom-left, Send appears on far right */
 #comment-submit-form.composer-typing { flex-direction: column; align-items: stretch; gap: 8px; }
@@ -845,6 +845,8 @@ let _mostUsedStickersCache = [];
 let _stickerUseCounts = new Map();
 let _savedStickersSet = new Set();
 let _stickerSaveLockUntil = new Map();
+let _lastDrawerHeight = 0;
+let _lastDrawerTop = 0;
 
 const COMMENT_STICKERS = ["😂", "🔥", "❤️", "😭", "👍", "💀", "🥺", "👏", "🎉", "🤔", "😍", "🙏"];
 const STICKER_PREFIX = "__STICKER__:";
@@ -1253,7 +1255,8 @@ function setComposerTypingMode(active) {
     if (!form) return;
     const hasText = !!(input && input.value.trim().length > 0);
     const hasMention = _mentionActiveQuery !== null;
-    _composerTypingMode = Boolean(active || hasText || hasMention);
+    const isFocused = !!(input && document.activeElement === input);
+    _composerTypingMode = Boolean(active || isFocused || hasText || hasMention);
     form.classList.toggle('composer-typing', _composerTypingMode);
 }
 
@@ -1330,7 +1333,7 @@ function renderFriendMentionDropdown() {
     }
 
     box.innerHTML = _mentionMatches.map((f, idx) => `
-        <div class="friend-mention-item ${idx === _mentionSelectedIdx ? 'active' : ''}" onclick="selectFriendMention(${idx})">
+        <div class="friend-mention-item ${idx === _mentionSelectedIdx ? 'active' : ''}" onmousedown="event.preventDefault()" onclick="selectFriendMention(${idx})">
             <img class="friend-mention-avatar" src="${f.pfp_url || defaultAvatar}" alt="">
             <span>@${escapeHtml(f.username)}${renderVerifiedBadge(f.verified)}</span>
         </div>
@@ -1422,7 +1425,9 @@ function focusCommentInput(caretPos = null) {
     input.disabled = false;
     input.readOnly = false;
     input.style.pointerEvents = 'auto';
-    input.focus();
+    if (document.activeElement !== input) {
+        input.focus({ preventScroll: true });
+    }
     if (typeof caretPos === 'number') {
         try { input.setSelectionRange(caretPos, caretPos); } catch (e) {}
     }
@@ -1431,19 +1436,26 @@ function focusCommentInput(caretPos = null) {
 function syncCommentsDrawerViewport() {
     const drawer = document.getElementById('comments-drawer');
     if (!drawer || !drawer.classList.contains('open')) return;
-    const input = document.getElementById('comment-input');
-    if (input && document.activeElement === input) return;
+
+    let targetHeight = window.innerHeight;
+    let targetTop = 0;
 
     if (window.visualViewport) {
-        drawer.style.height = `${window.visualViewport.height}px`;
-        drawer.style.top = `${window.visualViewport.offsetTop}px`;
-    } else {
-        drawer.style.height = `${window.innerHeight}px`;
-        drawer.style.top = '0px';
+        targetHeight = Math.round(window.visualViewport.height);
+        targetTop = Math.round(window.visualViewport.offsetTop);
+    }
+
+    if (targetHeight !== _lastDrawerHeight || targetTop !== _lastDrawerTop) {
+        _lastDrawerHeight = targetHeight;
+        _lastDrawerTop = targetTop;
+        drawer.style.height = `${targetHeight}px`;
+        drawer.style.top = `${targetTop}px`;
     }
 }
 
 function resetCommentsDrawerViewport() {
+    _lastDrawerHeight = 0;
+    _lastDrawerTop = 0;
     const drawer = document.getElementById('comments-drawer');
     if (!drawer) return;
     drawer.style.height = '';
@@ -1627,15 +1639,15 @@ function ensureCommentsDrawer() {
             <form id="comment-submit-form">
                 <div class="composer-top-row">
                     <img id="composer-user-pfp" class="composer-user-pfp" src="" alt="Your avatar">
-                    <input type="text" id="comment-input" inputmode="text" enterkeyhint="send" placeholder="Write a comment..." autocomplete="off">
+                    <input type="text" id="comment-input" inputmode="text" enterkeyhint="send" placeholder="Write a comment..." autocomplete="off" autocorrect="on" autocapitalize="sentences">
                 </div>
                 <div class="composer-bottom-bar">
                     <div class="composer-actions-row">
-                        <button type="button" class="composer-icon-btn" id="comment-image-btn" title="Upload image" aria-label="Upload image" onclick="triggerCommentImagePick()">${COMPOSER_IMAGE_SVG}</button>
-                        <button type="button" class="composer-icon-btn" id="comment-tag-btn" title="Tag a friend" aria-label="Tag a friend" onclick="triggerFriendTagMode()">${COMPOSER_AT_SVG}</button>
-                        <button type="button" class="composer-icon-btn" id="comment-sticker-toggle-btn" title="Stickers" aria-label="Stickers" onclick="toggleStickerPicker()">${COMPOSER_STICKER_SVG}</button>
+                        <button type="button" class="composer-icon-btn" id="comment-image-btn" title="Upload image" aria-label="Upload image" onmousedown="event.preventDefault()" onclick="triggerCommentImagePick()">${COMPOSER_IMAGE_SVG}</button>
+                        <button type="button" class="composer-icon-btn" id="comment-tag-btn" title="Tag a friend" aria-label="Tag a friend" onmousedown="event.preventDefault()" onclick="triggerFriendTagMode()">${COMPOSER_AT_SVG}</button>
+                        <button type="button" class="composer-icon-btn" id="comment-sticker-toggle-btn" title="Stickers" aria-label="Stickers" onmousedown="event.preventDefault()" onclick="toggleStickerPicker()">${COMPOSER_STICKER_SVG}</button>
                     </div>
-                    <button type="submit" class="comment-post-btn" id="comment-post-submit-btn">Send</button>
+                    <button type="submit" class="comment-post-btn" id="comment-post-submit-btn" onmousedown="event.preventDefault()">Send</button>
                 </div>
             </form>
         </div>
@@ -1649,7 +1661,7 @@ function ensureCommentsDrawer() {
 
     form.addEventListener('submit', submitComment);
 
-    const activateInput = () => {
+    input.addEventListener('focus', () => {
         input.disabled = false;
         input.readOnly = false;
         const stickerPanel = document.getElementById('comment-sticker-panel');
@@ -1659,22 +1671,25 @@ function ensureCommentsDrawer() {
             if (stickerBtn) stickerBtn.classList.remove('active');
         }
         setComposerTypingMode(true);
-        if (document.activeElement !== input) {
-            input.focus();
-        }
-    };
-
-    input.addEventListener('pointerdown', activateInput);
-    input.addEventListener('touchstart', activateInput, { passive: true });
-    input.addEventListener('click', activateInput);
-
-    input.addEventListener('focus', () => {
-        input.disabled = false;
-        input.readOnly = false;
-        setComposerTypingMode(true);
         if (!Array.isArray(_friendsCache)) {
             ensureFriendsLoaded(false);
         }
+    });
+
+    input.addEventListener('blur', () => {
+        setTimeout(() => {
+            const activeEl = document.activeElement;
+            const formEl = document.getElementById('comment-submit-form');
+            const mentionBox = document.getElementById('friend-mention-box');
+            const stickerPanel = document.getElementById('comment-sticker-panel');
+            const keepingComposerOpen =
+                (formEl && activeEl && formEl.contains(activeEl)) ||
+                (mentionBox && activeEl && mentionBox.contains(activeEl)) ||
+                (stickerPanel && activeEl && stickerPanel.contains(activeEl));
+            if (!keepingComposerOpen) {
+                setComposerTypingMode(false);
+            }
+        }, 50);
     });
 
     input.addEventListener('input', () => {
@@ -1713,7 +1728,8 @@ function ensureCommentsDrawer() {
         const drawerEl = document.getElementById('comments-drawer');
         if (!drawerEl || !drawerEl.classList.contains('open')) return;
         const inputEl = document.getElementById('comment-input');
-        if (inputEl && e.target === inputEl) return;
+        if (inputEl && (e.target === inputEl || inputEl.contains(e.target))) return;
+
         const formEl = document.getElementById('comment-submit-form');
         const mentionBox = document.getElementById('friend-mention-box');
         const stickerPanel = document.getElementById('comment-sticker-panel');
@@ -1725,6 +1741,9 @@ function ensureCommentsDrawer() {
             closeFriendMentionDropdown();
         }
         if (!clickedInsideComposer && !clickedMention && !clickedSticker) {
+            if (inputEl && document.activeElement === inputEl) {
+                inputEl.blur();
+            }
             setComposerTypingMode(false);
         }
     });
@@ -1732,10 +1751,10 @@ function ensureCommentsDrawer() {
     if (!_commentsViewportBound) {
         _commentsViewportBound = true;
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', syncCommentsDrawerViewport);
-            window.visualViewport.addEventListener('scroll', syncCommentsDrawerViewport);
+            window.visualViewport.addEventListener('resize', syncCommentsDrawerViewport, { passive: true });
+            window.visualViewport.addEventListener('scroll', syncCommentsDrawerViewport, { passive: true });
         }
-        window.addEventListener('resize', syncCommentsDrawerViewport);
+        window.addEventListener('resize', syncCommentsDrawerViewport, { passive: true });
     }
 
     return drawer;
@@ -1757,8 +1776,7 @@ function openCommentsDrawer(postId) {
         input.style.pointerEvents = 'auto';
     }
 
-    drawer.classList.remove('open');
-    void drawer.offsetWidth;
+    syncCommentsDrawerViewport();
     requestAnimationFrame(() => {
         drawer.classList.add('open');
         syncCommentsDrawerViewport();
@@ -1769,6 +1787,10 @@ function openCommentsDrawer(postId) {
 }
 
 function closeCommentsDrawer() {
+    const input = document.getElementById('comment-input');
+    if (input && document.activeElement === input) {
+        input.blur();
+    }
     const drawer = document.getElementById('comments-drawer');
     if (drawer) {
         drawer.classList.remove('open');
