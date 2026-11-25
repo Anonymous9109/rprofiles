@@ -28,6 +28,22 @@
                 background: #000;
                 -webkit-tap-highlight-color: transparent;
             }
+            .nv-video-poster-img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                pointer-events: none;
+                display: none;
+                background: #000;
+            }
+            .nv-video-poster-img.has-poster {
+                display: block;
+            }
+            .nv-video-wrap.is-playing .nv-video-poster-img {
+                display: none;
+            }
             .nv-video-play-overlay {
                 position: absolute;
                 inset: 0;
@@ -37,6 +53,7 @@
                 background: rgba(0, 0, 0, 0.2);
                 pointer-events: none;
                 transition: opacity 0.15s ease;
+                z-index: 2;
             }
             .nv-video-wrap.is-playing .nv-video-play-overlay {
                 opacity: 0;
@@ -66,16 +83,22 @@
         return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
     }
 
-    function applyPosterToVideo(videoEl, dataUrl) {
-        if (!dataUrl || !videoEl || videoEl.getAttribute('poster')) return;
-        videoEl.setAttribute('poster', dataUrl);
+    function applyPoster(videoEl, posterImgEl, dataUrl) {
+        if (!dataUrl) return;
+        if (videoEl && !videoEl.getAttribute('poster')) {
+            videoEl.setAttribute('poster', dataUrl);
+        }
+        if (posterImgEl) {
+            posterImgEl.src = dataUrl;
+            posterImgEl.classList.add('has-poster');
+        }
     }
 
-    function generateVideoPoster(src, videoEl) {
+    function generateVideoPoster(src, videoEl, posterImgEl) {
         if (!src || !videoEl) return;
 
         if (posterCache.has(src)) {
-            applyPosterToVideo(videoEl, posterCache.get(src));
+            applyPoster(videoEl, posterImgEl, posterCache.get(src));
             return;
         }
 
@@ -85,6 +108,9 @@
             probe.defaultMuted = true;
             probe.playsInline = true;
             probe.preload = 'auto';
+            if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+                probe.crossOrigin = 'anonymous';
+            }
 
             let done = false;
             let seekAttempted = false;
@@ -113,11 +139,11 @@
                     if (dataUrl && dataUrl.startsWith('data:image/jpeg')) {
                         done = true;
                         posterCache.set(src, dataUrl);
-                        applyPosterToVideo(videoEl, dataUrl);
+                        applyPoster(videoEl, posterImgEl, dataUrl);
                         cleanup();
                     }
                 } catch (e) {
-                    // If CORS blocks toDataURL, stop trying for this URL
+                    // Tainted canvas when R2/CDN lacks Access-Control-Allow-Origin
                     done = true;
                     cleanup();
                 }
@@ -182,9 +208,13 @@
         video.className = 'post-media nv-video-el';
         video.src = src;
         video.playsInline = true;
-        video.preload = 'metadata';
+        video.preload = 'auto';
 
-        generateVideoPoster(src, video);
+        const posterImg = document.createElement('img');
+        posterImg.className = 'nv-video-poster-img';
+        posterImg.alt = '';
+
+        generateVideoPoster(src, video, posterImg);
 
         const overlay = document.createElement('div');
         overlay.className = 'nv-video-play-overlay';
@@ -216,6 +246,7 @@
         });
 
         wrap.appendChild(video);
+        wrap.appendChild(posterImg);
         wrap.appendChild(overlay);
         return wrap;
     }
