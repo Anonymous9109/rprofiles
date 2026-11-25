@@ -1,4 +1,6 @@
 (function (global) {
+    const posterCache = new Map();
+
     function injectStyles() {
         if (document.getElementById('nv-video-player-styles')) return;
         const style = document.createElement('style');
@@ -64,21 +66,39 @@
         return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
     }
 
+    function applyPosterToVideo(videoEl, dataUrl) {
+        if (!dataUrl || !videoEl || videoEl.getAttribute('poster')) return;
+        videoEl.setAttribute('poster', dataUrl);
+    }
+
     function generateVideoPoster(src, videoEl) {
+        if (!src || !videoEl) return;
+
+        if (posterCache.has(src)) {
+            applyPosterToVideo(videoEl, posterCache.get(src));
+            return;
+        }
+
         try {
             const probe = document.createElement('video');
-            probe.src = src;
             probe.muted = true;
+            probe.defaultMuted = true;
             probe.playsInline = true;
             probe.preload = 'auto';
-            if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-                probe.crossOrigin = 'anonymous';
-            }
 
-            let captured = false;
+            let done = false;
+            let seekAttempted = false;
 
-            const captureFrame = () => {
-                if (captured) return;
+            const cleanup = () => {
+                try {
+                    probe.pause();
+                    probe.removeAttribute('src');
+                    probe.load();
+                } catch (e) {}
+            };
+
+            const tryCapture = () => {
+                if (done) return;
                 const w = probe.videoWidth;
                 const h = probe.videoHeight;
                 if (!w || !h) return;
@@ -89,41 +109,65 @@
                     canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(probe, 0, 0, w, h);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
                     if (dataUrl && dataUrl.startsWith('data:image/jpeg')) {
-                        captured = true;
-                        videoEl.setAttribute('poster', dataUrl);
+                        done = true;
+                        posterCache.set(src, dataUrl);
+                        applyPosterToVideo(videoEl, dataUrl);
+                        cleanup();
                     }
                 } catch (e) {
-                    // Canvas tainted or CORS blocked; leave video element as-is
-                } finally {
-                    probe.removeAttribute('src');
-                    probe.load();
+                    // If CORS blocks toDataURL, stop trying for this URL
+                    done = true;
+                    cleanup();
                 }
             };
 
-            probe.addEventListener('loadedmetadata', () => {
-                const targetTime = probe.duration && isFinite(probe.duration)
-                    ? Math.min(0.1, Math.max(0, probe.duration * 0.05))
-                    : 0;
-                if (targetTime > 0 && probe.currentTime !== targetTime) {
-                    try {
-                        probe.currentTime = targetTime;
-                    } catch (e) {
-                        captureFrame();
+            const triggerSeek = () => {
+                if (seekAttempted || done) return;
+                seekAttempted = true;
+                try {
+                    const dur = probe.duration;
+                    if (dur && isFinite(dur) && dur > 0.2) {
+                        probe.currentTime = Math.min(0.15, dur * 0.05);
+                    } else {
+                        tryCapture();
                     }
-                } else {
-                    captureFrame();
+                } catch (e) {
+                    tryCapture();
                 }
-            }, { once: true });
+            };
 
-            probe.addEventListener('seeked', captureFrame, { once: true });
+            probe.addEventListener('loadedmetadata', triggerSeek, { once: true });
             probe.addEventListener('loadeddata', () => {
-                if (!captured && (!probe.duration || probe.currentTime > 0)) {
-                    captureFrame();
+                if (!done) {
+                    if (!seekAttempted) {
+                        triggerSeek();
+                    } else {
+                        tryCapture();
+                    }
                 }
+            });
+            probe.addEventListener('seeked', tryCapture, { once: true });
+            probe.addEventListener('canplay', () => {
+                if (!done) tryCapture();
+            }, { once: true });
+            probe.addEventListener('error', () => {
+                done = true;
+                cleanup();
             }, { once: true });
 
+            setTimeout(() => {
+                if (!done) {
+                    tryCapture();
+                    if (!done) {
+                        done = true;
+                        cleanup();
+                    }
+                }
+            }, 6000);
+
+            probe.src = src;
             probe.load();
         } catch (e) {}
     }
