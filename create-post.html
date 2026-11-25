@@ -8,6 +8,7 @@
         :root {
             --bg: #f6f6f7;
             --surface: #ffffff;
+            --surface-2: #fafafa;
             --text: #111113;
             --muted: #6b6b73;
             --line: #e6e6ea;
@@ -26,15 +27,14 @@
             line-height: 1.45;
             min-height: 100vh;
             padding-top: 52px;
-            padding-bottom: 72px;
+            padding-bottom: 76px;
         }
         button, input, textarea { font: inherit; color: inherit; }
         :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        /* Header + footer */
         header, footer {
             position: fixed; left: 0; width: 100%; z-index: 100;
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.94);
             -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
             display: flex; align-items: center;
         }
@@ -47,53 +47,64 @@
         .footer-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-icon.icon-filled { fill: currentColor; stroke: none; }
 
-        /* Layout */
-        .wrapper { width: 100%; max-width: 640px; margin: 0 auto; padding: 20px 16px; }
-        .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .wrapper { width: 100%; max-width: 640px; margin: 0 auto; padding: 18px 16px; }
+        .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+        .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+        .page-sub { font-size: 12px; color: var(--muted); font-weight: 600; }
 
-        .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
-        .card-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+        .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .card-label { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+        .card-badge { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--bg); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
         .card-hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 
-        /* Error */
-        .error-msg { display: none; background: var(--danger-bg); border: 1px solid #f3b8bb; color: var(--danger); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; font-size: 13.5px; font-weight: 600; }
+        .error-msg { display: none; background: var(--danger-bg); border: 1px solid #f3b8bb; color: var(--danger); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; font-size: 13.5px; font-weight: 600; }
 
-        /* Composer */
         textarea#post-text {
-            display: block; width: 100%; min-height: 150px; resize: vertical;
+            display: block; width: 100%; min-height: 130px; resize: vertical;
             border: none; outline: none; background: transparent;
-            font-size: 16px; line-height: 1.5; padding: 0;
+            font-size: 15.5px; line-height: 1.5; padding: 0;
         }
         textarea#post-text::placeholder { color: #a0a0a8; }
-        .composer-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
-        .tag-meta { font-size: 12px; color: var(--muted); font-weight: 600; }
 
-        /* Tags */
+        .tag-divider { border-top: 1px solid var(--line); margin: 12px 0; }
         .tag-input-wrap { display: flex; gap: 8px; margin-bottom: 10px; }
-        .tag-input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--bg); }
+        .tag-input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--bg); }
         .tag-input:focus { background: var(--surface); border-color: var(--text); outline: none; }
-        .tag-add-btn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .tag-add-btn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 15px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
         .tag-add-btn:active { transform: scale(0.97); }
         .tag-bar { display: flex; flex-wrap: wrap; gap: 6px; }
-        .tag-chip { background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tag-chip { background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
         .tag-chip:hover { background: #ececef; }
 
-        /* Media */
         .custom-file-upload {
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-            padding: 22px 14px; border: 1.5px dashed #c9c9d0; border-radius: 12px;
-            background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600; text-align: center; cursor: pointer;
+            padding: 20px 14px; border: 1.5px dashed #c9c9d0; border-radius: 12px;
+            background: var(--surface-2); color: var(--muted); font-size: 13.5px; font-weight: 600; text-align: center; cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
         }
         .custom-file-upload:hover { background: #ececef; color: var(--text); }
         .custom-file-upload svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         input[type="file"] { display: none; }
-        .preview-wrap { position: relative; display: none; margin-top: 12px; }
-        .preview-img { display: block; width: 100%; max-height: 360px; border-radius: 12px; object-fit: cover; }
-        .remove-img { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(17, 17, 19, 0.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; z-index: 10; }
-        #file-name { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-        /* Publish */
-        .btn-app { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .preview-wrap { position: relative; display: none; margin-top: 12px; }
+        .preview-img { display: block; width: 100%; max-height: 360px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); }
+        .remove-img { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(17, 17, 19, 0.78); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; z-index: 10; }
+
+        .file-meta-bar {
+            display: none; align-items: center; justify-content: space-between; gap: 8px;
+            margin-top: 10px; padding: 8px 12px; border-radius: 10px;
+            background: var(--surface-2); border: 1px solid var(--line); font-size: 12px;
+        }
+        .file-meta-name { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-meta-size { color: var(--muted); flex-shrink: 0; font-weight: 600; }
+
+        .progress-card { display: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 12px; }
+        .progress-label { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; }
+        .progress-track { width: 100%; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+        .progress-fill { width: 15%; height: 100%; background: var(--accent); transition: width 0.2s ease; }
+
+        .btn-app { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15.5px; font-weight: 700; cursor: pointer; }
         .btn-app:active { transform: scale(0.99); }
         .btn-app:disabled { opacity: 0.55; cursor: default; }
     </style>
@@ -102,18 +113,23 @@
     <header><a href="feed.html" class="brand">Nvaritia</a></header>
 
     <div class="wrapper">
-        <h1 class="page-title">New post</h1>
+        <div class="page-header">
+            <h1 class="page-title">New post</h1>
+            <span class="page-sub" id="tag-counter">0 / 6 tags</span>
+        </div>
+
         <div id="post-error" class="error-msg" role="alert"></div>
+
         <form onsubmit="submitPost(event)">
             <div class="card">
-                <textarea id="post-text" aria-label="Post text" placeholder="What's on your mind? Use @username to tag people and #tags for topics." oninput="updateTagCount()"></textarea>
-                <div class="composer-foot">
-                    <span class="tag-meta" id="tag-counter">0 / 6 hashtags used</span>
+                <div class="section-head">
+                    <span class="card-label">Post &amp; Topics</span>
+                    <span class="card-badge">@mention &amp; #tag</span>
                 </div>
-            </div>
+                <textarea id="post-text" aria-label="Post text" placeholder="What's on your mind? Use @username to mention and #tags for topics." oninput="updateTagCount()"></textarea>
 
-            <div class="card">
-                <span class="card-label">Hashtags</span>
+                <div class="tag-divider"></div>
+
                 <div class="tag-input-wrap">
                     <input type="text" id="hashtag-input" class="tag-input" placeholder="Add a hashtag, e.g. gaming" aria-label="Add a hashtag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag();}">
                     <button type="button" class="tag-add-btn" onclick="addHashtag()">Add</button>
@@ -128,21 +144,27 @@
             </div>
 
             <div class="card">
-                <span class="card-label">Image or Video</span>
-                <p class="card-hint">Videos are capped at 2 minutes (60MB max).</p>
-                <label class="custom-file-upload">
+                <div class="section-head">
+                    <span class="card-label">Media Attachment</span>
+                    <span class="card-badge">Max 2m · 60MB</span>
+                </div>
+                <p class="card-hint">Attach a photo or short video clip (MP4 or WebM, up to 2 minutes).</p>
+
+                <label class="custom-file-upload" id="upload-dropzone">
                     <input type="file" id="post-media" accept="image/*,video/*" onchange="previewFile(this)">
                     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-                    Choose an image or video
+                    <span>Choose image or video</span>
                 </label>
 
                 <div class="preview-wrap" id="preview-wrap">
                     <img id="img-preview" class="preview-img" alt="Selected image preview" style="display: none;">
                     <div class="nv-video-wrap" id="video-preview-wrap" style="display: none; margin-bottom: 0;">
                         <video id="video-preview" class="nv-video-el" playsinline preload="metadata"></video>
-                        <button type="button" class="nv-video-center-btn" aria-label="Play video">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="#ffffff" stroke="none" style="margin-left:2px;"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                        </button>
+                        <div class="nv-video-play-overlay">
+                            <div class="nv-video-play-badge">
+                                <svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            </div>
+                        </div>
                         <div class="nv-video-hud">
                             <div class="nv-video-timer-row">
                                 <span class="nv-video-timer">0:00 / 0:00</span>
@@ -156,7 +178,18 @@
                     </div>
                     <button type="button" class="remove-img" onclick="removeMedia()" aria-label="Remove media">&times;</button>
                 </div>
-                <span id="file-name"></span>
+
+                <div class="file-meta-bar" id="file-meta-bar">
+                    <span class="file-meta-name" id="file-name"></span>
+                    <span class="file-meta-size" id="file-size"></span>
+                </div>
+            </div>
+
+            <div class="progress-card" id="publish-progress">
+                <div class="progress-label" id="publish-status-text">Preparing post...</div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="publish-progress-fill"></div>
+                </div>
             </div>
 
             <button type="submit" class="btn-app" id="pub-btn">Publish post</button>
@@ -182,16 +215,36 @@
         </a>
     </footer>
 
+    <script src="video-player.js?v=11"></script>
     <script src="app.js"></script>
     <script>
         const currentUser = requireAuth();
         const MAX_HASHTAGS = 6;
-        const MAX_VIDEO_SECONDS = 120; // 2 minutes
-        const MAX_MEDIA_BYTES = 60 * 1024 * 1024; // 60MB
+        const MAX_VIDEO_SECONDS = 120;
+        const MAX_MEDIA_BYTES = 60 * 1024 * 1024;
         let _previewBlobUrl = null;
 
         if (typeof bindCustomVideoPlayers === 'function') {
             bindCustomVideoPlayers(document);
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes <= 0) return '';
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        function setPublishStep(label, pct) {
+            const card = document.getElementById('publish-progress');
+            const txt = document.getElementById('publish-status-text');
+            const fill = document.getElementById('publish-progress-fill');
+            card.style.display = 'block';
+            txt.innerText = label;
+            fill.style.width = `${Math.max(5, Math.min(100, pct))}%`;
+        }
+
+        function hidePublishStep() {
+            document.getElementById('publish-progress').style.display = 'none';
         }
 
         function extractTags(text) {
@@ -203,7 +256,7 @@
             const textarea = document.getElementById('post-text');
             const tags = extractTags(textarea.value);
             const counter = document.getElementById('tag-counter');
-            counter.innerText = `${tags.length} / ${MAX_HASHTAGS} hashtags used`;
+            counter.innerText = `${tags.length} / ${MAX_HASHTAGS} tags`;
             counter.style.color = tags.length > MAX_HASHTAGS ? '#c0262d' : '';
         }
 
@@ -220,7 +273,7 @@
                 return;
             }
             if (currentTags.length >= MAX_HASHTAGS) {
-                showError(`Maximum of ${MAX_HASHTAGS} hashtags per post keeps feeds fair for everyone.`);
+                showError(`Maximum of ${MAX_HASHTAGS} hashtags per post.`);
                 return;
             }
 
@@ -272,6 +325,7 @@
             const vidWrap = document.getElementById('video-preview-wrap');
             const vidEl = document.getElementById('video-preview');
             const wrapEl = document.getElementById('preview-wrap');
+            const metaBar = document.getElementById('file-meta-bar');
 
             if (_previewBlobUrl) {
                 URL.revokeObjectURL(_previewBlobUrl);
@@ -303,14 +357,18 @@
                 imgEl.removeAttribute('src');
                 _previewBlobUrl = URL.createObjectURL(file);
                 vidEl.src = _previewBlobUrl;
+                vidWrap.dataset.nvBound = '';
+                vidEl.dataset.nvPrimed = '';
+                vidEl.dataset.nvSeeked = '';
                 vidWrap.style.display = 'flex';
                 wrapEl.style.display = 'block';
-                document.getElementById('file-name').innerText = file.name;
+                if (typeof bindCustomVideoPlayers === 'function') {
+                    bindCustomVideoPlayers(wrapEl);
+                }
             } else if (file.type.startsWith('image/')) {
                 vidEl.pause();
                 vidEl.removeAttribute('src');
                 vidWrap.style.display = 'none';
-                document.getElementById('file-name').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = e => {
                     imgEl.src = e.target.result;
@@ -321,7 +379,12 @@
             } else {
                 removeMedia();
                 showError('Unsupported file format. Please choose an image or video.');
+                return;
             }
+
+            document.getElementById('file-name').innerText = file.name;
+            document.getElementById('file-size').innerText = formatBytes(file.size);
+            metaBar.style.display = 'flex';
         }
 
         function removeMedia() {
@@ -346,7 +409,9 @@
             }
 
             document.getElementById('preview-wrap').style.display = 'none';
+            document.getElementById('file-meta-bar').style.display = 'none';
             document.getElementById('file-name').innerText = '';
+            document.getElementById('file-size').innerText = '';
         }
 
         async function submitPost(e) {
@@ -382,9 +447,11 @@
                             throw new Error('Videos cannot exceed 2 minutes (2:00).');
                         }
                         btn.innerText = "Preparing video...";
+                        setPublishStep("Preparing video...", 35);
                         toUpload = (typeof compressVideo === 'function') ? await compressVideo(media) : media;
                     } else {
                         btn.innerText = "Optimizing image...";
+                        setPublishStep("Optimizing image...", 35);
                         toUpload = (typeof compressImage === 'function') ? await compressImage(media) : media;
                     }
                 }
@@ -394,6 +461,7 @@
                 if (toUpload) formData.append('media', toUpload);
 
                 btn.innerText = "Publishing...";
+                setPublishStep("Uploading to feed...", 75);
                 const res = await fetch(`${WORKER_ORIGIN}/api/posts/create`, {
                     method: 'POST',
                     headers: authHeaders(),
@@ -401,8 +469,10 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to publish');
+                setPublishStep("Published!", 100);
                 window.location.href = 'feed.html';
             } catch (err) {
+                hidePublishStep();
                 showError(err.message);
                 btn.disabled = false;
                 btn.innerText = "Publish post";
