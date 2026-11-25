@@ -64,6 +64,70 @@
         return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
     }
 
+    function generateVideoPoster(src, videoEl) {
+        try {
+            const probe = document.createElement('video');
+            probe.src = src;
+            probe.muted = true;
+            probe.playsInline = true;
+            probe.preload = 'auto';
+            if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+                probe.crossOrigin = 'anonymous';
+            }
+
+            let captured = false;
+
+            const captureFrame = () => {
+                if (captured) return;
+                const w = probe.videoWidth;
+                const h = probe.videoHeight;
+                if (!w || !h) return;
+
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(probe, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    if (dataUrl && dataUrl.startsWith('data:image/jpeg')) {
+                        captured = true;
+                        videoEl.setAttribute('poster', dataUrl);
+                    }
+                } catch (e) {
+                    // Canvas tainted or CORS blocked; leave video element as-is
+                } finally {
+                    probe.removeAttribute('src');
+                    probe.load();
+                }
+            };
+
+            probe.addEventListener('loadedmetadata', () => {
+                const targetTime = probe.duration && isFinite(probe.duration)
+                    ? Math.min(0.1, Math.max(0, probe.duration * 0.05))
+                    : 0;
+                if (targetTime > 0 && probe.currentTime !== targetTime) {
+                    try {
+                        probe.currentTime = targetTime;
+                    } catch (e) {
+                        captureFrame();
+                    }
+                } else {
+                    captureFrame();
+                }
+            }, { once: true });
+
+            probe.addEventListener('seeked', captureFrame, { once: true });
+            probe.addEventListener('loadeddata', () => {
+                if (!captured && (!probe.duration || probe.currentTime > 0)) {
+                    captureFrame();
+                }
+            }, { once: true });
+
+            probe.load();
+        } catch (e) {}
+    }
+
     function createVideoPlayer(src) {
         injectStyles();
 
@@ -75,6 +139,8 @@
         video.src = src;
         video.playsInline = true;
         video.preload = 'metadata';
+
+        generateVideoPoster(src, video);
 
         const overlay = document.createElement('div');
         overlay.className = 'nv-video-play-overlay';
