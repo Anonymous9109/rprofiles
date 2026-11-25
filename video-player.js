@@ -94,6 +94,113 @@
         }
     }
 
+    function runProbeCapture(src, useCors, onSuccess, onFail) {
+        let settled = false;
+        let seeked = false;
+        const probe = document.createElement('video');
+        probe.muted = true;
+        probe.defaultMuted = true;
+        probe.playsInline = true;
+        probe.preload = 'auto';
+        if (useCors && !src.startsWith('data:') && !src.startsWith('blob:')) {
+            probe.crossOrigin = 'anonymous';
+        }
+
+        const finishFail = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            try {
+                probe.pause();
+                probe.removeAttribute('src');
+                probe.load();
+            } catch (e) {}
+            if (onFail) onFail();
+        };
+
+        const finishSuccess = (dataUrl) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            try {
+                probe.pause();
+                probe.removeAttribute('src');
+                probe.load();
+            } catch (e) {}
+            if (onSuccess) onSuccess(dataUrl);
+        };
+
+        const trySnap = () => {
+            if (settled) return;
+            const w = probe.videoWidth;
+            const h = probe.videoHeight;
+            if (!w || !h) return;
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(probe, 0, 0, w, h);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+                if (dataUrl && dataUrl.startsWith('data:image/jpeg')) {
+                    finishSuccess(dataUrl);
+                }
+            } catch (e) {
+                finishFail();
+            }
+        };
+
+        const doSeek = () => {
+            if (settled || seeked) return;
+            seeked = true;
+            try {
+                const dur = probe.duration;
+                if (dur && isFinite(dur) && dur > 0.2) {
+                    probe.currentTime = Math.min(0.15, dur * 0.05);
+                } else {
+                    trySnap();
+                }
+            } catch (e) {
+                trySnap();
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            trySnap();
+            if (!settled) finishFail();
+        }, 4500);
+
+        probe.addEventListener('loadedmetadata', doSeek, { once: true });
+        probe.addEventListener('loadeddata', () => {
+            if (!settled) {
+                if (!seeked) doSeek();
+                else trySnap();
+            }
+        });
+        probe.addEventListener('seeked', trySnap, { once: true });
+        probe.addEventListener('canplay', () => {
+            if (!settled) trySnap();
+        }, { once: true });
+        probe.addEventListener('error', finishFail, { once: true });
+
+        probe.src = src;
+        probe.load();
+    }
+
+    function nudgeMainVideoFrame(videoEl) {
+        let nudged = false;
+        const onMeta = () => {
+            if (nudged || !videoEl.paused) return;
+            nudged = true;
+            try {
+                if (videoEl.duration && isFinite(videoEl.duration) && videoEl.duration > 0.2 && videoEl.currentTime === 0) {
+                    videoEl.currentTime = 0.05;
+                }
+            } catch (e) {}
+        };
+        videoEl.addEventListener('loadedmetadata', onMeta, { once: true });
+    }
+
     function generateVideoPoster(src, videoEl, posterImgEl) {
         if (!src || !videoEl) return;
 
@@ -102,100 +209,33 @@
             return;
         }
 
-        try {
-            const probe = document.createElement('video');
-            probe.muted = true;
-            probe.defaultMuted = true;
-            probe.playsInline = true;
-            probe.preload = 'auto';
-            if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-                probe.crossOrigin = 'anonymous';
-            }
+        nudgeMainVideoFrame(videoEl);
 
-            let done = false;
-            let seekAttempted = false;
-
-            const cleanup = () => {
-                try {
-                    probe.pause();
-                    probe.removeAttribute('src');
-                    probe.load();
-                } catch (e) {}
-            };
-
-            const tryCapture = () => {
-                if (done) return;
-                const w = probe.videoWidth;
-                const h = probe.videoHeight;
-                if (!w || !h) return;
-
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(probe, 0, 0, w, h);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
-                    if (dataUrl && dataUrl.startsWith('data:image/jpeg')) {
-                        done = true;
-                        posterCache.set(src, dataUrl);
-                        applyPoster(videoEl, posterImgEl, dataUrl);
-                        cleanup();
-                    }
-                } catch (e) {
-                    // Tainted canvas when R2/CDN lacks Access-Control-Allow-Origin
-                    done = true;
-                    cleanup();
-                }
-            };
-
-            const triggerSeek = () => {
-                if (seekAttempted || done) return;
-                seekAttempted = true;
-                try {
-                    const dur = probe.duration;
-                    if (dur && isFinite(dur) && dur > 0.2) {
-                        probe.currentTime = Math.min(0.15, dur * 0.05);
-                    } else {
-                        tryCapture();
-                    }
-                } catch (e) {
-                    tryCapture();
-                }
-            };
-
-            probe.addEventListener('loadedmetadata', triggerSeek, { once: true });
-            probe.addEventListener('loadeddata', () => {
-                if (!done) {
-                    if (!seekAttempted) {
-                        triggerSeek();
-                    } else {
-                        tryCapture();
-                    }
-                }
+        const isRemote = !src.startsWith('data:') && !src.startsWith('blob:');
+        if (!isRemote) {
+            runProbeCapture(src, false, (dataUrl) => {
+                posterCache.set(src, dataUrl);
+                applyPoster(videoEl, posterImgEl, dataUrl);
             });
-            probe.addEventListener('seeked', tryCapture, { once: true });
-            probe.addEventListener('canplay', () => {
-                if (!done) tryCapture();
-            }, { once: true });
-            probe.addEventListener('error', () => {
-                done = true;
-                cleanup();
-            }, { once: true });
+            return;
+        }
 
-            setTimeout(() => {
-                if (!done) {
-                    tryCapture();
-                    if (!done) {
-                        done = true;
-                        cleanup();
-                    }
-                }
-            }, 6000);
-
-            probe.src = src;
-            probe.load();
-        } catch (e) {}
+        // Attempt 1: with CORS enabled so canvas can extract frame
+        runProbeCapture(
+            src,
+            true,
+            (dataUrl) => {
+                posterCache.set(src, dataUrl);
+                applyPoster(videoEl, posterImgEl, dataUrl);
+            },
+            () => {
+                // Attempt 2: without CORS so WebView can at least decode stream cleanly
+                runProbeCapture(src, false, (dataUrl) => {
+                    posterCache.set(src, dataUrl);
+                    applyPoster(videoEl, posterImgEl, dataUrl);
+                });
+            }
+        );
     }
 
     function createVideoPlayer(src) {
