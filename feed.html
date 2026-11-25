@@ -171,6 +171,7 @@
     </footer>
 
     <script src="app.js?v=5"></script>
+    <script src="video-player.js?v=1"></script>
     <script>
         const currentUser = requireAuth(true);
         let currentSearchFilter = 'posts';
@@ -398,37 +399,11 @@
             }
         }
 
-        function isVideoMediaUrl(url) {
-            if (!url || typeof url !== 'string') return false;
-            return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
-        }
-
-        function hydrateFeedVideos(rootEl) {
-            if (!rootEl) return;
-            const mediaEls = rootEl.querySelectorAll('img.post-media');
-            mediaEls.forEach(img => {
-                if (img.dataset.videoHydrated) return;
-                const src = img.getAttribute('src') || '';
-                if (!isVideoMediaUrl(src)) return;
-                img.dataset.videoHydrated = '1';
-
-                const video = document.createElement('video');
-                video.className = 'post-media nv-video-el';
-                video.src = src;
-                video.controls = true;
-                video.playsInline = true;
-                video.preload = 'metadata';
-                img.replaceWith(video);
-            });
-        }
-
         const activeViewTimers = new Map();
         const postObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const postId = entry.target.getAttribute('data-post-id');
                 if (!postId) return;
-
-                const vid = entry.target.querySelector('.nv-video-el');
 
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.75) {
                     if (!activeViewTimers.has(postId)) {
@@ -440,8 +415,8 @@
                         });
                     }
                 } else {
-                    if (vid && !vid.paused) {
-                        vid.pause();
+                    if (window.NvaritiaVideoPlayer) {
+                        window.NvaritiaVideoPlayer.pauseOffscreenVideos(entry.target);
                     }
                     if (activeViewTimers.has(postId)) {
                         const data = activeViewTimers.get(postId);
@@ -486,12 +461,12 @@
                 const data = await res.json();
                 try { localStorage.setItem('rprofiles_cached_feed', JSON.stringify(data.posts)); } catch (e) {}
                 await renderPosts(data.posts, container, { highlightPostId, observer: postObserver });
-                hydrateFeedVideos(container);
+                if (window.NvaritiaVideoPlayer) window.NvaritiaVideoPlayer.renderVideoPlayers(container);
             } catch (e) {
                 const cached = localStorage.getItem('rprofiles_cached_feed');
                 if (cached) {
                     await renderPosts(JSON.parse(cached), container, { highlightPostId, observer: postObserver });
-                    hydrateFeedVideos(container);
+                    if (window.NvaritiaVideoPlayer) window.NvaritiaVideoPlayer.renderVideoPlayers(container);
                 } else {
                     container.innerHTML = '<p style="color: #666; padding: 16px; text-align: center;">You are currently offline. Connect to the internet to load new articles and posts.</p>';
                 }
@@ -541,7 +516,7 @@
                         return;
                     }
                     await renderPosts(data.posts, container, { clear: true, observer: null });
-                    hydrateFeedVideos(container);
+                    if (window.NvaritiaVideoPlayer) window.NvaritiaVideoPlayer.renderVideoPlayers(container);
                 }
             } catch (e) {
                 container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">Search unavailable offline.</p>';
