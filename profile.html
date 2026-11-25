@@ -84,20 +84,17 @@
         .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
         .pfp-pick-btn input[type="file"] { display: none; }
 
-        /* Friendship Status Bar */
         .friendship-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
         .friendship-bar-text { font-size: 13px; font-weight: 600; color: #111; }
         .friendship-view-btn { background: #000; color: #fff; border: 1px solid #000; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
         .friendship-view-btn:active { transform: scale(0.97); }
 
-        /* Friendship Slide-In Drawer from Right */
         .friendship-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; background: #fff; z-index: 2200; transition: right 0.3s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow-y: auto; }
         .friendship-drawer.open { right: 0; }
         .friendship-drawer-header { height: 52px; padding: 0 16px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 16px; flex-shrink: 0; background: #fff; position: sticky; top: 0; z-index: 5; }
         .friendship-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; color: inherit; border-radius: 50%; }
         .friendship-drawer-body { width: 100%; max-width: 520px; margin: 0 auto; padding: 28px 20px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; flex-grow: 1; }
 
-        /* Diagonal Overlapping PFPs meeting at '&' */
         .friendship-pfp-duo { position: relative; width: 224px; height: 204px; margin: 4px auto 18px; }
         .friendship-pfp-large { position: absolute; width: 122px; height: 122px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.14); background: #f0f0f0; }
         .friendship-pfp-left { top: 0; left: 4px; z-index: 1; }
@@ -111,7 +108,6 @@
         .friendship-stat-number { font-size: 26px; font-weight: 800; color: #111; line-height: 1.15; letter-spacing: -0.02em; }
         .friendship-stat-label { font-size: 12px; font-weight: 600; color: #666; }
 
-        /* Dark Mode Support */
         html.dark .friendship-bar { background: #1c1c1c; border-color: #2a2a2a; }
         html.dark .friendship-bar-text { color: #eee; }
         html.dark .friendship-view-btn { background: #fff; color: #000; border-color: #fff; }
@@ -229,6 +225,7 @@
             </div>
         </div>
     </div>
+    <script src="video-player.js?v=11"></script>
     <script src="app.js?v=5"></script>
     <script src="music-notes.js"></script>
     <script>
@@ -339,6 +336,9 @@
                     clear: true,
                     fallbackAuthor: activeProfileUser
                 });
+                if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.renderVideoPlayers === 'function') {
+                    window.NvaritiaVideoPlayer.renderVideoPlayers(container);
+                }
             } catch (e) {
                 document.getElementById('username-display').innerText = 'User not found or offline';
                 document.getElementById('posts-container').innerHTML = '';
