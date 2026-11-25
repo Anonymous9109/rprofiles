@@ -66,6 +66,13 @@
         return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
     }
 
+    function unmuteVideo(videoEl) {
+        if (!videoEl) return;
+        videoEl.muted = false;
+        videoEl.defaultMuted = false;
+        videoEl.volume = 1.0;
+    }
+
     function forceFirstFrame(videoEl) {
         if (!videoEl) return;
         let done = false;
@@ -78,7 +85,6 @@
                 videoEl.currentTime = (dur && isFinite(dur) && dur > 0.2) ? 0.05 : 0.01;
             } catch (e) {}
 
-            // Fallback for Android WebView builds that only paint after a brief muted play/pause
             setTimeout(() => {
                 if (!videoEl.paused) return;
                 if (videoEl.readyState >= 2 && videoEl.currentTime === 0) {
@@ -89,10 +95,17 @@
                             setTimeout(() => {
                                 if (!videoEl.dataset.userPlayed) {
                                     videoEl.pause();
+                                    unmuteVideo(videoEl);
                                 }
                             }, 120);
-                        }).catch(() => {});
+                        }).catch(() => {
+                            unmuteVideo(videoEl);
+                        });
+                    } else {
+                        unmuteVideo(videoEl);
                     }
+                } else {
+                    unmuteVideo(videoEl);
                 }
             }, 350);
         };
@@ -112,12 +125,11 @@
         const video = document.createElement('video');
         video.className = 'post-media nv-video-el';
         video.src = src;
-        video.muted = true;
-        video.defaultMuted = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
         video.preload = 'auto';
+        unmuteVideo(video);
 
         forceFirstFrame(video);
 
@@ -131,6 +143,9 @@
 
         video.addEventListener('play', () => {
             wrap.classList.add('is-playing');
+            if (video.dataset.userPlayed) {
+                unmuteVideo(video);
+            }
         });
         video.addEventListener('pause', () => {
             wrap.classList.remove('is-playing');
@@ -143,8 +158,11 @@
             e.stopPropagation();
             if (video.paused || video.ended) {
                 video.dataset.userPlayed = '1';
-                video.muted = false;
-                video.play().catch(() => {});
+                unmuteVideo(video);
+                const playPromise = video.play();
+                if (playPromise && typeof playPromise.then === 'function') {
+                    playPromise.then(() => unmuteVideo(video)).catch(() => {});
+                }
             } else {
                 video.dataset.userPlayed = '';
                 video.pause();
@@ -171,7 +189,7 @@
         existingVideos.forEach(vid => {
             if (vid.dataset.framePrimed) return;
             vid.dataset.framePrimed = '1';
-            vid.muted = true;
+            unmuteVideo(vid);
             vid.preload = 'auto';
             forceFirstFrame(vid);
         });
