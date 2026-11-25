@@ -50,6 +50,113 @@ html.dark .reaction-btn.active-like .reaction-icon { stroke: #fff; fill: #fff; }
 .reaction-btn.active-dislike { color: #ef4444 !important; font-weight: 700; }
 .reaction-btn.active-dislike .reaction-icon { stroke: #ef4444; fill: #ef4444; }
 
+/* Custom Post Video Player */
+.nv-video-wrap {
+    position: relative;
+    width: 100%;
+    max-height: 440px;
+    background: #000;
+    border-radius: 8px;
+    border: 1px solid #e5e5e5;
+    overflow: hidden;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+html.dark .nv-video-wrap { border-color: #333; }
+.nv-video-el {
+    width: 100%;
+    max-height: 440px;
+    display: block;
+    object-fit: contain;
+    background: #000;
+    cursor: pointer;
+}
+.nv-video-center-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.58);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 4;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    padding: 0;
+}
+.nv-video-center-btn:active {
+    transform: translate(-50%, -50%) scale(0.92);
+}
+.nv-video-wrap.is-playing .nv-video-center-btn {
+    opacity: 0;
+    pointer-events: none;
+}
+.nv-video-wrap.is-playing:hover .nv-video-center-btn,
+.nv-video-wrap.is-playing.show-hud .nv-video-center-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+.nv-video-hud {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
+    padding-top: 18px;
+}
+.nv-video-timer-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 10px 6px 10px;
+    pointer-events: none;
+}
+.nv-video-timer {
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    letter-spacing: 0.02em;
+}
+.nv-video-progress-hit {
+    width: 100%;
+    height: 14px;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+    touch-action: none;
+}
+.nv-video-progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.28);
+    position: relative;
+    transition: height 0.12s ease;
+}
+.nv-video-progress-hit:hover .nv-video-progress-track,
+.nv-video-progress-hit:active .nv-video-progress-track {
+    height: 6px;
+}
+.nv-video-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #ffffff;
+    pointer-events: none;
+}
+
 /* Comments Slide-In Page from Right */
 .comments-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; max-height: 100%; background: #fff; z-index: 2100; transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow: hidden; will-change: right; pointer-events: auto; }
 .comments-drawer.open { right: 0; pointer-events: auto; }
@@ -666,6 +773,141 @@ const POST_DISLIKE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d
 const POST_COMMENT_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 const POST_SHARE_SVG = `<svg class="reaction-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
 
+const NV_PLAY_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="#ffffff" stroke="none" style="margin-left:2px;"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>`;
+const NV_PAUSE_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#ffffff" stroke="none"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>`;
+
+function isVideoMediaUrl(url) {
+    if (!url || typeof url !== "string") return false;
+    const clean = url.split("?")[0].split("#")[0].toLowerCase();
+    return /\.(mp4|webm|mov|m4v|ogg)$/i.test(clean);
+}
+
+function formatVideoTime(sec) {
+    if (!isFinite(sec) || sec < 0) return "0:00";
+    const total = Math.floor(sec);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function renderPostMediaHtml(mediaUrl) {
+    if (!mediaUrl) return "";
+    if (isVideoMediaUrl(mediaUrl)) {
+        return `
+            <div class="nv-video-wrap" onclick="event.stopPropagation()">
+                <video class="nv-video-el" src="${escapeHtml(mediaUrl)}" playsinline preload="metadata"></video>
+                <button type="button" class="nv-video-center-btn" aria-label="Play video">${NV_PLAY_SVG}</button>
+                <div class="nv-video-hud">
+                    <div class="nv-video-timer-row">
+                        <span class="nv-video-timer">0:00 / 0:00</span>
+                    </div>
+                    <div class="nv-video-progress-hit" role="slider" aria-label="Seek video">
+                        <div class="nv-video-progress-track">
+                            <div class="nv-video-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    return `<img class="post-media" src="${escapeHtml(mediaUrl)}" loading="lazy" alt="Post media">`;
+}
+
+function bindCustomVideoPlayers(rootEl = document) {
+    rootEl.querySelectorAll(".nv-video-wrap").forEach(wrap => {
+        if (wrap.dataset.playerBound === "1") return;
+        wrap.dataset.playerBound = "1";
+
+        const video = wrap.querySelector(".nv-video-el");
+        const btn = wrap.querySelector(".nv-video-center-btn");
+        const timerEl = wrap.querySelector(".nv-video-timer");
+        const hitEl = wrap.querySelector(".nv-video-progress-hit");
+        const fillEl = wrap.querySelector(".nv-video-progress-fill");
+        let hudTimer = null;
+
+        const flashHud = () => {
+            wrap.classList.add("show-hud");
+            clearTimeout(hudTimer);
+            hudTimer = setTimeout(() => wrap.classList.remove("show-hud"), 1800);
+        };
+
+        const syncUi = () => {
+            const cur = video.currentTime || 0;
+            const dur = isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+            timerEl.textContent = `${formatVideoTime(cur)} / ${formatVideoTime(dur)}`;
+            fillEl.style.width = dur > 0 ? `${Math.min(100, (cur / dur) * 100)}%` : "0%";
+        };
+
+        const togglePlay = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (video.paused || video.ended) {
+                document.querySelectorAll(".nv-video-el").forEach(other => {
+                    if (other !== video && !other.paused) other.pause();
+                });
+                video.play().catch(() => {});
+                flashHud();
+            } else {
+                video.pause();
+            }
+        };
+
+        btn.addEventListener("click", togglePlay);
+        video.addEventListener("click", togglePlay);
+
+        video.addEventListener("play", () => {
+            wrap.classList.add("is-playing");
+            btn.innerHTML = NV_PAUSE_SVG;
+            btn.setAttribute("aria-label", "Pause video");
+            flashHud();
+        });
+
+        video.addEventListener("pause", () => {
+            wrap.classList.remove("is-playing", "show-hud");
+            btn.innerHTML = NV_PLAY_SVG;
+            btn.setAttribute("aria-label", "Play video");
+        });
+
+        video.addEventListener("ended", () => {
+            wrap.classList.remove("is-playing", "show-hud");
+            btn.innerHTML = NV_PLAY_SVG;
+            fillEl.style.width = "100%";
+        });
+
+        video.addEventListener("loadedmetadata", syncUi);
+        video.addEventListener("durationchange", syncUi);
+        video.addEventListener("timeupdate", syncUi);
+
+        const scrubTo = (clientX) => {
+            if (!isFinite(video.duration) || video.duration <= 0) return;
+            const rect = hitEl.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            video.currentTime = ratio * video.duration;
+            syncUi();
+            flashHud();
+        };
+
+        let scrubbing = false;
+        hitEl.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            scrubbing = true;
+            try { hitEl.setPointerCapture(e.pointerId); } catch (err) {}
+            scrubTo(e.clientX);
+        });
+        hitEl.addEventListener("pointermove", (e) => {
+            if (!scrubbing) return;
+            scrubTo(e.clientX);
+        });
+        const stopScrub = () => { scrubbing = false; };
+        hitEl.addEventListener("pointerup", stopScrub);
+        hitEl.addEventListener("pointercancel", stopScrub);
+    });
+}
+
+window.bindCustomVideoPlayers = bindCustomVideoPlayers;
+
 function updatePostCommentCount(postId, count) {
     const safeCount = Math.max(0, Number(count) || 0);
     document.querySelectorAll(`.post-box[data-post-id="${postId}"] .comments-count`).forEach(el => {
@@ -825,7 +1067,7 @@ async function renderPosts(posts, container, options = {}) {
             </div>
         `;
 
-        const mediaHtml = post.media_url ? `<img class="post-media" src="${post.media_url}">` : '';
+        const mediaHtml = renderPostMediaHtml(post.media_url);
 
         postEl.innerHTML = `
             ${authorRowHtml}
@@ -853,6 +1095,8 @@ async function renderPosts(posts, container, options = {}) {
             observer.observe(postEl);
         }
     }
+
+    bindCustomVideoPlayers(container);
 
     if (highlightPostId && observer) {
         const target = container.querySelector(`.post-box[data-post-id="${highlightPostId}"]`);
@@ -1915,50 +2159,51 @@ async function loadComments() {
 
             return `
                 <div class="comment-item ${isReply ? 'reply' : ''}" id="comment-${c.id}">
-                    <a href="${profileUrl}" class="comment-avatar-link" onclick="goToProfile('${profileUrl}', event)" title="View @${escapeHtml(c.username)}'s profile">
-                        <img class="comment-avatar" src="${c.pfp_url || defaultAvatar}">
+                    <a href="${profileUrl}" class="comment-avatar-link" onclick="goToProfile('${profileUrl}', event)">
+                        <img class="comment-avatar" src="${c.pfp_url || defaultAvatar}" alt="">
                     </a>
                     <div class="comment-main-col">
                         <div class="comment-header-row">
-                            <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(c.username)}${renderVerifiedBadge(c.verified)}</a>
+                            <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(c.username)}</a>${renderVerifiedBadge(c.verified)}
                         </div>
                         ${renderCommentBodyHtml(c.content)}
                         <div class="comment-actions">
-                            <div class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="toggleCommentReaction('${c.id}', 'like')">
-                                ${COMMENT_LIKE_SVG} <span class="c-likes-count">${c.likes}</span>
-                            </div>
-                            <div class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="toggleCommentReaction('${c.id}', 'dislike')">
-                                ${COMMENT_DISLIKE_SVG} <span class="c-dislikes-count">${c.dislikes}</span>
-                            </div>
-                            <span style="cursor: pointer; color: #000;" onclick="setReplyingTo('${c.id}', '${escapeHtml(c.username)}')">Reply</span>
-                            ${isMe
-                                ? `<span class="comment-delete-btn" onclick="deleteComment('${c.id}')">Delete</span>`
-                                : `<span style="cursor: pointer; color: #777;" onclick="blockUser('${escapeHtml(c.user_email)}', '${escapeHtml(c.username)}', loadComments)">Block</span>`
-                            }
+                            <span class="comment-reaction-btn ${c.userReaction === 'like' ? 'active-like' : ''}" onclick="reactToComment('${c.id}', 'like', this)">
+                                ${COMMENT_LIKE_SVG} <span class="c-likes">${c.likes || 0}</span>
+                            </span>
+                            <span class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="reactToComment('${c.id}', 'dislike', this)">
+                                ${COMMENT_DISLIKE_SVG} <span class="c-dislikes">${c.dislikes || 0}</span>
+                            </span>
+                            <span style="cursor: pointer;" onclick="startReply('${c.id}', '${escapeHtml(c.username)}')">Reply</span>
+                            ${isMe ? `<span class="comment-delete-btn" onclick="deleteComment('${c.id}')">Delete</span>` : ''}
                         </div>
                     </div>
                 </div>
-                ${c.replies.map(r => renderCommentNode(r, true)).join('')}
             `;
         }
 
-        listEl.innerHTML = rootComments.map(c => renderCommentNode(c)).join('');
-        listEl.scrollTop = listEl.scrollHeight;
+        listEl.innerHTML = '';
+        for (const root of rootComments) {
+            listEl.innerHTML += renderCommentNode(root, false);
+            for (const reply of root.replies) {
+                listEl.innerHTML += renderCommentNode(reply, true);
+            }
+        }
         syncStickerSaveIndicators();
     } catch (err) {
-        listEl.innerHTML = '<p style="color: #ef4444; font-size: 13px; text-align: center; margin: auto;">Failed to load comments.</p>';
+        listEl.innerHTML = `<p style="color:#ef4444; text-align:center;">Error: ${escapeHtml(err.message)}</p>`;
     }
 }
 
-function setReplyingTo(commentId, username) {
-    const user = getSessionUser();
-    if (!user) return promptSignup('reply to comments');
+function startReply(commentId, username) {
     _replyingToCommentId = commentId;
     _replyingToCommentUsername = username;
-    const textEl = document.getElementById('replying-to-text');
-    const bannerEl = document.getElementById('replying-banner');
-    if (textEl) textEl.innerText = `Replying to @${username}`;
-    if (bannerEl) bannerEl.style.display = 'flex';
+    const banner = document.getElementById('replying-banner');
+    const txt = document.getElementById('replying-to-text');
+    if (banner && txt) {
+        txt.innerText = `Replying to @${username}`;
+        banner.style.display = 'flex';
+    }
     setComposerTypingMode(true);
     focusCommentInput();
 }
@@ -1966,22 +2211,57 @@ function setReplyingTo(commentId, username) {
 function cancelReply() {
     _replyingToCommentId = null;
     _replyingToCommentUsername = null;
-    const bannerEl = document.getElementById('replying-banner');
-    if (bannerEl) bannerEl.style.display = 'none';
+    const banner = document.getElementById('replying-banner');
+    if (banner) banner.style.display = 'none';
 }
 
-async function postCommentPayload(content) {
+async function reactToComment(commentId, reactionType, btnEl) {
     const user = getSessionUser();
-    if (!user) return promptSignup('comment');
-    if (!content || !_activeCommentsPostId) return;
+    if (!user) return promptSignup('react to comments');
 
-    const targetPostId = _activeCommentsPostId;
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ commentId, reaction: reactionType })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const parent = btnEl.parentElement;
+        const likeBtn = parent.children[0];
+        const dislikeBtn = parent.children[1];
+
+        likeBtn.querySelector('.c-likes').innerText = data.likes;
+        dislikeBtn.querySelector('.c-dislikes').innerText = data.dislikes;
+
+        likeBtn.className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
+        dislikeBtn.className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
+async function postCommentPayload(contentText) {
+    const user = getSessionUser();
+    if (!user) {
+        promptSignup('comment on posts');
+        return false;
+    }
+    if (!_activeCommentsPostId) return false;
+
+    const mentionCheck = validateFriendMentions(contentText);
+    if (!mentionCheck.ok) {
+        showToast(`You can only tag friends (@${mentionCheck.invalidUsernames.join(', @')})`);
+        return false;
+    }
+
     const res = await fetch(`${WORKER_ORIGIN}/api/comments/add`, {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-            postId: targetPostId,
-            content,
+            postId: _activeCommentsPostId,
+            content: contentText,
             parentId: _replyingToCommentId
         })
     });
@@ -1991,15 +2271,17 @@ async function postCommentPayload(content) {
     cancelReply();
     closeFriendMentionDropdown();
     toggleStickerPicker(false);
-    incrementPostCommentCount(targetPostId, 1);
     await loadComments();
+    return true;
 }
 
 async function sendStickerComment(sticker) {
+    const user = getSessionUser();
+    if (!user) return promptSignup('post stickers');
+    if (!_activeCommentsPostId) return;
+
     try {
         recordStickerUsage(sticker);
-        renderStickerPicker();
-        syncStickerSaveIndicators();
         await postCommentPayload(`${STICKER_PREFIX}${sticker}`);
     } catch (err) {
         showToast(err.message);
@@ -2007,204 +2289,150 @@ async function sendStickerComment(sticker) {
 }
 
 async function submitComment(e) {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    e.preventDefault();
+    const user = getSessionUser();
+    if (!user) return promptSignup('comment on posts');
+
     const input = document.getElementById('comment-input');
-    if (!input) return;
-    const content = input.value.trim();
+    const content = input ? input.value.trim() : '';
     if (!content || !_activeCommentsPostId) return;
 
-    if (/(?:^|\s)@[a-zA-Z0-9_]+/.test(content)) {
-        await ensureFriendsLoaded(false);
-        const check = validateFriendMentions(content);
-        if (!check.ok) {
-            showToast(`You can only tag friends (@${check.invalidUsernames.join(', @')} is not your friend).`);
-            return;
-        }
-    }
+    const submitBtn = document.getElementById('comment-post-submit-btn');
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
-        await postCommentPayload(content);
-        input.value = '';
-        setComposerTypingMode(false);
-    } catch (err) {
-        showToast(err.message);
-    }
-}
-
-async function toggleCommentReaction(commentId, reactionType) {
-    const user = getSessionUser();
-    if (!user) return promptSignup('like or dislike comments');
-    try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/comments/react`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ commentId, reaction: reactionType })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to react');
-
-        const parent = document.getElementById(`comment-${commentId}`);
-        if (parent) {
-            const lSpan = parent.querySelector('.c-likes-count');
-            const dSpan = parent.querySelector('.c-dislikes-count');
-            if (lSpan) lSpan.innerText = data.likes;
-            if (dSpan) dSpan.innerText = data.dislikes;
-
-            const buttons = parent.querySelectorAll('.comment-reaction-btn');
-            if (buttons[0]) buttons[0].className = `comment-reaction-btn ${data.userReaction === 'like' ? 'active-like' : ''}`;
-            if (buttons[1]) buttons[1].className = `comment-reaction-btn ${data.userReaction === 'dislike' ? 'active-dislike' : ''}`;
+        const posted = await postCommentPayload(content);
+        if (posted && input) {
+            input.value = '';
+            setComposerTypingMode(false);
         }
     } catch (err) {
         showToast(err.message);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
 window.openCommentsDrawer = openCommentsDrawer;
 window.closeCommentsDrawer = closeCommentsDrawer;
-window.loadComments = loadComments;
-window.deleteComment = deleteComment;
-window.setReplyingTo = setReplyingTo;
+window.startReply = startReply;
 window.cancelReply = cancelReply;
+window.reactToComment = reactToComment;
+window.deleteComment = deleteComment;
 window.submitComment = submitComment;
 window.sendStickerComment = sendStickerComment;
 window.sendImageStickerUrl = sendImageStickerUrl;
+window.toggleStickerPicker = toggleStickerPicker;
 window.triggerStickerImagePick = triggerStickerImagePick;
 window.handleStickerImageSelected = handleStickerImageSelected;
 window.triggerCommentImagePick = triggerCommentImagePick;
 window.handleCommentImageSelected = handleCommentImageSelected;
 window.triggerFriendTagMode = triggerFriendTagMode;
 window.selectFriendMention = selectFriendMention;
-window.toggleStickerPicker = toggleStickerPicker;
 window.setStickerTab = setStickerTab;
 window.toggleBrowseAllUploadedStickers = toggleBrowseAllUploadedStickers;
 window.toggleSaveSticker = toggleSaveSticker;
-window.toggleCommentReaction = toggleCommentReaction;
 
-// ===== UGC REPORT MODAL & SAFETY HELPERS =====
-function reportPost(postId) {
-    const user = getSessionUser();
-    if (!user) { promptSignup('report posts'); return; }
+// ===== REPORT & BLOCK MODALS =====
+const REPORT_REASONS = [
+    "Spam or unwanted solicitation",
+    "Harassment or bullying",
+    "Hate speech or discriminatory content",
+    "Sexual content or nudity",
+    "Violence or dangerous activity",
+    "Copyright or intellectual property violation",
+    "Misinformation or scam"
+];
 
-    let overlay = document.getElementById('ugc-report-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'ugc-report-overlay';
-        overlay.className = 'ugc-overlay';
-        overlay.innerHTML = `
-            <div class="ugc-dialog-box">
-                <div class="ugc-dialog-head">
-                    <span>Report Post</span>
-                    <span style="cursor:pointer;" onclick="document.getElementById('ugc-report-overlay').style.display='none'">✕</span>
-                </div>
-                <form id="ugc-report-form" class="ugc-dialog-body">
-                    <p style="font-size:12px; color:#666;">Select a violation category:</p>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Spam or Misleading" required> Spam or Misleading</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Sexual or Explicit Content"> Sexual or Explicit Content</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Harassment or Bullying"> Harassment or Bullying</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Hate Speech or Violence"> Hate Speech or Violence</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Copyright Violation"> Copyright Violation</label>
-                    <label class="report-option"><input type="radio" name="report_reason" value="Something else" id="radio-something-else"> Something else</label>
-                    
-                    <div id="custom-reason-container" style="display:none; flex-direction:column; gap:4px; margin-top:4px;">
-                        <label style="font-size:11px; font-weight:600; color:#555;">Please specify:</label>
-                        <input type="text" id="ugc-custom-reason-input" placeholder="Type custom reason here..." style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:12px;">
-                    </div>
+let _reportTargetPostId = null;
 
-                    <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-                        <div id="ugc-report-cancel" class="ugc-btn ugc-btn-cancel">Cancel</div>
-                        <div id="ugc-report-submit" class="ugc-btn ugc-btn-danger">Submit Report</div>
-                    </div>
-                </form>
+function ensureReportModal() {
+    let overlay = document.getElementById('report-modal-overlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'report-modal-overlay';
+    overlay.className = 'ugc-overlay';
+
+    const optionsHtml = REPORT_REASONS.map((reason, idx) => `
+        <label class="report-option">
+            <input type="radio" name="reportReason" value="${escapeHtml(reason)}" ${idx === 0 ? 'checked' : ''}>
+            <span>${escapeHtml(reason)}</span>
+        </label>
+    `).join('');
+
+    overlay.innerHTML = `
+        <div class="ugc-dialog-box">
+            <div class="ugc-dialog-head">
+                <span>Report Post</span>
+                <span style="cursor:pointer;" id="report-close-btn">✕</span>
             </div>
-        `;
-        document.body.appendChild(overlay);
-        document.getElementById('ugc-report-cancel').addEventListener('click', () => { overlay.style.display = 'none'; });
-    }
+            <div class="ugc-dialog-body">
+                <p style="color:#666; margin-bottom:2px;">Why are you reporting this post?</p>
+                ${optionsHtml}
+                <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                    <div id="report-cancel-btn" class="ugc-btn ugc-btn-cancel">Cancel</div>
+                    <div id="report-submit-btn" class="ugc-btn ugc-btn-danger">Submit Report</div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
 
-    const form = document.getElementById('ugc-report-form');
-    form.reset();
-    document.getElementById('custom-reason-container').style.display = 'none';
+    const closeModal = () => { overlay.style.display = 'none'; _reportTargetPostId = null; };
+    document.getElementById('report-close-btn').addEventListener('click', closeModal);
+    document.getElementById('report-cancel-btn').addEventListener('click', closeModal);
 
-    form.querySelectorAll('input[name="report_reason"]').forEach(radio => {
-        radio.onchange = (e) => {
-            const isSomethingElse = e.target.value === 'Something else';
-            document.getElementById('custom-reason-container').style.display = isSomethingElse ? 'flex' : 'none';
-            if (isSomethingElse) document.getElementById('ugc-custom-reason-input').focus();
-        };
-    });
-
-    const submitBtn = document.getElementById('ugc-report-submit');
-    function setSubmitBusy(busy) {
-        submitBtn.style.pointerEvents = busy ? 'none' : 'auto';
-        submitBtn.style.opacity = busy ? '0.6' : '1';
-        submitBtn.innerText = busy ? 'Submitting...' : 'Submit Report';
-    }
-    setSubmitBusy(false);
-
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const selected = form.querySelector('input[name="report_reason"]:checked');
-        if (!selected) {
-            showToast("Please select a violation type.");
-            return;
-        }
-
-        let finalReason = selected.value;
-        if (selected.value === 'Something else') {
-            const customText = document.getElementById('ugc-custom-reason-input').value.trim();
-            if (!customText) {
-                showToast("Please specify your reason.");
-                document.getElementById('ugc-custom-reason-input').focus();
-                return;
-            }
-            finalReason = `Something else: ${customText}`;
-        }
-
-        setSubmitBusy(true);
-
+    document.getElementById('report-submit-btn').addEventListener('click', async () => {
+        if (!_reportTargetPostId) return;
+        const selected = overlay.querySelector('input[name="reportReason"]:checked');
+        const reason = selected ? selected.value : REPORT_REASONS[0];
+        const postId = _reportTargetPostId;
+        closeModal();
         try {
             const res = await fetch(`${WORKER_ORIGIN}/api/reports/create`, {
                 method: 'POST',
                 headers: authHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ postId, reason: finalReason })
+                body: JSON.stringify({ postId, reason })
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to submit report');
-            overlay.style.display = 'none';
-            showToast("Report received. Our moderation team will review this post within 24 hours.");
+            if (!res.ok) throw new Error(data.error || 'Failed to report');
+            showToast(data.message || 'Report submitted.');
         } catch (err) {
             showToast(err.message);
-            setSubmitBusy(false);
         }
-    };
+    });
 
-    submitBtn.onclick = () => form.onsubmit({ preventDefault() {} });
-    document.getElementById('ugc-custom-reason-input').onkeydown = (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); form.onsubmit({ preventDefault() {} }); }
-    };
-
-    overlay.style.display = 'flex';
+    return overlay;
 }
 
-function blockUser(targetEmail, targetUsername, onSuccess) {
+function reportPost(postId) {
     const user = getSessionUser();
-    if (!user) { promptSignup('block users'); return; }
+    if (!user) return promptSignup('report posts');
+    _reportTargetPostId = postId;
+    ensureReportModal().style.display = 'flex';
+}
 
+function blockUser(blockedEmail, blockedUsername, onSuccessCallback) {
+    const user = getSessionUser();
+    if (!user) return promptSignup('block users');
+
+    const label = blockedUsername ? `@${blockedUsername}` : blockedEmail;
     showConfirmDialog(
-        "Block User",
-        `Block @${targetUsername || targetEmail}? You will no longer see their posts, comments, or messages.`,
+        `Block ${label}?`,
+        `You will no longer see posts or messages from ${label}.`,
         "Block User",
         async () => {
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/users/block`, {
                     method: 'POST',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ blockedEmail: targetEmail })
+                    body: JSON.stringify({ blockedEmail })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to block user');
-                showToast(`Blocked @${targetUsername || targetEmail}`);
-                if (typeof onSuccess === 'function') onSuccess();
+                showToast(`${label} has been blocked.`);
+                if (typeof onSuccessCallback === 'function') onSuccessCallback();
             } catch (err) {
                 showToast(err.message);
             }
@@ -2212,307 +2440,35 @@ function blockUser(targetEmail, targetUsername, onSuccess) {
     );
 }
 
-// ===== IMAGE COMPRESSION (client-side, before upload) =====
-async function compressImage(file, maxDim = 2048, quality = 0.88) {
-    if (!file || !file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
-    try {
-        const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-        const s = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
-        const w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const ctx = c.getContext('2d');
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(bmp, 0, 0, w, h);
-        const blob = await new Promise(r => c.toBlob(r, 'image/webp', quality));
-        if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
-        return new File([blob], file.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
-    } catch (e) { return file; }
+// ===== CLIENT-SIDE IMAGE & VIDEO COMPRESSION ENGINE =====
+function compressImage(file, maxDimension = 1280, quality = 0.8) {
+    return new Promise((resolve) => {
+        if (!file || !file.type.startsWith('image/')) return resolve(file);
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            let { width, height } = img;
+            if (width <= maxDimension && height <= maxDimension && file.size < 450 * 1024) return resolve(file);
+            if (width > height) {
+                if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+            } else {
+                if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+                if (!blob || blob.size >= file.size) return resolve(file);
+                resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: "image/jpeg" }));
+            }, "image/jpeg", quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
 }
 
-// ===== VIDEO PASS-THROUGH (Compression completely removed) =====
 async function compressVideo(file) {
     return file;
 }
-
-// ===== SHARED STORY PLAYER =====
-const STORY_CSS = `
-.story-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-.story-modal.open { opacity: 1; pointer-events: auto; }
-.story-modal-content { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-.story-modal.open .story-modal-content { transform: translateX(0); }
-.story-video { width: 100%; height: 100%; max-width: 100vw; max-height: 100vh; object-fit: contain; background: #000; }
-.story-top-hud { position: absolute; top: 40px; left: 20px; right: 20px; z-index: 30; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-.story-progress-container { width: 100%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
-.story-progress-fill { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
-.story-action-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.story-left-controls { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
-.story-right-controls { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; pointer-events: auto; }
-.story-close-btn { color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.55); width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; user-select: none; }
-.story-age { height: 34px; padding: 0 12px; color: #fff; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.55); border-radius: 17px; display: none; align-items: center; user-select: none; }
-.story-delete-btn { height: 34px; padding: 0 14px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; background: #ef4444; border-radius: 17px; display: none; align-items: center; justify-content: center; user-select: none; }
-.story-delete-btn.visible { display: inline-flex; }
-.story-reply-bar { position: absolute; left: 0; right: 0; bottom: 10%; z-index: 20; display: none; gap: 8px; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0)); }
-.story-reply-input { flex-grow: 1; min-width: 0; padding: 10px 16px; border: 1px solid rgba(255,255,255,0.6); border-radius: 22px; background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; outline: none; }
-.story-reply-input::placeholder { color: rgba(255,255,255,0.7); }
-.story-reply-send { border: none; border-radius: 22px; padding: 10px 18px; background: #fff; color: #000; font-size: 14px; font-weight: 700; cursor: pointer; }
-.story-reply-send:disabled { opacity: 0.5; }
-html.dark .story-reply-input { background: rgba(0,0,0,0.4); color: #fff; border-color: rgba(255,255,255,0.6); }
-#ugc-confirm-overlay { z-index: 10001; }
-`;
-
-let _storyReady = false;
-let _storyOnDeleted = null;
-let _storyOwnerEmail = '';
-let _storyReplySending = false;
-
-function storyAgeLabel(createdAt) {
-    if (!createdAt) return '';
-    let s = String(createdAt).trim();
-    if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
-    const t = Date.parse(s);
-    if (isNaN(t)) return '';
-    const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
-    if (sec < 60) return sec + 's';
-    const min = Math.floor(sec / 60);
-    if (min < 60) return min + 'm';
-    return Math.floor(min / 60) + 'h';
-}
-
-function isViewerStoryOwner(viewer, ownerEmail = '', ownerUsername = '') {
-    if (!viewer) return false;
-    const vEmail = (viewer.email || '').trim().toLowerCase();
-    const oEmail = (ownerEmail || '').trim().toLowerCase();
-    if (vEmail && oEmail && vEmail === oEmail) return true;
-
-    const vUser = (viewer.username || '').trim().toLowerCase();
-    const oUser = (ownerUsername || '').trim().toLowerCase();
-    if (vUser && oUser && vUser === oUser) return true;
-
-    return false;
-}
-
-function ensureStoryPlayer() {
-    if (_storyReady) return;
-    const style = document.createElement('style');
-    style.textContent = STORY_CSS;
-    document.head.appendChild(style);
-
-    const modal = document.createElement('div');
-    modal.id = 'story-viewer-modal';
-    modal.className = 'story-modal';
-    modal.innerHTML = `
-        <div class="story-modal-content">
-            <div class="story-top-hud">
-                <div class="story-progress-container"><div id="story-progress-fill" class="story-progress-fill"></div></div>
-                <div class="story-action-row">
-                    <div class="story-left-controls">
-                        <div id="story-age" class="story-age"></div>
-                    </div>
-                    <div class="story-right-controls">
-                        <div id="story-delete-btn" class="story-delete-btn" onclick="deleteActiveStory()">Delete</div>
-                        <div class="story-close-btn" onclick="closeStoryModal()">✕</div>
-                    </div>
-                </div>
-            </div>
-            <video id="story-video-player" class="story-video" playsinline preload="metadata"></video>
-            <div id="story-reply-bar" class="story-reply-bar">
-                <input id="story-reply-input" class="story-reply-input" type="text" maxlength="300" placeholder="Reply to story..." autocomplete="off">
-                <button id="story-reply-send" class="story-reply-send" type="button" onclick="sendStoryReply()">Send</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    const player = document.getElementById('story-video-player');
-    const fill = document.getElementById('story-progress-fill');
-
-    player.addEventListener('click', () => {
-        if (player.paused) player.play().catch(() => {});
-        else player.pause();
-    });
-
-    player.addEventListener('timeupdate', () => {
-        if (player.duration && isFinite(player.duration) && player.duration > 0) {
-            fill.style.width = ((player.currentTime / player.duration) * 100) + '%';
-        }
-    });
-
-    player.addEventListener('ended', () => {
-        fill.style.width = '100%';
-        setTimeout(() => closeStoryModal(), 250);
-    });
-
-    player.addEventListener('error', () => {
-        const err = player.error;
-        const code = err ? err.code : 0;
-        const msg = err && err.message ? err.message : '';
-        showToast(`Story video error (${code})${msg ? `: ${msg}` : ''}`);
-    });
-
-    const replyInput = document.getElementById('story-reply-input');
-    replyInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); sendStoryReply(); }
-    });
-
-    const shiftForKeyboard = () => {
-        const bar = document.getElementById('story-reply-bar');
-        if (!bar || bar.style.display !== 'flex') return;
-        const vv = window.visualViewport;
-        const kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-        bar.style.bottom = kb ? (kb + 12) + 'px' : '10%';
-    };
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', shiftForKeyboard);
-        window.visualViewport.addEventListener('scroll', shiftForKeyboard);
-    }
-
-    _storyReady = true;
-}
-
-function showStoryInPlayer(mediaUrl, { canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', ownerUsername = '' } = {}) {
-    ensureStoryPlayer();
-    _storyOnDeleted = onDeleted || null;
-    _storyOwnerEmail = (ownerEmail || '').trim().toLowerCase();
-
-    const viewer = getSessionUser();
-    const resolvedCanDelete = Boolean(canDelete) || isViewerStoryOwner(viewer, _storyOwnerEmail, ownerUsername);
-    const canReply = !resolvedCanDelete && !!_storyOwnerEmail && !!(viewer && viewer.email && viewer.email.toLowerCase() !== _storyOwnerEmail);
-
-    const delBtn = document.getElementById('story-delete-btn');
-    if (delBtn) delBtn.classList.toggle('visible', resolvedCanDelete);
-
-    const replyBar = document.getElementById('story-reply-bar');
-    const replyInput = document.getElementById('story-reply-input');
-    if (replyBar) replyBar.style.display = canReply ? 'flex' : 'none';
-    if (replyInput) replyInput.value = '';
-
-    const ageEl = document.getElementById('story-age');
-    const age = storyAgeLabel(createdAt);
-    if (ageEl) {
-        ageEl.textContent = age;
-        ageEl.style.display = age ? 'inline-flex' : 'none';
-    }
-
-    const modal = document.getElementById('story-viewer-modal');
-    const player = document.getElementById('story-video-player');
-    const fill = document.getElementById('story-progress-fill');
-    fill.style.width = '0%';
-    player.src = mediaUrl;
-    player.load();
-    modal.classList.add('open');
-    player.play().catch((err) => {
-        showToast(`Story play issue: ${err && err.message ? err.message : 'playback blocked'}`);
-    });
-}
-
-function openStory({ mediaUrl, canDelete = false, onDeleted = null, createdAt = '', ownerEmail = '', ownerUsername = '' } = {}) {
-    return showStoryInPlayer(mediaUrl, { canDelete, onDeleted, createdAt, ownerEmail, ownerUsername });
-}
-
-async function sendStoryReply() {
-    if (_storyReplySending) return;
-    const viewer = getSessionUser();
-    if (!viewer) { promptSignup('reply to stories'); return; }
-
-    const input = document.getElementById('story-reply-input');
-    const btn = document.getElementById('story-reply-send');
-    const content = (input ? input.value : '').trim();
-    if (!content || !_storyOwnerEmail) return;
-
-    _storyReplySending = true;
-    if (btn) btn.disabled = true;
-    try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/stories/reply`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ ownerEmail: _storyOwnerEmail, content })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Could not send reply');
-        if (input) input.value = '';
-        showToast('Reply sent');
-    } catch (err) {
-        showToast(err.message);
-    } finally {
-        _storyReplySending = false;
-        if (btn) btn.disabled = false;
-    }
-}
-
-async function viewUserStory(email, createdAt = '') {
-    if (!email) return;
-    try {
-        const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-        let data = null;
-        try { data = await res.json(); } catch (e) { data = null; }
-
-        if (!res.ok) {
-            showToast((data && data.error) ? data.error : `Story failed to load (${res.status})`);
-            return;
-        }
-
-        const storyObj = data && (data.story || (Array.isArray(data.stories) && data.stories[0]));
-        if (!storyObj || !storyObj.media_url) {
-            showToast("Story expired or unavailable");
-            return;
-        }
-
-        const viewer = getSessionUser();
-        const storyEmail = (storyObj.user_email || email || '').trim().toLowerCase();
-        const storyUsername = (storyObj.username || '').trim().toLowerCase();
-        const isOwn = isViewerStoryOwner(viewer, storyEmail, storyUsername);
-
-        showStoryInPlayer(storyObj.media_url, {
-            canDelete: isOwn,
-            createdAt: createdAt || storyObj.created_at || '',
-            ownerEmail: storyEmail,
-            ownerUsername: storyUsername
-        });
-    } catch (err) {
-        showToast(`Story failed to load: ${err && err.message ? err.message : 'network error'}`);
-    }
-}
-
-function closeStoryModal() {
-    if (!_storyReady) return;
-    const modal = document.getElementById('story-viewer-modal');
-    const player = document.getElementById('story-video-player');
-    const fill = document.getElementById('story-progress-fill');
-    const bar = document.getElementById('story-reply-bar');
-    if (document.activeElement === document.getElementById('story-reply-input')) {
-        document.activeElement.blur();
-    }
-    if (bar) bar.style.bottom = '10%';
-    player.pause();
-    player.removeAttribute('src');
-    player.load();
-    fill.style.width = '0%';
-    modal.classList.remove('open');
-}
-
-function deleteActiveStory() {
-    showConfirmDialog("Delete Story", "Delete your active story?", "Delete", async () => {
-        try {
-            const res = await fetch(`${WORKER_ORIGIN}/api/stories/delete`, {
-                method: 'POST',
-                headers: authHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({})
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to delete story');
-            closeStoryModal();
-            showToast("Story deleted");
-            if (typeof _storyOnDeleted === 'function') _storyOnDeleted();
-        } catch (err) {
-            showToast(err.message);
-        }
-    });
-}
-
-window.openStory = openStory;
-window.showStoryInPlayer = showStoryInPlayer;
-window.viewUserStory = viewUserStory;
-window.closeStoryModal = closeStoryModal;
-window.deleteActiveStory = deleteActiveStory;
-window.sendStoryReply = sendStoryReply;
