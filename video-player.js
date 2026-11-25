@@ -69,17 +69,37 @@
     function forceFirstFrame(videoEl) {
         if (!videoEl) return;
         let done = false;
-        const seekToFrame = () => {
+
+        const paintFrame = () => {
             if (done || !videoEl.paused) return;
             done = true;
             try {
                 const dur = videoEl.duration;
-                videoEl.currentTime = (dur && isFinite(dur) && dur > 0.2) ? 0.1 : 0.01;
+                videoEl.currentTime = (dur && isFinite(dur) && dur > 0.2) ? 0.05 : 0.01;
             } catch (e) {}
+
+            // Fallback for Android WebView builds that only paint after a brief muted play/pause
+            setTimeout(() => {
+                if (!videoEl.paused) return;
+                if (videoEl.readyState >= 2 && videoEl.currentTime === 0) {
+                    videoEl.muted = true;
+                    const p = videoEl.play();
+                    if (p && typeof p.then === 'function') {
+                        p.then(() => {
+                            setTimeout(() => {
+                                if (!videoEl.dataset.userPlayed) {
+                                    videoEl.pause();
+                                }
+                            }, 120);
+                        }).catch(() => {});
+                    }
+                }
+            }, 350);
         };
-        videoEl.addEventListener('loadedmetadata', seekToFrame, { once: true });
-        videoEl.addEventListener('loadeddata', seekToFrame, { once: true });
-        videoEl.addEventListener('canplay', seekToFrame, { once: true });
+
+        videoEl.addEventListener('loadedmetadata', paintFrame, { once: true });
+        videoEl.addEventListener('loadeddata', paintFrame, { once: true });
+        videoEl.addEventListener('canplay', paintFrame, { once: true });
         videoEl.load();
     }
 
@@ -122,9 +142,11 @@
         wrap.addEventListener('click', (e) => {
             e.stopPropagation();
             if (video.paused || video.ended) {
+                video.dataset.userPlayed = '1';
                 video.muted = false;
                 video.play().catch(() => {});
             } else {
+                video.dataset.userPlayed = '';
                 video.pause();
             }
         });
@@ -143,6 +165,15 @@
             if (!isVideoMediaUrl(src)) return;
             img.dataset.videoHydrated = '1';
             img.replaceWith(createVideoPlayer(src));
+        });
+
+        const existingVideos = container.querySelectorAll('video.post-media, video.nv-video-el');
+        existingVideos.forEach(vid => {
+            if (vid.dataset.framePrimed) return;
+            vid.dataset.framePrimed = '1';
+            vid.muted = true;
+            vid.preload = 'auto';
+            forceFirstFrame(vid);
         });
     }
 
