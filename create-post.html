@@ -53,7 +53,7 @@
 
         .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
         .card-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-        .card-hint { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+        .card-hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 
         /* Error */
         .error-msg { display: none; background: var(--danger-bg); border: 1px solid #f3b8bb; color: var(--danger); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; font-size: 13.5px; font-weight: 600; }
@@ -88,8 +88,8 @@
         .custom-file-upload svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         input[type="file"] { display: none; }
         .preview-wrap { position: relative; display: none; margin-top: 12px; }
-        .preview-img { display: block; width: 100%; max-height: 320px; border-radius: 12px; object-fit: cover; }
-        .remove-img { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(17, 17, 19, 0.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+        .preview-img { display: block; width: 100%; max-height: 360px; border-radius: 12px; object-fit: cover; }
+        .remove-img { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(17, 17, 19, 0.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; z-index: 10; }
         #file-name { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
 
         /* Publish */
@@ -128,15 +128,33 @@
             </div>
 
             <div class="card">
-                <span class="card-label">Image</span>
+                <span class="card-label">Image or Video</span>
+                <p class="card-hint">Videos are capped at 2 minutes (60MB max).</p>
                 <label class="custom-file-upload">
-                    <input type="file" id="post-media" accept="image/*" onchange="previewFile(this)">
+                    <input type="file" id="post-media" accept="image/*,video/*" onchange="previewFile(this)">
                     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-                    Choose an image
+                    Choose an image or video
                 </label>
+
                 <div class="preview-wrap" id="preview-wrap">
-                    <img id="img-preview" class="preview-img" alt="Selected image preview">
-                    <button type="button" class="remove-img" onclick="removeImage()" aria-label="Remove image">&times;</button>
+                    <img id="img-preview" class="preview-img" alt="Selected image preview" style="display: none;">
+                    <div class="nv-video-wrap" id="video-preview-wrap" style="display: none; margin-bottom: 0;">
+                        <video id="video-preview" class="nv-video-el" playsinline preload="metadata"></video>
+                        <button type="button" class="nv-video-center-btn" aria-label="Play video">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="#ffffff" stroke="none" style="margin-left:2px;"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        </button>
+                        <div class="nv-video-hud">
+                            <div class="nv-video-timer-row">
+                                <span class="nv-video-timer">0:00 / 0:00</span>
+                            </div>
+                            <div class="nv-video-progress-hit" role="slider" aria-label="Seek video">
+                                <div class="nv-video-progress-track">
+                                    <div class="nv-video-progress-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-img" onclick="removeMedia()" aria-label="Remove media">&times;</button>
                 </div>
                 <span id="file-name"></span>
             </div>
@@ -168,6 +186,13 @@
     <script>
         const currentUser = requireAuth();
         const MAX_HASHTAGS = 6;
+        const MAX_VIDEO_SECONDS = 120; // 2 minutes
+        const MAX_MEDIA_BYTES = 60 * 1024 * 1024; // 60MB
+        let _previewBlobUrl = null;
+
+        if (typeof bindCustomVideoPlayers === 'function') {
+            bindCustomVideoPlayers(document);
+        }
 
         function extractTags(text) {
             const matches = (text || "").match(/#[a-zA-Z0-9_]{1,32}/g) || [];
@@ -213,28 +238,120 @@
             input.value = '';
         }
 
-        function previewFile(input) {
+        function getVideoDurationSeconds(file) {
+            return new Promise((resolve, reject) => {
+                const probe = document.createElement('video');
+                const url = URL.createObjectURL(file);
+                probe.preload = 'metadata';
+                probe.onloadedmetadata = () => {
+                    const dur = probe.duration;
+                    URL.revokeObjectURL(url);
+                    resolve(dur);
+                };
+                probe.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Could not read video metadata. Please choose a valid MP4 or WebM video.'));
+                };
+                probe.src = url;
+            });
+        }
+
+        async function previewFile(input) {
             const file = input.files[0];
-            if (file) {
+            if (!file) return;
+
+            hideError();
+
+            if (file.size > MAX_MEDIA_BYTES) {
+                removeMedia();
+                showError('File exceeds the 60MB limit.');
+                return;
+            }
+
+            const imgEl = document.getElementById('img-preview');
+            const vidWrap = document.getElementById('video-preview-wrap');
+            const vidEl = document.getElementById('video-preview');
+            const wrapEl = document.getElementById('preview-wrap');
+
+            if (_previewBlobUrl) {
+                URL.revokeObjectURL(_previewBlobUrl);
+                _previewBlobUrl = null;
+            }
+
+            if (file.type.startsWith('video/')) {
+                try {
+                    const duration = await getVideoDurationSeconds(file);
+                    if (!isFinite(duration) || duration <= 0) {
+                        removeMedia();
+                        showError('Unable to verify video length. Please try another video file.');
+                        return;
+                    }
+                    if (duration > MAX_VIDEO_SECONDS) {
+                        removeMedia();
+                        const mins = Math.floor(duration / 60);
+                        const secs = Math.round(duration % 60);
+                        showError(`Video is ${mins}:${String(secs).padStart(2, '0')}. Videos must be 2 minutes (2:00) or shorter.`);
+                        return;
+                    }
+                } catch (err) {
+                    removeMedia();
+                    showError(err.message);
+                    return;
+                }
+
+                imgEl.style.display = 'none';
+                imgEl.removeAttribute('src');
+                _previewBlobUrl = URL.createObjectURL(file);
+                vidEl.src = _previewBlobUrl;
+                vidWrap.style.display = 'flex';
+                wrapEl.style.display = 'block';
+                document.getElementById('file-name').innerText = file.name;
+            } else if (file.type.startsWith('image/')) {
+                vidEl.pause();
+                vidEl.removeAttribute('src');
+                vidWrap.style.display = 'none';
                 document.getElementById('file-name').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = e => {
-                    document.getElementById('img-preview').src = e.target.result;
-                    document.getElementById('preview-wrap').style.display = 'block';
+                    imgEl.src = e.target.result;
+                    imgEl.style.display = 'block';
+                    wrapEl.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
+            } else {
+                removeMedia();
+                showError('Unsupported file format. Please choose an image or video.');
             }
         }
 
-        function removeImage() {
-            document.getElementById('post-media').value = '';
-            document.getElementById('img-preview').removeAttribute('src');
+        function removeMedia() {
+            const input = document.getElementById('post-media');
+            const imgEl = document.getElementById('img-preview');
+            const vidWrap = document.getElementById('video-preview-wrap');
+            const vidEl = document.getElementById('video-preview');
+
+            input.value = '';
+            imgEl.removeAttribute('src');
+            imgEl.style.display = 'none';
+
+            vidEl.pause();
+            vidEl.removeAttribute('src');
+            vidEl.load();
+            vidWrap.style.display = 'none';
+            vidWrap.classList.remove('is-playing', 'show-hud');
+
+            if (_previewBlobUrl) {
+                URL.revokeObjectURL(_previewBlobUrl);
+                _previewBlobUrl = null;
+            }
+
             document.getElementById('preview-wrap').style.display = 'none';
             document.getElementById('file-name').innerText = '';
         }
 
         async function submitPost(e) {
             e.preventDefault();
+            hideError();
             const text = document.getElementById('post-text').value.trim();
             const media = document.getElementById('post-media').files[0];
             if (!text && !media) {
@@ -250,15 +367,31 @@
 
             const btn = document.getElementById('pub-btn');
             btn.disabled = true;
-            btn.innerText = media ? "Optimizing image..." : "Publishing...";
 
             try {
+                if (media && media.size > MAX_MEDIA_BYTES) {
+                    throw new Error('File exceeds the 60MB limit.');
+                }
+
+                let toUpload = media;
+                if (media) {
+                    const isVideo = media.type.startsWith('video/');
+                    if (isVideo) {
+                        const dur = await getVideoDurationSeconds(media);
+                        if (dur > MAX_VIDEO_SECONDS) {
+                            throw new Error('Videos cannot exceed 2 minutes (2:00).');
+                        }
+                        btn.innerText = "Preparing video...";
+                        toUpload = (typeof compressVideo === 'function') ? await compressVideo(media) : media;
+                    } else {
+                        btn.innerText = "Optimizing image...";
+                        toUpload = (typeof compressImage === 'function') ? await compressImage(media) : media;
+                    }
+                }
+
                 const formData = new FormData();
                 formData.append('content', text);
-                if (media) {
-                    const toUpload = (typeof compressImage === 'function') ? await compressImage(media) : media;
-                    formData.append('media', toUpload);
-                }
+                if (toUpload) formData.append('media', toUpload);
 
                 btn.innerText = "Publishing...";
                 const res = await fetch(`${WORKER_ORIGIN}/api/posts/create`, {
@@ -281,6 +414,12 @@
             el.innerText = msg;
             el.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideError() {
+            const el = document.getElementById('post-error');
+            el.style.display = 'none';
+            el.innerText = '';
         }
     </script>
 </body>
