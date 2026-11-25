@@ -3,118 +3,480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nvaritia - Video Player Preview</title>
+    <title>Nvaritia - Reels</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: #f6f6f7;
-            color: #111113;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 14px;
-            line-height: 1.45;
-            padding-top: 52px;
-            padding-bottom: 40px;
+        :root {
+            --bg: #000000;
+            --surface: #121214;
+            --text: #ffffff;
+            --muted: #b3b3bc;
+            --line: rgba(255, 255, 255, 0.14);
         }
-        header {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button { font: inherit; color: inherit; }
+
+        .top-bar {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
+            right: 0;
             height: 52px;
             padding: 0 16px;
-            background: #ffffff;
-            border-bottom: 1px solid #e6e6ea;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+            z-index: 40;
+            pointer-events: none;
         }
+        .top-bar > * { pointer-events: auto; }
         .brand {
             font-size: 18px;
             font-weight: 800;
-            color: #111113;
+            letter-spacing: -0.02em;
+            color: #ffffff;
             text-decoration: none;
         }
-        .wrapper {
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto;
-            padding: 18px 16px;
-        }
-        .card {
-            background: #ffffff;
-            border: 1px solid #e6e6ea;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 14px;
-        }
-        .card-title {
-            font-size: 15px;
+        .top-actions { display: flex; align-items: center; gap: 10px; }
+        .pill-link {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 12px;
             font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 999px;
+        }
+
+        .reels-feed {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .reels-feed::-webkit-scrollbar { display: none; }
+
+        .reel-item {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            overflow: hidden;
+        }
+
+        .reel-media-layer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .reel-media-layer .nv-video-wrap {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            border: none;
+            border-radius: 0;
+            margin-bottom: 0;
+            background: #000;
+        }
+
+        .reel-media-layer .nv-video-wrap .nv-video-el {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            min-height: 100%;
+            object-fit: contain;
+        }
+
+        .reel-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 64px;
+            padding: 28px 16px 16px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 14px;
+            z-index: 15;
+            pointer-events: none;
+        }
+        .reel-overlay > * { pointer-events: auto; }
+
+        .reel-meta { flex: 1; min-width: 0; }
+        .reel-author-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 6px;
         }
-        .card-sub {
-            font-size: 12px;
-            color: #6b6b73;
-            margin-bottom: 12px;
+        .reel-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            flex-shrink: 0;
         }
-        .url-row {
-            display: flex;
-            gap: 8px;
-        }
-        .url-input {
-            flex: 1;
-            min-width: 0;
-            padding: 10px 12px;
-            border: 1px solid #e6e6ea;
-            border-radius: 10px;
-            font-size: 13px;
-            background: #f6f6f7;
-            color: #111113;
-        }
-        .btn {
-            background: #111113;
+        .reel-author {
+            font-size: 14px;
+            font-weight: 700;
             color: #ffffff;
+            text-decoration: none;
+        }
+        .reel-caption {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #f4f4f6;
+            max-height: 54px;
+            overflow-y: auto;
+            word-break: break-word;
+        }
+
+        .reel-side-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        .side-btn {
+            background: rgba(20, 20, 24, 0.72);
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .side-btn svg {
+            width: 19px;
+            height: 19px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .side-btn.active {
+            background: #ffffff;
+            border-color: #ffffff;
+        }
+        .side-btn.active svg { stroke: #000000; fill: #000000; }
+        .side-count {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 3px;
+            text-align: center;
+        }
+
+        .state-box {
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .retry-btn {
+            background: #ffffff;
+            color: #000000;
             border: none;
             border-radius: 10px;
-            padding: 0 16px;
+            padding: 10px 18px;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
         }
-        #player-slot {
-            margin-top: 8px;
+
+        footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 56px;
+            background: rgba(0, 0, 0, 0.92);
+            border-top: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            z-index: 40;
+        }
+        .footer-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #9b9ba6;
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .footer-tab.active { color: #ffffff; }
+        .footer-icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
     </style>
 </head>
 <body>
-    <header>
+    <header class="top-bar">
         <a href="feed.html" class="brand">Nvaritia</a>
-        <span style="font-size: 12px; color: #6b6b73; font-weight: 600;">Player Test</span>
+        <div class="top-actions">
+            <a href="create-post.html" class="pill-link">+ Post Video</a>
+        </div>
     </header>
 
-    <div class="wrapper">
-        <div class="card">
-            <div class="card-title">Test Video URL</div>
-            <div class="card-sub">Paste a direct `.mp4` or `.webm` URL to preview the player controls and auto-hide timer.</div>
-            <div class="url-row">
-                <input type="url" id="video-url-input" class="url-input" placeholder="https://example.com/sample.mp4">
-                <button type="button" class="btn" onclick="loadTestVideo()">Load</button>
-            </div>
-            <div id="player-slot"></div>
+    <main id="reels-feed" class="reels-feed" aria-live="polite">
+        <div class="state-box" id="reels-state">
+            <div>Loading video reels...</div>
         </div>
-    </div>
+    </main>
+
+    <footer>
+        <a href="feed.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="reels.html" class="footer-tab active">
+            <svg class="footer-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Reels
+        </a>
+        <a href="create-post.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Post
+        </a>
+        <a href="profile.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
+    </footer>
 
     <script src="video-player.js?v=11"></script>
+    <script src="app.js?v=5"></script>
     <script>
-        function loadTestVideo() {
-            const input = document.getElementById('video-url-input');
-            const slot = document.getElementById('player-slot');
-            const url = (input.value || '').trim();
-            if (!url || !window.NvaritiaVideoPlayer) return;
-            slot.innerHTML = '';
-            slot.appendChild(window.NvaritiaVideoPlayer.createVideoPlayer(url));
+        const loggedUser = typeof requireAuth === 'function' ? requireAuth(true) : { guest: true };
+        const feedEl = document.getElementById('reels-feed');
+
+        function isVideoUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+            if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.isVideoMediaUrl === 'function') {
+                return window.NvaritiaVideoPlayer.isVideoMediaUrl(url);
+            }
+            return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
         }
+
+        function extractVideoUrl(post) {
+            if (!post || typeof post !== 'object') return '';
+            const candidates = [
+                post.media_url,
+                post.video_url,
+                post.mediaUrl,
+                post.videoUrl,
+                post.media
+            ];
+            for (const c of candidates) {
+                if (typeof c === 'string' && isVideoUrl(c)) return c;
+            }
+            return '';
+        }
+
+        function extractAuthor(post) {
+            const authorObj = (post && typeof post.author === 'object' && post.author) ? post.author : {};
+            const username = post.username || authorObj.username || post.author_username || 'user';
+            const pfp = post.pfp_url || authorObj.pfp_url || post.avatar_url || '';
+            const verified = Boolean(post.verified || authorObj.verified);
+            return { username, pfp, verified };
+        }
+
+        async function fetchVideoPosts() {
+            const origin = typeof WORKER_ORIGIN !== 'undefined' ? WORKER_ORIGIN : 'https://nvaritia.online';
+            const headers = typeof authHeaders === 'function' ? authHeaders() : {};
+            const endpoints = [
+                `${origin}/api/reels`,
+                `${origin}/api/posts?type=video`,
+                `${origin}/api/posts`
+            ];
+
+            for (const url of endpoints) {
+                try {
+                    const res = await fetch(url, { headers });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    const rawList = Array.isArray(data) ? data : (data.posts || data.reels || data.items || []);
+                    const videos = rawList
+                        .map(p => ({ post: p, videoUrl: extractVideoUrl(p) }))
+                        .filter(item => Boolean(item.videoUrl));
+                    if (videos.length > 0 || url.endsWith('/api/posts')) {
+                        return videos;
+                    }
+                } catch (e) {}
+            }
+            return [];
+        }
+
+        function renderState(message, showRetry) {
+            feedEl.innerHTML = `
+                <div class="state-box">
+                    <div>${message}</div>
+                    ${showRetry ? '<button type="button" class="retry-btn" onclick="initReels()">Retry</button>' : ''}
+                </div>
+            `;
+        }
+
+        function setupVisibilityObserver() {
+            const items = feedEl.querySelectorAll('.reel-item');
+            if (!items.length || !('IntersectionObserver' in window)) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const item = entry.target;
+                    const vid = item.querySelector('.nv-video-el');
+                    if (!vid) return;
+
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
+                        vid.muted = true;
+                        vid.play().catch(() => {});
+                    } else {
+                        if (!vid.paused) {
+                            vid.pause();
+                        }
+                        if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.pauseOffscreenVideos === 'function') {
+                            window.NvaritiaVideoPlayer.pauseOffscreenVideos(item);
+                        }
+                    }
+                });
+            }, { threshold: [0.65] });
+
+            items.forEach(item => observer.observe(item));
+        }
+
+        async function initReels() {
+            renderState('Loading video reels...', false);
+            const items = await fetchVideoPosts();
+
+            if (!items.length) {
+                renderState('No video posts found yet.', true);
+                return;
+            }
+
+            feedEl.innerHTML = '';
+            const safeText = (str) => typeof escapeHtml === 'function' ? escapeHtml(str || '') : String(str || '');
+            const badgeHtml = (v) => typeof renderVerifiedBadge === 'function' ? renderVerifiedBadge(v) : '';
+            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23222226'/></svg>";
+
+            items.forEach(({ post, videoUrl }, idx) => {
+                const { username, pfp, verified } = extractAuthor(post);
+                const caption = post.content || post.caption || post.text || '';
+                const likes = Number(post.likes_count ?? post.likes ?? 0) || 0;
+                const postId = post.id ?? post.post_id ?? idx;
+
+                const slide = document.createElement('section');
+                slide.className = 'reel-item';
+                slide.dataset.postId = String(postId);
+
+                const mediaLayer = document.createElement('div');
+                mediaLayer.className = 'reel-media-layer';
+
+                if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.createVideoPlayer === 'function') {
+                    mediaLayer.appendChild(window.NvaritiaVideoPlayer.createVideoPlayer(videoUrl));
+                } else {
+                    const fallbackVid = document.createElement('video');
+                    fallbackVid.className = 'nv-video-el';
+                    fallbackVid.src = videoUrl;
+                    fallbackVid.playsInline = true;
+                    fallbackVid.controls = true;
+                    mediaLayer.appendChild(fallbackVid);
+                }
+
+                const overlay = document.createElement('div');
+                overlay.className = 'reel-overlay';
+                overlay.innerHTML = `
+                    <div class="reel-meta">
+                        <div class="reel-author-row">
+                            <img class="reel-avatar" src="${pfp || defaultAvatar}" alt="@${safeText(username)}">
+                            <a class="reel-author" href="profile.html?user=${encodeURIComponent(username)}">@${safeText(username)}${badgeHtml(verified)}</a>
+                        </div>
+                        ${caption ? `<div class="reel-caption">${safeText(caption)}</div>` : ''}
+                    </div>
+                    <div class="reel-side-actions">
+                        <div>
+                            <button type="button" class="side-btn" aria-label="Like reel" onclick="this.classList.toggle('active')">
+                                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            </button>
+                            <div class="side-count">${likes}</div>
+                        </div>
+                        <div>
+                            <button type="button" class="side-btn" aria-label="Share reel" onclick="shareReel('${encodeURIComponent(String(postId))}')">
+                                <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            </button>
+                            <div class="side-count">Share</div>
+                        </div>
+                    </div>
+                `;
+
+                slide.appendChild(mediaLayer);
+                slide.appendChild(overlay);
+                feedEl.appendChild(slide);
+            });
+
+            setupVisibilityObserver();
+        }
+
+        function shareReel(encodedId) {
+            const shareUrl = `${window.location.origin}/reels.html?post=${encodedId}`;
+            if (window.AndroidBridge && typeof window.AndroidBridge.shareUrl === 'function') {
+                window.AndroidBridge.shareUrl(shareUrl, 'Check out this reel on Nvaritia');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    if (typeof showToast === 'function') showToast('Reel link copied');
+                }).catch(() => {});
+            }
+        }
+
+        initReels();
     </script>
 </body>
 </html>
