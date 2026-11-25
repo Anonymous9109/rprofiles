@@ -6,139 +6,145 @@
     <title>Nvaritia - Home Feed</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #fff; color: #111; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; padding-top: 48px; padding-bottom: 54px; overflow-x: hidden; }
-        header { position: fixed; top: 0; left: 0; width: 100%; height: 48px; background: #fff; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; z-index: 100; gap: 8px; }
-        .brand { font-size: 18px; font-weight: 800; color: #000; text-decoration: none; flex-shrink: 0; }
-        .header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-        .btn-app { display: inline-block; background: #000; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+        body { background: #ffffff; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; display: flex; flex-direction: column; min-height: 100vh; padding-top: 56px; padding-bottom: 54px; }
+        header, footer { background: #ffffff; border-color: #e5e5e5; position: fixed; left: 0; width: 100%; z-index: 100; padding: 0 16px; }
+        header { border-bottom: 1px solid #e5e5e5; top: 0; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; padding-top: 8px; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; }
+        footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; display: flex; align-items: center; justify-content: space-around; }
+        .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
 
-        /* Stories & Friends Music Notes Strip */
-        .social-strip-wrap { display: none; width: 100%; border-bottom: 1px solid #ececec; background: #fff; padding: 10px 12px; }
-        .social-strip-wrap.visible { display: block; }
-        .social-strip-scroll { display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; scrollbar-width: none; padding-top: 2px; }
-        .social-strip-scroll::-webkit-scrollbar { display: none; }
-        .social-story-item { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 64px; flex-shrink: 0; cursor: pointer; user-select: none; }
-        .social-story-ring { width: 54px; height: 54px; border-radius: 50%; padding: 2px; background: conic-gradient(#111, #777, #111); display: flex; align-items: center; justify-content: center; }
-        .social-story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; background: #f0f0f0; }
-        .social-story-name { font-size: 11px; font-weight: 600; color: #333; max-width: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+        .notif-icon-btn { position: relative; background: none; border: none; color: #111; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: background 0.15s ease; }
+        .notif-icon-btn:hover { background: #f4f4f5; }
+        .notif-badge { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: none; }
+        .notif-badge.show { display: block; }
 
-        .social-note-item { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 88px; flex-shrink: 0; cursor: pointer; user-select: none; }
-        .social-note-bubble-wrap { position: relative; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; margin-top: 14px; }
-        .social-note-bubble { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; border: 1px solid #333; border-radius: 10px; padding: 4px 7px; font-size: 10px; font-weight: 600; max-width: 112px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 3px 8px rgba(0,0,0,0.18); z-index: 2; }
-        .social-note-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #22c55e; background: #f0f0f0; }
-        .social-note-track { font-size: 10.5px; font-weight: 700; color: #111; max-width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-        .social-note-artist { font-size: 10px; color: #666; max-width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; margin-top: -3px; }
+        .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
 
-        html.dark .social-strip-wrap { background: #121212; border-bottom-color: #2a2a2a; }
-        html.dark .social-story-name { color: #ddd; }
-        html.dark .social-story-ring { background: conic-gradient(#fff, #666, #fff); }
-        html.dark .social-story-ring img, html.dark .social-note-avatar { border-color: #121212; }
-        html.dark .social-note-bubble { background: #262626; color: #fff; border-color: #444; }
-        html.dark .social-note-track { color: #eee; }
-        html.dark .social-note-artist { color: #aaa; }
-
-        /* Story Viewer Modal */
-        #story-viewer-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9600; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
-        #story-viewer-modal.open { display: flex; }
-        .story-viewer-card { width: 100%; max-width: 420px; background: #000; border: 1px solid #2a2a2a; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
-        .story-viewer-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #fff; background: rgba(0,0,0,0.7); }
-        .story-viewer-user { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
-        .story-viewer-user img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-        .story-viewer-media { width: 100%; max-height: 70vh; object-fit: contain; background: #000; }
-        .story-reply-form { display: flex; gap: 8px; padding: 10px 12px; background: #141414; border-top: 1px solid #262626; }
-        .story-reply-input { flex: 1; background: #222; color: #fff; border: 1px solid #3a3a3a; border-radius: 18px; padding: 8px 12px; font-size: 13px; }
-        .story-reply-btn { background: #fff; color: #000; border: none; border-radius: 18px; padding: 0 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
-
-        /* Feed */
-        .feed-wrapper { width: 100%; max-width: 600px; margin: 0 auto; padding: 8px 12px; }
-        .post-box { border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: #fff; }
-        .post-box.highlighted { background: #f9f9f9; border: 1px solid #000; }
-        .post-header-line { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .feed-avatar-container { position: relative; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .feed-avatar-container.has-story { padding: 2px; background: conic-gradient(#000, #888, #000); }
-        html.dark .feed-avatar-container.has-story { background: conic-gradient(#fff, #666, #fff); }
-        .post-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; background: #f0f0f0; }
-        .feed-avatar-container.has-story .post-avatar { border: 2px solid #fff; }
-        html.dark .feed-avatar-container.has-story .post-avatar { border-color: #121212; }
-        .post-meta { font-weight: 700; font-size: 13px; color: #111; text-decoration: none; }
-        .post-meta:hover { text-decoration: underline; }
-        .post-timestamp { font-size: 11px; color: #666; }
-        .post-text { margin: 6px 0 8px 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-        .post-media { max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 4px; display: block; }
-        .delete-btn { color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; margin-left: auto; }
-        .safety-actions { display: flex; gap: 6px; margin-left: auto; }
-        .safety-btn { font-size: 11px; font-weight: 600; color: #666; cursor: pointer; padding: 2px 6px; border: 1px solid #ddd; border-radius: 4px; }
-        .safety-btn:hover { color: #000; border-color: #999; }
-
-        .load-more-btn { width: 100%; padding: 10px; background: #f5f5f5; color: #111; border: 1px solid #ddd; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin: 10px 0 20px 0; text-align: center; }
-
-        /* Search Drawer */
-        .search-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: #fff; z-index: 1500; transition: right 0.25s ease; display: flex; flex-direction: column; }
-        .search-drawer.open { right: 0; }
-        .search-drawer-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; height: 48px; }
-        .search-drawer-header input { flex-grow: 1; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        .search-filters { display: flex; border-bottom: 1px solid #e5e5e5; background: #f5f5f5; }
-        .filter-tab { flex: 1; text-align: center; padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; color: #666; }
-        .filter-tab.active { color: #000; background: #fff; border-bottom: 2px solid #000; }
-        .search-results-area { flex-grow: 1; overflow-y: auto; padding: 12px; }
-        .user-result-box { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
-        .avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
-
-        /* Footer */
-        footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 50px; background: #fff; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: 1; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; height: 100%; cursor: pointer; }
+        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; background: none; border: none; cursor: pointer; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .footer-tab.active .footer-icon { stroke: #000; }
         .footer-icon.icon-filled { fill: currentColor; stroke: none; }
+        .footer-tab.active .footer-icon { stroke: #000; }
+        .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
+
+        /* Search Slide-out Drawer Styles */
+        .search-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: #fff; z-index: 2000; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
+        .search-drawer.open { right: 0; }
+        .search-drawer-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; }
+        .search-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; color: inherit; }
+        .search-drawer-input { flex-grow: 1; border: none; font-size: 14px; outline: none; background: transparent; }
+
+        .search-filters { display: flex; border-bottom: 1px solid #e5e5e5; background: #fafafa; }
+        .filter-tab { flex: 1; text-align: center; padding: 10px; font-weight: 600; font-size: 12px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; user-select: none; }
+        .filter-tab.active { color: #000; border-bottom-color: #000; background: #fff; }
+
+        .search-results-body { flex-grow: 1; overflow-y: auto; padding: 16px; }
+
+        /* Activity & Notifications Slide-in Page Styles */
+        .activity-drawer { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #ffffff; z-index: 2100; display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform 0.3s ease, visibility 0s 0.3s; }
+        .activity-drawer.open { transform: translateX(0); visibility: visible; transition: transform 0.3s ease, visibility 0s; }
+        .activity-drawer-header { height: 48px; flex-shrink: 0; padding: 0 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e5e5; background: #ffffff; }
+        .activity-back-btn { background: none; border: none; padding: 6px; cursor: pointer; color: #111; display: flex; align-items: center; }
+        .activity-back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .activity-drawer-title { font-weight: bold; font-size: 16px; color: #111; }
+        .activity-drawer-body { flex-grow: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; background: #fafafa; }
+        .drawer-activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fff; border: 1px solid #eee; border-radius: 12px; cursor: pointer; }
+        .drawer-activity-item:hover { background: #f5f5f5; }
+        .activity-avatar { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; flex-shrink: 0; }
+        .activity-info { flex-grow: 1; min-width: 0; }
+        .activity-name { font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 4px; color: #111; }
+        .activity-preview { color: #666; font-size: 13px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .fr-btn { border: 1px solid #ccc; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: #111; }
+        .fr-btn.fr-accept { background: #000; color: #fff; border-color: #000; }
+        .fr-btn:disabled { opacity: 0.6; cursor: default; }
+
+        @media (min-width: 700px) {
+            .activity-drawer { left: calc(50% - 340px); width: 680px; border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; }
+        }
+
+        .post-box, .user-result-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
+        .post-box.highlighted { background: #fafafa; border: 1px solid #ccc; border-radius: 6px; padding: 12px; }
+        .post-header-line { display: flex; align-items: center; gap: 10px; margin-top: 8px; margin-bottom: 8px; }
+
+        .feed-avatar-container { position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
+        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
+
+        .post-meta { font-weight: 600; color: #111; text-decoration: none; display: inline-block; padding: 2px 0; }
+        .post-meta:hover { text-decoration: underline; }
+        .post-timestamp { color: #666; font-size: 10px; }
+        .post-text { font-size: 13px; margin-top: 6px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+        .post-media { max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 4px; display: block; }
+        .nv-video-el { background: #000; }
+
+        .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
+        .reaction-group { display: flex; gap: 10px; align-items: center; }
+        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; user-select: none; }
+        .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
+        .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+        .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
+        .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
+
+        .safety-actions { display: flex; gap: 8px; align-items: center; }
+        .safety-btn { background: none; border: none; color: #777; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; user-select: none; }
+        .safety-btn:hover { color: #ef4444; text-decoration: underline; }
+
+        .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; user-select: none; }
+
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+        .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
+
+        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
+    <div id="app-toast"></div>
+
     <header>
-        <a href="feed.html" class="brand">Nvaritia</a>
-        <div class="header-right">
-            <div class="btn-app" onclick="openSearchDrawer()">Search</div>
-            <div id="auth-header-btn" class="btn-app" style="display: none;" onclick="window.location.href='index.html'">Sign Up / Login</div>
+        <div class="header-top">
+            <a href="feed.html" class="brand">Nvaritia</a>
+            <button type="button" class="notif-icon-btn" onclick="openActivityDrawer()" aria-label="Activity and Notifications">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span id="notif-badge" class="notif-badge"></span>
+            </button>
         </div>
     </header>
 
-    <div id="friends-social-strip" class="social-strip-wrap">
-        <div id="friends-social-scroll" class="social-strip-scroll"></div>
+    <div class="wrapper">
+        <div id="feed-container"><div class="loading-spinner">Loading posts...</div></div>
     </div>
 
-    <div class="feed-wrapper">
-        <div id="feed-container">Loading feed...</div>
-        <div id="load-more-btn" class="load-more-btn" style="display: none;" onclick="loadMorePosts()">Load more posts</div>
-    </div>
-
-    <div id="story-viewer-modal">
-        <div class="story-viewer-card">
-            <div class="story-viewer-top">
-                <div class="story-viewer-user">
-                    <img id="story-viewer-pfp" src="" alt="">
-                    <span id="story-viewer-username">@user</span>
-                </div>
-                <span style="cursor:pointer; font-size:18px; padding:0 6px;" onclick="closeStoryViewer()">✕</span>
-            </div>
-            <video id="story-viewer-video" class="story-viewer-media" controls autoplay playsinline></video>
-            <form id="story-reply-form" class="story-reply-form" onsubmit="submitStoryReply(event)">
-                <input type="text" id="story-reply-input" class="story-reply-input" placeholder="Reply to story..." maxlength="300" required>
-                <button type="submit" id="story-reply-submit" class="story-reply-btn">Send</button>
-            </form>
+    <!-- Sliding Activity & Notifications Page -->
+    <div id="activity-drawer" class="activity-drawer">
+        <div class="activity-drawer-header">
+            <button type="button" class="activity-back-btn" onclick="closeActivityDrawer()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span class="activity-drawer-title">Activity & Notifications</span>
+        </div>
+        <div id="activity-drawer-body" class="activity-drawer-body">
+            <div class="loading-spinner">Loading activity...</div>
         </div>
     </div>
 
+    <!-- Sliding Search Drawer -->
     <div id="search-drawer" class="search-drawer">
         <div class="search-drawer-header">
-            <input type="text" id="drawer-search-input" placeholder="Search users or posts..." oninput="performSearch()">
-            <span style="cursor:pointer; font-size:18px; font-weight:bold; padding: 0 6px;" onclick="closeSearchDrawer()">✕</span>
+            <button type="button" class="search-back-btn" onclick="closeSearchDrawer()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <input type="text" id="drawer-search-input" class="search-drawer-input" placeholder="Search Nvaritia..." oninput="handleSearch(this.value)">
         </div>
         <div class="search-filters">
-            <div class="filter-tab active" id="tab-all" onclick="switchSearchTab('all')">All</div>
-            <div class="filter-tab" id="tab-users" onclick="switchSearchTab('users')">Users</div>
-            <div class="filter-tab" id="tab-posts" onclick="switchSearchTab('posts')">Posts</div>
+            <div class="filter-tab active" id="filter-posts-tab" onclick="setSearchFilter('posts')">Posts</div>
+            <div class="filter-tab" id="filter-users-tab" onclick="setSearchFilter('users')">Users</div>
         </div>
-        <div class="search-results-area" id="drawer-search-results">Type at least 2 characters to search...</div>
+        <div class="search-results-body" id="search-results-container">
+            <p style="color: #666; text-align: center; padding-top: 20px;">Type something to search...</p>
+        </div>
     </div>
 
     <footer>
@@ -146,6 +152,10 @@
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             Home
         </a>
+        <button type="button" class="footer-tab" onclick="openSearchDrawer()">
+            <svg class="footer-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Search
+        </button>
         <a href="create-post.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
@@ -160,28 +170,257 @@
         </a>
     </footer>
 
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=5"></script>
     <script>
         const currentUser = requireAuth(true);
-        const isGuest = !!(currentUser && currentUser.guest);
-        if (isGuest) {
-            const authBtn = document.getElementById('auth-header-btn');
-            if (authBtn) authBtn.style.display = 'inline-block';
+        let currentSearchFilter = 'posts';
+        let lastSearchQuery = '';
+        let isActivityDrawerOpen = false;
+        let cachedNotifications = [];
+        let cachedFriendRequests = [];
+
+        const SEEN_ACTIVITY_KEY = `nvaritia_seen_activity_${((currentUser && currentUser.email) || '').toLowerCase()}`;
+        const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+
+        function showToast(message) {
+            const toast = document.getElementById('app-toast');
+            if (!toast) return;
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const highlightPostId = urlParams.get('post');
-        const activeTagFilter = (urlParams.get('tag') || '').replace(/^#/, '').toLowerCase();
+        function getSeenActivityKeys() {
+            try {
+                return new Set(JSON.parse(localStorage.getItem(SEEN_ACTIVITY_KEY) || '[]'));
+            } catch (e) {
+                return new Set();
+            }
+        }
 
-        let currentOffset = 0;
-        const limit = 25;
-        let feedSeed = null;
-        const shownPostIds = new Set();
-        let searchTimeout = null;
-        let activeSearchTab = 'all';
-        let activeStoryOwnerEmail = null;
-        let activeNoteAudio = null;
-        let activeNoteTimer = null;
+        function getActivityItemKey(prefix, item) {
+            if (item && item.id !== undefined && item.id !== null) {
+                return `${prefix}:${item.id}`;
+            }
+            return `${prefix}:${item.actor_username || item.username || ''}:${item.type || ''}:${item.post_id || ''}:${item.created_at || ''}:${item.message || ''}`;
+        }
+
+        function markCurrentActivityAsSeen() {
+            const seen = getSeenActivityKeys();
+            for (const r of cachedFriendRequests) {
+                seen.add(getActivityItemKey('fr', r));
+            }
+            for (const n of cachedNotifications) {
+                seen.add(getActivityItemKey('notif', n));
+            }
+            try {
+                localStorage.setItem(SEEN_ACTIVITY_KEY, JSON.stringify([...seen].slice(-300)));
+            } catch (e) {}
+            updateNotifBadge();
+        }
+
+        function formatNotificationText(n) {
+            if (n.type === 'tag') return 'tagged you in a post';
+            if (n.type === 'like') return 'liked your post';
+            if (n.type === 'comment') return 'commented on your post';
+            if (n.type === 'comment_reply') return 'replied to your comment';
+            if (n.type === 'follow') return 'started following you';
+            if (n.type === 'post_share') return n.message ? `shared a post: "${n.message}"` : 'shared a post with you';
+            if (n.type === 'story_reply') return n.message ? `replied to your story: "${n.message}"` : 'replied to your story';
+            return 'interacted with your post';
+        }
+
+        function updateNotifBadge() {
+            const badge = document.getElementById('notif-badge');
+            if (!badge) return;
+            if (isActivityDrawerOpen) {
+                badge.classList.remove('show');
+                return;
+            }
+            const seen = getSeenActivityKeys();
+            const hasUnseenFriendRequest = cachedFriendRequests.some(r => !seen.has(getActivityItemKey('fr', r)));
+            const hasUnseenNotification = cachedNotifications.some(n => !seen.has(getActivityItemKey('notif', n)));
+            badge.classList.toggle('show', hasUnseenFriendRequest || hasUnseenNotification);
+        }
+
+        async function respondToFriendRequest(requestId, action, el) {
+            el.querySelectorAll('.fr-btn').forEach(b => b.disabled = true);
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/friends/respond`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ requestId, action })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                cachedFriendRequests = cachedFriendRequests.filter(r => r.id !== requestId);
+                el.remove();
+                updateNotifBadge();
+                showToast(action === 'accept' ? 'Friend request accepted' : 'Friend request declined');
+
+                const bodyEl = document.getElementById('activity-drawer-body');
+                if (isActivityDrawerOpen && !bodyEl.children.length) {
+                    bodyEl.innerHTML = '<p style="color: #666; text-align: center; font-size: 12px; margin: auto;">No new activity or notifications.</p>';
+                }
+            } catch (err) {
+                el.querySelectorAll('.fr-btn').forEach(b => b.disabled = false);
+                showToast(err.message);
+            }
+        }
+
+        async function loadActivity() {
+            if (!currentUser || !currentUser.email) return;
+            const bodyEl = document.getElementById('activity-drawer-body');
+            try {
+                const [notifRes, reqRes] = await Promise.all([
+                    fetch(`${WORKER_ORIGIN}/api/notifications`, { headers: authHeaders() }),
+                    fetch(`${WORKER_ORIGIN}/api/friends/requests`, { headers: authHeaders() })
+                ]);
+                const data = await notifRes.json();
+                if (!notifRes.ok) throw new Error(data.error);
+
+                let friendRequests = [];
+                try {
+                    if (reqRes.ok) friendRequests = (await reqRes.json()).requests || [];
+                } catch (e) {}
+
+                cachedNotifications = data.notifications || [];
+                cachedFriendRequests = friendRequests;
+
+                if (isActivityDrawerOpen) {
+                    markCurrentActivityAsSeen();
+                    renderActivityDrawerItems();
+                } else {
+                    updateNotifBadge();
+                }
+            } catch (err) {
+                if (isActivityDrawerOpen && bodyEl) {
+                    bodyEl.innerHTML = '<p style="color: #ef4444; text-align: center; font-size: 12px; margin: auto;">Failed to load activity.</p>';
+                }
+            }
+        }
+
+        function renderActivityDrawerItems() {
+            const container = document.getElementById('activity-drawer-body');
+            if (!cachedNotifications.length && !cachedFriendRequests.length) {
+                container.innerHTML = '<p style="color: #666; text-align: center; font-size: 12px; margin: auto;">No new activity or notifications.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            for (const r of cachedFriendRequests) {
+                const el = document.createElement('div');
+                el.className = 'drawer-activity-item';
+                el.innerHTML = `
+                    <img class="activity-avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}" alt="">
+                    <div class="activity-info">
+                        <div class="activity-name">@${escapeHtml(r.username)}${renderVerifiedBadge(r.verified)}</div>
+                        <div class="activity-preview">sent you a friend request</div>
+                    </div>
+                    <div class="fr-actions">
+                        <button type="button" class="fr-btn fr-accept">Accept</button>
+                        <button type="button" class="fr-btn fr-deny">Deny</button>
+                    </div>
+                `;
+                el.querySelector('.fr-accept').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    respondToFriendRequest(r.id, 'accept', el);
+                });
+                el.querySelector('.fr-deny').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    respondToFriendRequest(r.id, 'deny', el);
+                });
+                el.addEventListener('click', () => {
+                    window.location.href = `profile.html?user=${encodeURIComponent(r.username)}`;
+                });
+                container.appendChild(el);
+            }
+
+            for (const n of cachedNotifications) {
+                const el = document.createElement('div');
+                el.className = 'drawer-activity-item';
+                const actionText = formatNotificationText(n);
+                const timeStr = new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                el.innerHTML = `
+                    <img class="activity-avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}" alt="">
+                    <div class="activity-info">
+                        <div class="activity-name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
+                        <div class="activity-preview">${escapeHtml(actionText)} • ${timeStr}</div>
+                    </div>
+                `;
+                el.addEventListener('click', () => {
+                    if (n.type === 'post_share' && n.post_id) {
+                        window.location.href = `feed.html?post=${encodeURIComponent(n.post_id)}`;
+                    } else if (n.post_id) {
+                        window.location.href = `feed.html?highlight=${n.post_id}`;
+                    } else {
+                        window.location.href = `profile.html?user=${encodeURIComponent(n.actor_username)}`;
+                    }
+                });
+                container.appendChild(el);
+            }
+        }
+
+        function openActivityDrawer() {
+            isActivityDrawerOpen = true;
+            markCurrentActivityAsSeen();
+            document.getElementById('activity-drawer').classList.add('open');
+            renderActivityDrawerItems();
+            loadActivity();
+        }
+
+        function closeActivityDrawer() {
+            isActivityDrawerOpen = false;
+            markCurrentActivityAsSeen();
+            document.getElementById('activity-drawer').classList.remove('open');
+        }
+
+        function openSearchDrawer() {
+            document.getElementById('search-drawer').classList.add('open');
+            document.getElementById('drawer-search-input').focus();
+        }
+
+        function closeSearchDrawer() {
+            document.getElementById('search-drawer').classList.remove('open');
+        }
+
+        function setSearchFilter(filter) {
+            currentSearchFilter = filter;
+            document.getElementById('filter-posts-tab').className = `filter-tab ${filter === 'posts' ? 'active' : ''}`;
+            document.getElementById('filter-users-tab').className = `filter-tab ${filter === 'users' ? 'active' : ''}`;
+            if (lastSearchQuery.trim()) {
+                handleSearch(lastSearchQuery);
+            }
+        }
+
+        function isVideoMediaUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+            return /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
+        }
+
+        function hydrateFeedVideos(rootEl) {
+            if (!rootEl) return;
+            const mediaEls = rootEl.querySelectorAll('img.post-media');
+            mediaEls.forEach(img => {
+                if (img.dataset.videoHydrated) return;
+                const src = img.getAttribute('src') || '';
+                if (!isVideoMediaUrl(src)) return;
+                img.dataset.videoHydrated = '1';
+
+                const video = document.createElement('video');
+                video.className = 'post-media nv-video-el';
+                video.src = src;
+                video.controls = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                img.replaceWith(video);
+            });
+        }
 
         const activeViewTimers = new Map();
         const postObserver = new IntersectionObserver((entries) => {
@@ -217,341 +456,125 @@
             });
         }, { threshold: [0.75] });
 
-        const VIEW_QUEUE_KEY = 'nvaritia_view_queue';
-        function getViewQueue() {
-            try { return JSON.parse(localStorage.getItem(VIEW_QUEUE_KEY) || '[]'); } catch (e) { return []; }
-        }
-        function saveViewQueue(q) {
-            try { localStorage.setItem(VIEW_QUEUE_KEY, JSON.stringify(q.slice(-100))); } catch (e) {}
-        }
-        let flushTimer = null;
-        function scheduleViewFlush(delay = 1500) {
-            if (flushTimer) return;
-            flushTimer = setTimeout(() => { flushTimer = null; flushViewQueue(); }, delay);
-        }
-        async function flushViewQueue() {
+        async function recordPostView(postId, durationMs, completed) {
             if (!navigator.onLine) return;
-            const q = getViewQueue();
-            if (!q.length) return;
-            const batch = q.slice(0, 25);
             try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/posts/view`, {
+                await fetch(`${WORKER_ORIGIN}/api/posts/view`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ views: batch })
+                    body: JSON.stringify({
+                        email: currentUser ? currentUser.email : null,
+                        postId: postId,
+                        durationMs: durationMs,
+                        completed: completed
+                    })
                 });
-                if (!res.ok) return;
-                const sentIds = new Set(batch.map(b => b._qid));
-                saveViewQueue(getViewQueue().filter(x => !sentIds.has(x._qid)));
-                if (getViewQueue().length) scheduleViewFlush(500);
-            } catch (e) {}
-        }
-        function recordPostView(postId, durationMs, completed) {
-            const q = getViewQueue();
-            q.push({ _qid: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, email: isGuest ? null : currentUser.email, postId, durationMs, completed });
-            saveViewQueue(q);
-            if (q.length >= 10) flushViewQueue(); else scheduleViewFlush(2000);
-        }
-        window.addEventListener('online', () => flushViewQueue());
-        window.addEventListener('pagehide', () => {
-            activeViewTimers.forEach((data, postId) => {
-                clearTimeout(data.timer);
-                const durationMs = Date.now() - data.startTime;
-                if (durationMs > 500) {
-                    recordPostView(postId, durationMs, durationMs >= 3000);
-                }
-            });
-            activeViewTimers.clear();
-            const q = getViewQueue();
-            if (q.length && navigator.sendBeacon) {
-                navigator.sendBeacon(`${WORKER_ORIGIN}/api/posts/view`, new Blob([JSON.stringify({ views: q.slice(-25) })], { type: 'application/json' }));
-            }
-        });
-
-        function stopActiveNoteAudio() {
-            if (activeNoteTimer) {
-                clearTimeout(activeNoteTimer);
-                activeNoteTimer = null;
-            }
-            if (activeNoteAudio) {
-                try { activeNoteAudio.pause(); } catch (e) {}
-                activeNoteAudio = null;
-            }
+            } catch (err) {}
         }
 
-        function playFriendNoteClip(noteObj) {
-            stopActiveNoteAudio();
-            if (!noteObj || !noteObj.preview_url) {
-                if (noteObj && noteObj.track_view_url) window.open(noteObj.track_view_url, '_blank');
-                return;
-            }
-            const audio = new Audio(noteObj.preview_url);
-            activeNoteAudio = audio;
-            const startSec = Math.max(0, Number(noteObj.clip_start) || 0);
-            const durSec = Math.max(3, Math.min(30, Number(noteObj.clip_duration) || 15));
-
-            const startPlayback = () => {
-                try {
-                    if (startSec > 0 && audio.duration && startSec < audio.duration) {
-                        audio.currentTime = startSec;
-                    }
-                } catch (e) {}
-                audio.play().catch(() => {});
-                activeNoteTimer = setTimeout(() => {
-                    stopActiveNoteAudio();
-                }, durSec * 1000);
-            };
-
-            audio.addEventListener('loadedmetadata', startPlayback, { once: true });
-            audio.addEventListener('ended', stopActiveNoteAudio, { once: true });
-            audio.load();
-            showToast(`Playing ${noteObj.track_name} — ${noteObj.artist_name}`);
-        }
-
-        async function openStoryViewer(ownerEmail, username, pfpUrl, mediaUrl) {
-            stopActiveNoteAudio();
-            activeStoryOwnerEmail = ownerEmail;
-            const modal = document.getElementById('story-viewer-modal');
-            const vid = document.getElementById('story-viewer-video');
-            const pfp = document.getElementById('story-viewer-pfp');
-            const uname = document.getElementById('story-viewer-username');
-            const replyForm = document.getElementById('story-reply-form');
-
-            pfp.src = pfpUrl || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-            uname.innerText = `@${username || ownerEmail}`;
-            vid.src = mediaUrl;
-            if (replyForm) replyForm.style.display = isGuest ? 'none' : 'flex';
-            modal.classList.add('open');
-            try { await vid.play(); } catch (e) {}
-        }
-
-        function closeStoryViewer() {
-            const modal = document.getElementById('story-viewer-modal');
-            const vid = document.getElementById('story-viewer-video');
-            if (vid) {
-                vid.pause();
-                vid.removeAttribute('src');
-            }
-            if (modal) modal.classList.remove('open');
-            activeStoryOwnerEmail = null;
-        }
-
-        async function submitStoryReply(e) {
-            e.preventDefault();
-            if (isGuest) return promptSignup('reply to stories');
-            const input = document.getElementById('story-reply-input');
-            const btn = document.getElementById('story-reply-submit');
-            const content = (input.value || '').trim();
-            if (!content || !activeStoryOwnerEmail) return;
-
-            btn.disabled = true;
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/stories/reply`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ ownerEmail: activeStoryOwnerEmail, content })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Could not send reply');
-                input.value = '';
-                showToast('Story reply sent');
-            } catch (err) {
-                showToast(err.message);
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function loadFriendsStoriesAndNotes() {
-            const wrap = document.getElementById('friends-social-strip');
-            const scroll = document.getElementById('friends-social-scroll');
-            if (!wrap || !scroll || isGuest || !currentUser || !currentUser.email) return;
-
-            try {
-                const [storiesRes, notesRes] = await Promise.all([
-                    fetch(`${WORKER_ORIGIN}/api/stories/friends`, { headers: authHeaders() }),
-                    fetch(`${WORKER_ORIGIN}/api/notes/friends`, { headers: authHeaders() })
-                ]);
-
-                const storiesData = storiesRes.ok ? await storiesRes.json() : { stories: [] };
-                const notesData = notesRes.ok ? await notesRes.json() : { notes: [] };
-
-                const stories = Array.isArray(storiesData.stories) ? storiesData.stories : [];
-                const notes = Array.isArray(notesData.notes) ? notesData.notes : [];
-
-                if (!stories.length && !notes.length) {
-                    wrap.classList.remove('visible');
-                    scroll.innerHTML = '';
-                    return;
-                }
-
-                const defaultPfp = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='54' height='54'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-                scroll.innerHTML = '';
-
-                for (const st of stories) {
-                    const item = document.createElement('div');
-                    item.className = 'social-story-item';
-                    item.title = `Story by @${st.username}`;
-                    item.innerHTML = `
-                        <div class="social-story-ring">
-                            <img src="${st.pfp_url || defaultPfp}" alt="">
-                        </div>
-                        <span class="social-story-name">@${escapeHtml(st.username)}</span>
-                    `;
-                    item.onclick = () => openStoryViewer(st.user_email, st.username, st.pfp_url || defaultPfp, st.media_url);
-                    scroll.appendChild(item);
-                }
-
-                for (const nt of notes) {
-                    const item = document.createElement('div');
-                    item.className = 'social-note-item';
-                    item.title = `${nt.track_name} — ${nt.artist_name}`;
-                    const bubbleHtml = nt.note_text
-                        ? `<div class="social-note-bubble">${escapeHtml(nt.note_text)}</div>`
-                        : '';
-                    item.innerHTML = `
-                        <div class="social-note-bubble-wrap">
-                            ${bubbleHtml}
-                            <img class="social-note-avatar" src="${nt.pfp_url || defaultPfp}" alt="">
-                        </div>
-                        <span class="social-note-track">${escapeHtml(nt.track_name)}</span>
-                        <span class="social-note-artist">${escapeHtml(nt.artist_name)}</span>
-                    `;
-                    item.onclick = () => playFriendNoteClip(nt);
-                    scroll.appendChild(item);
-                }
-
-                wrap.classList.add('visible');
-            } catch (e) {
-                wrap.classList.remove('visible');
-            }
-        }
-
-        async function loadPosts(isMore = false) {
+        async function loadFeed() {
             const container = document.getElementById('feed-container');
-            const loadMoreBtn = document.getElementById('load-more-btn');
-
-            if (!isMore) {
-                currentOffset = 0;
-                shownPostIds.clear();
-                feedSeed = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-                container.innerHTML = '<div style="text-align:center; padding:30px; color:#666; font-weight:600;">Curating your feed...</div>';
-            } else {
-                loadMoreBtn.innerText = 'Loading more...';
-            }
-
+            container.innerHTML = '<div class="loading-spinner">Loading posts...</div>';
+            const params = new URLSearchParams(window.location.search);
+            const highlightPostId = params.get('highlight') || params.get('post');
             try {
-                const emailParam = isGuest ? '' : encodeURIComponent(currentUser.email);
-                const excl = isMore ? `&exclude=${encodeURIComponent([...shownPostIds].slice(-80).join(','))}` : '';
-                const tagParam = activeTagFilter ? `&tag=${encodeURIComponent(activeTagFilter)}` : '';
-                const res = await fetch(`${WORKER_ORIGIN}/api/posts/feed?email=${emailParam}&limit=${limit}&offset=${currentOffset}&seed=${encodeURIComponent(feedSeed)}${excl}${tagParam}`, { cache: 'no-store' });
+                const feedUrl = currentUser && currentUser.email
+                    ? `${WORKER_ORIGIN}/api/posts/feed?email=${encodeURIComponent(currentUser.email)}`
+                    : `${WORKER_ORIGIN}/api/posts/feed`;
+
+                const res = await fetch(feedUrl);
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to load feed');
-
-                const freshPosts = (data.posts || []).filter(p => !shownPostIds.has(p.id));
-                freshPosts.forEach(p => shownPostIds.add(p.id));
-
-                await renderPosts(freshPosts, container, {
-                    clear: !isMore,
-                    highlightPostId,
-                    observer: postObserver
-                });
-
-                if ((data.posts || []).length === limit) {
-                    loadMoreBtn.style.display = 'block';
-                    loadMoreBtn.innerText = 'Load more posts';
-                    currentOffset += limit;
+                try { localStorage.setItem('rprofiles_cached_feed', JSON.stringify(data.posts)); } catch (e) {}
+                await renderPosts(data.posts, container, { highlightPostId, observer: postObserver });
+                hydrateFeedVideos(container);
+            } catch (e) {
+                const cached = localStorage.getItem('rprofiles_cached_feed');
+                if (cached) {
+                    await renderPosts(JSON.parse(cached), container, { highlightPostId, observer: postObserver });
+                    hydrateFeedVideos(container);
                 } else {
-                    loadMoreBtn.style.display = 'none';
-                }
-            } catch (err) {
-                if (!isMore) {
-                    container.innerHTML = `<p style="color:#ef4444; text-align:center; padding:20px;">Error loading feed: ${escapeHtml(err.message)}</p>`;
-                } else {
-                    loadMoreBtn.innerText = 'Error loading more. Try again.';
+                    container.innerHTML = '<p style="color: #666; padding: 16px; text-align: center;">You are currently offline. Connect to the internet to load new articles and posts.</p>';
                 }
             }
         }
 
-        function loadMorePosts() {
-            loadPosts(true);
-        }
-
-        function openSearchDrawer() {
-            document.getElementById('search-drawer').classList.add('open');
-            const input = document.getElementById('drawer-search-input');
-            input.focus();
-            if (input.value.trim().length >= 2) performSearch();
-        }
-
-        function closeSearchDrawer() {
-            document.getElementById('search-drawer').classList.remove('open');
-        }
-
-        function switchSearchTab(tab) {
-            activeSearchTab = tab;
-            ['all', 'users', 'posts'].forEach(t => document.getElementById(`tab-${t}`).classList.toggle('active', t === tab));
-            performSearch();
-        }
-
-        async function performSearch() {
-            const q = document.getElementById('drawer-search-input').value.trim();
-            const resultsDiv = document.getElementById('drawer-search-results');
-            if (q.length < 2) {
-                resultsDiv.innerHTML = 'Type at least 2 characters to search...';
+        async function handleSearch(query) {
+            lastSearchQuery = query;
+            const container = document.getElementById('search-results-container');
+            if (!query.trim()) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding-top: 20px;">Type something to search...</p>';
                 return;
             }
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(async () => {
-                resultsDiv.innerHTML = '<p style="color:#666;">Searching...</p>';
-                try {
-                    const emailParam = isGuest ? '' : encodeURIComponent(currentUser.email);
-                    const res = await fetch(`${WORKER_ORIGIN}/api/search?q=${encodeURIComponent(q)}&email=${emailParam}`);
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error);
+            container.innerHTML = '<div class="loading-spinner">Searching...</div>';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/search?q=${encodeURIComponent(query)}&email=${encodeURIComponent(currentUser.email)}`);
+                const data = await res.json();
 
-                    resultsDiv.innerHTML = '';
-                    const users = data.users || [];
-                    const posts = data.posts || [];
+                container.innerHTML = '';
 
-                    if ((activeSearchTab === 'all' || activeSearchTab === 'users') && users.length > 0) {
-                        resultsDiv.innerHTML += '<div style="font-weight:700; font-size:12px; margin-bottom:6px; color:#666;">USERS</div>';
-                        users.forEach(u => {
-                            const div = document.createElement('div');
-                            div.className = 'user-result-box';
-                            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='38' height='38'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-                            div.innerHTML = `
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <img class="avatar" src="${u.pfp_url || defaultAvatar}">
-                                    <div>
-                                        <div style="font-weight:700;">@${escapeHtml(u.username)}${renderVerifiedBadge(u.verified)}</div>
-                                        <div style="font-size:12px; color:#666;">${escapeHtml(u.bio || '')}</div>
-                                    </div>
+                if (currentSearchFilter === 'users') {
+                    if (!data.users || !data.users.length) {
+                        container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">No users found.</p>';
+                        return;
+                    }
+                    for (const u of data.users) {
+                        const profileUrl = `profile.html?user=${encodeURIComponent(u.username)}`;
+                        const avatarClickAttr = u.has_story
+                            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"`
+                            : `onclick="goToProfile('${profileUrl}', event)"`;
+
+                        const uEl = document.createElement('div');
+                        uEl.className = 'user-result-box';
+                        uEl.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="feed-avatar-container ${u.has_story ? 'has-story' : ''}" ${avatarClickAttr} title="${u.has_story ? 'View Story' : 'View Profile'}">
+                                    <img class="post-avatar" src="${u.pfp_url || AVATAR_PLACEHOLDER}">
                                 </div>
-                            `;
-                            const targetProfileUrl = `profile.html?user=${encodeURIComponent(u.username || u.email)}`;
-                            div.onclick = () => goToProfile(targetProfileUrl);
-                            resultsDiv.appendChild(div);
-                        });
+                                <span><a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
+                            </div>
+                        `;
+                        container.appendChild(uEl);
                     }
-
-                    if ((activeSearchTab === 'all' || activeSearchTab === 'posts') && posts.length > 0) {
-                        resultsDiv.innerHTML += '<div style="font-weight:700; font-size:12px; margin:12px 0 6px 0; color:#666;">POSTS</div>';
-                        await renderPosts(posts, resultsDiv, { clear: false });
+                } else {
+                    if (!data.posts || !data.posts.length) {
+                        container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">No posts found.</p>';
+                        return;
                     }
-
-                    if (resultsDiv.innerHTML === '') {
-                        resultsDiv.innerHTML = '<p style="color:#666; text-align:center; padding:20px;">No results found.</p>';
-                    }
-                } catch (err) {
-                    resultsDiv.innerHTML = `<p style="color:#ef4444;">Error: ${escapeHtml(err.message)}</p>`;
+                    await renderPosts(data.posts, container, { clear: true, observer: null });
+                    hydrateFeedVideos(container);
                 }
-            }, 300);
+            } catch (e) {
+                container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">Search unavailable offline.</p>';
+            }
         }
 
-        loadFriendsStoriesAndNotes();
-        loadPosts(false);
-        flushViewQueue();
+        async function viewUserStory(email, createdAt) {
+            if (!email) return;
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+                let data = null;
+                try { data = await res.json(); } catch (e) { data = null; }
+
+                if (res.ok && data && data.story && data.story.media_url) {
+                    const viewer = typeof getSessionUser === 'function' ? getSessionUser() : null;
+                    const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === String(email).trim().toLowerCase());
+                    showStoryInPlayer(data.story.media_url, {
+                        canDelete: isOwn,
+                        createdAt: data.story.created_at || createdAt || '',
+                        ownerEmail: email.trim().toLowerCase(),
+                        onDeleted: loadFeed
+                    });
+                } else {
+                    showToast((data && data.error) ? data.error : "No active story found.");
+                }
+            } catch (err) {
+                showToast("Failed to load story: " + (err && err.message ? err.message : "network error"));
+            }
+        }
+
+        loadFeed();
+        loadActivity();
+        setInterval(loadActivity, 10000);
     </script>
 </body>
 </html>
