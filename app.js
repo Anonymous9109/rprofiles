@@ -8,6 +8,18 @@ function renderVerifiedBadge(isVerified) {
     return (isVerified === true || Number(isVerified) === 1) ? VERIFIED_BADGE_SVG : '';
 }
 
+function getDisplayName(entity, fallback = '') {
+    if (!entity) return fallback || '';
+    if (typeof entity === 'string') return entity.trim() || fallback || '';
+    const dn = String(entity.display_name ?? entity.displayName ?? '').trim();
+    if (dn) return dn;
+    const uname = String(entity.username || '').trim();
+    if (uname) return uname;
+    return fallback || String(entity.email || '').trim();
+}
+
+window.getDisplayName = getDisplayName;
+
 function goToProfile(url, event) {
     if (event) {
         event.preventDefault();
@@ -513,7 +525,7 @@ function requireAuth(allowGuest = false) {
     const path = window.location.pathname;
     const onIndex = path.endsWith('index.html') || path === '/' || path.endsWith('/');
     if (!user) {
-        if (allowGuest) return { email: '', username: '', guest: true };
+        if (allowGuest) return { email: '', username: '', display_name: '', guest: true };
         if (!onIndex) {
             try { sessionStorage.setItem('Nvaritia_notice', 'Please sign up or log in to continue.'); } catch (e) {}
             window.location.href = 'index.html';
@@ -579,7 +591,7 @@ function parseSharedPostContent(content) {
 
     const match = content.match(/[?&]post=([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
-        return { postId: match[1], authorUsername: "", content: "", mediaUrl: "" };
+        return { postId: match[1], authorUsername: "", authorDisplayName: "", content: "", mediaUrl: "" };
     }
 
     return null;
@@ -588,15 +600,18 @@ function parseSharedPostContent(content) {
 function formatInboxPreviewText(rawContent) {
     const shared = parseSharedPostContent(rawContent);
     if (!shared) return rawContent || "";
-    return shared.authorUsername
-        ? `Shared @${shared.authorUsername}'s post`
+    const authorLabel = shared.authorDisplayName || (shared.authorUsername ? `@${shared.authorUsername}` : "");
+    return authorLabel
+        ? `Shared ${authorLabel}'s post`
         : "Shared a post";
 }
 
 function renderSharedPostBubbleHtml(shared, isSent) {
     const postId = encodeURIComponent(shared.postId);
     const targetUrl = `feed.html?post=${postId}`;
-    const authorLabel = shared.authorUsername ? `@${escapeHtml(shared.authorUsername)}` : "Post on Nvaritia";
+    const authorLabel = shared.authorDisplayName
+        ? escapeHtml(shared.authorDisplayName)
+        : (shared.authorUsername ? `@${escapeHtml(shared.authorUsername)}` : "Post on Nvaritia");
     const snippet = shared.content ? `<div class="shared-post-snippet">${escapeHtml(shared.content)}</div>` : "";
     const mediaThumb = shared.mediaUrl
         ? `<img class="shared-post-thumb" src="${escapeHtml(shared.mediaUrl)}" alt="Shared post media">`
@@ -683,7 +698,11 @@ function renderFriendsInShareModal(filterText = "") {
 
     const friends = Array.isArray(_friendsCache) ? _friendsCache : [];
     const filtered = filterText
-        ? friends.filter(f => (f.username || "").toLowerCase().includes(filterText) || (f.email || "").toLowerCase().includes(filterText))
+        ? friends.filter(f =>
+            getDisplayName(f).toLowerCase().includes(filterText) ||
+            (f.username || "").toLowerCase().includes(filterText) ||
+            (f.email || "").toLowerCase().includes(filterText)
+        )
         : friends;
 
     if (!filtered.length) {
@@ -695,12 +714,13 @@ function renderFriendsInShareModal(filterText = "") {
     listEl.innerHTML = '';
 
     for (const friend of filtered) {
+        const friendLabel = getDisplayName(friend, friend.email);
         const row = document.createElement('div');
         row.className = 'share-friend-row';
         row.innerHTML = `
             <div class="share-friend-meta">
                 <img class="share-friend-avatar" src="${friend.pfp_url || defaultAvatar}" alt="">
-                <span class="share-friend-name">@${escapeHtml(friend.username)}${renderVerifiedBadge(friend.verified)}</span>
+                <span class="share-friend-name">${escapeHtml(friendLabel)}${renderVerifiedBadge(friend.verified)}</span>
             </div>
             <button type="button" class="share-friend-send-btn">Send</button>
         `;
@@ -717,6 +737,7 @@ function renderFriendsInShareModal(filterText = "") {
                         postId: _shareTargetPost.id,
                         recipientEmail: friend.email,
                         authorUsername: _shareTargetPost.username || "",
+                        authorDisplayName: _shareTargetPost.display_name || "",
                         snippet: _shareTargetPost.content || "",
                         mediaUrl: _shareTargetPost.media_url || ""
                     })
@@ -724,7 +745,7 @@ function renderFriendsInShareModal(filterText = "") {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Could not share post");
                 btn.innerText = "Sent ✓";
-                showToast(`Shared with @${friend.username}`);
+                showToast(`Shared with ${friendLabel}`);
             } catch (err) {
                 btn.disabled = false;
                 btn.innerText = "Send";
@@ -739,7 +760,7 @@ async function sharePost(postId) {
     const user = getSessionUser();
     if (!user) return promptSignup('share posts with friends');
 
-    const postMeta = _sharedPostCache.get(postId) || { id: postId, username: "", content: "", media_url: "" };
+    const postMeta = _sharedPostCache.get(postId) || { id: postId, username: "", display_name: "", content: "", media_url: "" };
     _shareTargetPost = postMeta;
 
     const modal = ensureShareFriendsModal();
@@ -747,8 +768,9 @@ async function sharePost(postId) {
     const searchEl = document.getElementById('share-friend-search');
     const listEl = document.getElementById('share-friends-list');
 
-    summaryEl.innerHTML = postMeta.username
-        ? `<strong>@${escapeHtml(postMeta.username)}</strong>${postMeta.content ? `: ${escapeHtml(postMeta.content)}` : " (Media post)"}`
+    const authorLabel = getDisplayName(postMeta);
+    summaryEl.innerHTML = authorLabel
+        ? `<strong>${escapeHtml(authorLabel)}</strong>${postMeta.content ? `: ${escapeHtml(postMeta.content)}` : " (Media post)"}`
         : `Post ID: ${escapeHtml(postId)}`;
     searchEl.value = "";
     listEl.innerHTML = `<div style="text-align:center; padding:14px; color:#666;">Loading friends...</div>`;
@@ -921,8 +943,8 @@ function incrementPostCommentCount(postId, delta = 1) {
     updatePostCommentCount(postId, current + delta);
 }
 
-function blockAuthorFromFeed(authorEmail, authorUsername) {
-    blockUser(authorEmail, authorUsername, () => {
+function blockAuthorFromFeed(authorEmail, authorDisplayName, authorUsername) {
+    blockUser(authorEmail, authorDisplayName || authorUsername, () => {
         document.querySelectorAll(`[data-author="${authorEmail.toLowerCase()}"]`).forEach(el => el.remove());
     });
 }
@@ -1009,6 +1031,7 @@ async function renderPosts(posts, container, options = {}) {
     for (const post of posts) {
         const authorEmail = post.user_email || (fallbackAuthor && fallbackAuthor.email) || '';
         const authorUsername = post.username || (fallbackAuthor && fallbackAuthor.username) || '';
+        const authorDisplayName = getDisplayName(post, getDisplayName(fallbackAuthor, authorUsername || authorEmail));
         const authorPfp = post.pfp_url || (fallbackAuthor && fallbackAuthor.pfp_url) || defaultAvatar;
         const authorVerified = post.verified !== undefined ? post.verified : (fallbackAuthor && fallbackAuthor.verified);
         const initialCommentsCount = post.comments_count ?? post.comment_count ?? post.commentsCount ?? 0;
@@ -1017,6 +1040,7 @@ async function renderPosts(posts, container, options = {}) {
             id: post.id,
             user_email: authorEmail,
             username: authorUsername,
+            display_name: authorDisplayName,
             content: post.content || "",
             media_url: post.media_url || ""
         });
@@ -1045,7 +1069,7 @@ async function renderPosts(posts, container, options = {}) {
             ? `<div class="delete-btn" onclick="event.stopPropagation(); deletePost('${post.id}')">Delete</div>`
             : `<div class="safety-actions" onclick="event.stopPropagation()">
                 <div class="safety-btn" onclick="reportPost('${post.id}')">Report</div>
-                <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(authorEmail)}', '${escapeHtml(authorUsername)}')">Block</div>
+                <div class="safety-btn" onclick="blockAuthorFromFeed('${escapeHtml(authorEmail)}', '${escapeHtml(authorDisplayName)}', '${escapeHtml(authorUsername)}')">Block</div>
                </div>`;
 
         const profileUrl = `profile.html?user=${encodeURIComponent(authorUsername || authorEmail)}`;
@@ -1060,7 +1084,7 @@ async function renderPosts(posts, container, options = {}) {
                     <img class="post-avatar" src="${authorPfp}">
                 </div>
                 <div style="flex-grow: 1;">
-                    <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${authorUsername ? '@' + escapeHtml(authorUsername) : escapeHtml(authorEmail)}</a>${renderVerifiedBadge(authorVerified)}
+                    <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${escapeHtml(authorDisplayName)}</a>${renderVerifiedBadge(authorVerified)}
                     <br><span class="post-timestamp">${new Date(post.created_at).toLocaleString()}</span>
                 </div>
                 ${ownerOrSafetyControls}
@@ -1113,7 +1137,7 @@ window.blockAuthorFromFeed = blockAuthorFromFeed;
 // ===== COMMENTS DRAWER, FRIEND MENTIONING, IMAGE UPLOAD & STICKER LIBRARY =====
 let _activeCommentsPostId = null;
 let _replyingToCommentId = null;
-let _replyingToCommentUsername = null;
+let _replyingToCommentName = null;
 let _commentsViewportBound = false;
 let _stickerUploading = false;
 let _commentImageUploading = false;
@@ -1602,7 +1626,8 @@ function renderFriendMentionDropdown() {
     const q = _mentionActiveQuery.toLowerCase();
     _mentionMatches = friends.filter(f => {
         const uname = (f && f.username ? String(f.username) : "").toLowerCase();
-        return uname.startsWith(q) || uname.includes(q);
+        const dname = getDisplayName(f).toLowerCase();
+        return uname.startsWith(q) || uname.includes(q) || dname.includes(q);
     });
 
     if (_mentionSelectedIdx >= _mentionMatches.length) _mentionSelectedIdx = 0;
@@ -1618,7 +1643,7 @@ function renderFriendMentionDropdown() {
     box.innerHTML = _mentionMatches.map((f, idx) => `
         <div class="friend-mention-item ${idx === _mentionSelectedIdx ? 'active' : ''}" onmousedown="event.preventDefault()" onclick="selectFriendMention(${idx})">
             <img class="friend-mention-avatar" src="${f.pfp_url || defaultAvatar}" alt="">
-            <span>@${escapeHtml(f.username)}${renderVerifiedBadge(f.verified)}</span>
+            <span>${escapeHtml(getDisplayName(f, f.username))} <span style="opacity:0.65;font-size:11px;">@${escapeHtml(f.username)}</span>${renderVerifiedBadge(f.verified)}</span>
         </div>
     `).join('');
     box.classList.add('open');
@@ -2155,6 +2180,7 @@ async function loadComments() {
         function renderCommentNode(c, isReply = false) {
             const isMe = !!(user && user.email && c.user_email && c.user_email.toLowerCase() === user.email.toLowerCase());
             const profileUrl = `profile.html?user=${encodeURIComponent(c.username || c.user_email)}`;
+            const authorName = getDisplayName(c, c.username || c.user_email);
             const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
 
             return `
@@ -2164,7 +2190,7 @@ async function loadComments() {
                     </a>
                     <div class="comment-main-col">
                         <div class="comment-header-row">
-                            <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(c.username)}</a>${renderVerifiedBadge(c.verified)}
+                            <a href="${profileUrl}" class="comment-author-link" onclick="goToProfile('${profileUrl}', event)">${escapeHtml(authorName)}</a>${renderVerifiedBadge(c.verified)}
                         </div>
                         ${renderCommentBodyHtml(c.content)}
                         <div class="comment-actions">
@@ -2174,7 +2200,7 @@ async function loadComments() {
                             <span class="comment-reaction-btn ${c.userReaction === 'dislike' ? 'active-dislike' : ''}" onclick="reactToComment('${c.id}', 'dislike', this)">
                                 ${COMMENT_DISLIKE_SVG} <span class="c-dislikes">${c.dislikes || 0}</span>
                             </span>
-                            <span style="cursor: pointer;" onclick="startReply('${c.id}', '${escapeHtml(c.username)}')">Reply</span>
+                            <span style="cursor: pointer;" onclick="startReply('${c.id}', '${escapeHtml(authorName)}')">Reply</span>
                             ${isMe ? `<span class="comment-delete-btn" onclick="deleteComment('${c.id}')">Delete</span>` : ''}
                         </div>
                     </div>
@@ -2195,13 +2221,13 @@ async function loadComments() {
     }
 }
 
-function startReply(commentId, username) {
+function startReply(commentId, displayName) {
     _replyingToCommentId = commentId;
-    _replyingToCommentUsername = username;
+    _replyingToCommentName = displayName;
     const banner = document.getElementById('replying-banner');
     const txt = document.getElementById('replying-to-text');
     if (banner && txt) {
-        txt.innerText = `Replying to @${username}`;
+        txt.innerText = `Replying to ${displayName}`;
         banner.style.display = 'flex';
     }
     setComposerTypingMode(true);
@@ -2210,7 +2236,7 @@ function startReply(commentId, username) {
 
 function cancelReply() {
     _replyingToCommentId = null;
-    _replyingToCommentUsername = null;
+    _replyingToCommentName = null;
     const banner = document.getElementById('replying-banner');
     if (banner) banner.style.display = 'none';
 }
@@ -2413,11 +2439,11 @@ function reportPost(postId) {
     ensureReportModal().style.display = 'flex';
 }
 
-function blockUser(blockedEmail, blockedUsername, onSuccessCallback) {
+function blockUser(blockedEmail, blockedLabelName, onSuccessCallback) {
     const user = getSessionUser();
     if (!user) return promptSignup('block users');
 
-    const label = blockedUsername ? `@${blockedUsername}` : blockedEmail;
+    const label = blockedLabelName || blockedEmail;
     showConfirmDialog(
         `Block ${label}?`,
         `You will no longer see posts or messages from ${label}.`,
