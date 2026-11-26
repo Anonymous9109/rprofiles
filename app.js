@@ -466,6 +466,7 @@ html.dark .story-plus-btn {
     height: 100%;
     object-fit: contain;
     background: #000;
+    cursor: pointer;
 }
 .nv-story-reply-bar {
     position: relative;
@@ -2898,7 +2899,18 @@ async function viewUserStory(ownerEmail, fallbackCreatedAt = '', authorMeta = nu
 
         timeEl.innerText = formatTimeAgo(story.created_at || fallbackCreatedAt);
         if (isVideoMediaUrl(story.media_url)) {
-            stage.innerHTML = `<video class="nv-story-media-video" src="${escapeHtml(story.media_url)}" autoplay playsinline controls></video>`;
+            stage.innerHTML = `<video class="nv-story-media-video" src="${escapeHtml(story.media_url)}" autoplay playsinline loop></video>`;
+            const vid = stage.querySelector('video');
+            if (vid) {
+                vid.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (vid.paused) {
+                        vid.play().catch(() => {});
+                    } else {
+                        vid.pause();
+                    }
+                });
+            }
         } else {
             stage.innerHTML = `<img class="nv-story-media-img" src="${escapeHtml(story.media_url)}" alt="Story">`;
         }
