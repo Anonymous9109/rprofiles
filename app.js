@@ -2735,9 +2735,25 @@ async function compressVideo(file) {
 }
 
 // ===== STORIES VIEWER, POSTING & RELATIVE TIME =====
+function parseUtcTimestamp(input) {
+    if (!input) return NaN;
+    if (typeof input === 'number') {
+        return input < 1e12 ? input * 1000 : input;
+    }
+    let s = String(input).trim();
+    if (!s) return NaN;
+    if (/^\d+$/.test(s)) {
+        const num = Number(s);
+        return num < 1e12 ? num * 1000 : num;
+    }
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
+        s = s.replace(' ', 'T') + 'Z';
+    }
+    return new Date(s).getTime();
+}
+
 function formatTimeAgo(isoOrDate) {
-    if (!isoOrDate) return 'just now';
-    const ts = new Date(isoOrDate).getTime();
+    const ts = parseUtcTimestamp(isoOrDate);
     if (isNaN(ts)) return 'just now';
     const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
     if (diffSec < 60) return diffSec <= 5 ? 'just now' : `${diffSec} sec ago`;
