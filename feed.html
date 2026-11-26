@@ -316,10 +316,11 @@
             for (const r of cachedFriendRequests) {
                 const el = document.createElement('div');
                 el.className = 'drawer-activity-item';
+                const reqName = getDisplayName(r, r.username);
                 el.innerHTML = `
                     <img class="activity-avatar" src="${r.pfp_url || AVATAR_PLACEHOLDER}" alt="">
                     <div class="activity-info">
-                        <div class="activity-name">@${escapeHtml(r.username)}${renderVerifiedBadge(r.verified)}</div>
+                        <div class="activity-name">${escapeHtml(reqName)}${renderVerifiedBadge(r.verified)}</div>
                         <div class="activity-preview">sent you a friend request</div>
                     </div>
                     <div class="fr-actions">
@@ -344,13 +345,14 @@
             for (const n of cachedNotifications) {
                 const el = document.createElement('div');
                 el.className = 'drawer-activity-item';
+                const actorName = getDisplayName({ display_name: n.actor_display_name, username: n.actor_username }, n.actor_username);
                 const actionText = formatNotificationText(n);
                 const timeStr = new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 el.innerHTML = `
                     <img class="activity-avatar" src="${n.actor_pfp || AVATAR_PLACEHOLDER}" alt="">
                     <div class="activity-info">
-                        <div class="activity-name">@${escapeHtml(n.actor_username)}${renderVerifiedBadge(n.actor_verified)}</div>
+                        <div class="activity-name">${escapeHtml(actorName)}${renderVerifiedBadge(n.actor_verified)}</div>
                         <div class="activity-preview">${escapeHtml(actionText)} • ${timeStr}</div>
                     </div>
                 `;
@@ -494,6 +496,7 @@
                     }
                     for (const u of data.users) {
                         const profileUrl = `profile.html?user=${encodeURIComponent(u.username)}`;
+                        const userDisplayName = getDisplayName(u, u.username);
                         const avatarClickAttr = u.has_story
                             ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"`
                             : `onclick="goToProfile('${profileUrl}', event)"`;
@@ -505,7 +508,10 @@
                                 <div class="feed-avatar-container ${u.has_story ? 'has-story' : ''}" ${avatarClickAttr} title="${u.has_story ? 'View Story' : 'View Profile'}">
                                     <img class="post-avatar" src="${u.pfp_url || AVATAR_PLACEHOLDER}">
                                 </div>
-                                <span><a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(u.username)}</a>${renderVerifiedBadge(u.verified)}</span>
+                                <div>
+                                    <a href="${profileUrl}" class="post-meta" onclick="goToProfile('${profileUrl}', event)">${escapeHtml(userDisplayName)}</a>${renderVerifiedBadge(u.verified)}
+                                    <div style="color:#666;font-size:11px;">@${escapeHtml(u.username)}</div>
+                                </div>
                             </div>
                         `;
                         container.appendChild(uEl);
