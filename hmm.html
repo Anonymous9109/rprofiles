@@ -206,19 +206,21 @@
             flex-direction: column;
             align-items: center;
         }
-        .side-btn {
-            background: transparent;
-            border: 1.5px solid #ffffff;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        button.side-btn,
+        button.side-btn.reaction-btn {
+            background: rgba(0, 0, 0, 0.28) !important;
+            border: 1.5px solid #ffffff !important;
+            border-radius: 50% !important;
+            width: 44px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             cursor: pointer;
-            transition: background-color 0.16s ease, color 0.16s ease;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
         }
-        .side-btn svg {
+        button.side-btn svg {
             width: 19px;
             height: 19px;
             fill: none;
@@ -228,13 +230,18 @@
             stroke-linejoin: round;
             transition: fill 0.16s ease, stroke 0.16s ease;
         }
-        .side-btn.active-like {
-            background: #ffffff;
-            border-color: #ffffff;
+        button.side-btn.active-like,
+        button.side-btn.reaction-btn.active-like,
+        html.dark button.side-btn.active-like,
+        html.dark button.side-btn.reaction-btn.active-like {
+            background: #ffffff !important;
+            border-color: #ffffff !important;
+            color: #000000 !important;
         }
-        .side-btn.active-like svg {
-            fill: #000000;
-            stroke: #000000;
+        button.side-btn.active-like svg,
+        html.dark button.side-btn.active-like svg {
+            fill: #000000 !important;
+            stroke: #000000 !important;
         }
         .side-count {
             font-size: 11px;
@@ -331,9 +338,8 @@
             border-radius: 16px 16px 0 0;
             border-top: 1px solid #d4d4d8;
             box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
-            transition: bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            transition: bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s ease !important;
             z-index: 2100;
-            touch-action: pan-y;
         }
         #comments-drawer.comments-drawer.open {
             bottom: 0 !important;
@@ -345,10 +351,36 @@
         html.dark #comments-drawer.comments-drawer {
             border-top-color: #2f2f35;
         }
-        #comments-drawer .drawer-header {
-            padding: 10px 14px;
-            font-size: 14px;
+
+        .reels-drag-handle-wrap {
+            width: 100%;
+            padding: 8px 0 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: grab;
+            touch-action: none;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .reels-drag-handle-wrap:active {
+            cursor: grabbing;
+        }
+        .reels-drag-handle-pill {
+            width: 42px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(120, 120, 130, 0.55);
+        }
+        html.dark .reels-drag-handle-pill {
+            background: rgba(255, 255, 255, 0.32);
+        }
+
+        #comments-drawer .drawer-header {
+            padding: 6px 14px 10px;
+            font-size: 14px;
+            touch-action: none;
+            user-select: none;
         }
         #comments-drawer .drawer-body {
             padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
@@ -452,7 +484,6 @@
                 await vid.play();
                 enforceSoundOnVideo(vid);
             } catch (err) {
-                // Only if browser blocks unmuted autoplay before gesture: start muted, then unmute immediately once playing
                 vid.muted = true;
                 try {
                     await vid.play();
@@ -462,7 +493,7 @@
             }
         }
 
-        function showDoubleTapLikeFeedback(slide) {
+        function showDoubleTapLikeFeedback(slide, isLiked) {
             if (!slide) return;
             let burst = slide.querySelector('.double-tap-burst');
             if (!burst) {
@@ -471,6 +502,7 @@
                 burst.innerHTML = THUMBS_UP_SVG;
                 slide.appendChild(burst);
             }
+            burst.classList.toggle('unliked', !isLiked);
             burst.classList.remove('show');
             void burst.offsetWidth;
             burst.classList.add('show');
@@ -487,14 +519,48 @@
                 if (now - lastTapTime < 320) {
                     lastTapTime = 0;
                     const likeBtn = slide.querySelector('.like-toggle-btn');
+                    const willBeLiked = likeBtn ? !likeBtn.classList.contains('active-like') : true;
                     if (typeof toggleReaction === 'function') {
                         toggleReaction(postId, 'like', likeBtn);
                     }
-                    showDoubleTapLikeFeedback(slide);
+                    showDoubleTapLikeFeedback(slide, willBeLiked);
                 } else {
                     lastTapTime = now;
                 }
             });
+        }
+
+        // Keep .side-btn intact whenever app.js's toggleReaction updates reaction-btn classes
+        function patchToggleReactionForReels() {
+            const origToggle = window.toggleReaction;
+            if (typeof origToggle !== 'function' || origToggle._reelsPatched) return;
+
+            const wrappedToggle = async function(postId, reactionType, buttonEl = null) {
+                const res = await origToggle.apply(this, arguments);
+                document.querySelectorAll(`.post-box[data-post-id="${postId}"] .side-btn.reaction-btn`).forEach(btn => {
+                    btn.classList.add('side-btn');
+                });
+                if (buttonEl && buttonEl.classList.contains('side-btn')) {
+                    buttonEl.classList.add('reaction-btn');
+                }
+                return res;
+            };
+            wrappedToggle._reelsPatched = true;
+            window.toggleReaction = wrappedToggle;
+        }
+
+        function ensureDragHandleOnDrawer() {
+            const drawer = document.getElementById('comments-drawer');
+            if (!drawer) return;
+            if (!drawer.querySelector('.reels-drag-handle-wrap')) {
+                const handleWrap = document.createElement('div');
+                handleWrap.className = 'reels-drag-handle-wrap';
+                handleWrap.id = 'reels-sheet-handle';
+                handleWrap.title = 'Drag down to close comments';
+                handleWrap.setAttribute('aria-label', 'Drag down to close comments');
+                handleWrap.innerHTML = `<div class="reels-drag-handle-pill"></div>`;
+                drawer.insertBefore(handleWrap, drawer.firstChild);
+            }
         }
 
         function syncBackdropState() {
@@ -516,6 +582,7 @@
             if (typeof origOpen === 'function' && !origOpen._reelsWrapped) {
                 const wrappedOpen = function(postId) {
                     const res = origOpen.apply(this, arguments);
+                    ensureDragHandleOnDrawer();
                     syncBackdropState();
                     bindDrawerDragToDismiss();
                     return res;
@@ -527,6 +594,8 @@
             const origClose = window.closeCommentsDrawer;
             if (typeof origClose === 'function' && !origClose._reelsWrapped) {
                 const wrappedClose = function() {
+                    const drawer = document.getElementById('comments-drawer');
+                    if (drawer) drawer.style.transform = '';
                     const res = origClose.apply(this, arguments);
                     syncBackdropState();
                     return res;
@@ -549,8 +618,10 @@
             const onStart = (clientY, target) => {
                 if (!drawer.classList.contains('open')) return;
                 if (target && target.closest('input, textarea, button, form, #comment-sticker-panel')) return;
-                // If dragging inside the scroll list, only dismiss when already scrolled to the top
-                if (commentsList && commentsList.contains(target) && commentsList.scrollTop > 2) return;
+                const onHandleOrHeader = Boolean(target && target.closest('.reels-drag-handle-wrap, .drawer-header'));
+                if (!onHandleOrHeader && commentsList && commentsList.contains(target) && commentsList.scrollTop > 2) {
+                    return;
+                }
                 startY = clientY;
                 currentDeltaY = 0;
                 tracking = true;
@@ -564,6 +635,9 @@
                     currentDeltaY = delta;
                     if (e && e.cancelable) e.preventDefault();
                     drawer.style.transform = `translateY(${Math.min(delta, drawer.offsetHeight || 400)}px)`;
+                } else {
+                    currentDeltaY = 0;
+                    drawer.style.transform = '';
                 }
             };
 
@@ -571,13 +645,14 @@
                 if (!tracking) return;
                 tracking = false;
                 drawer.classList.remove('dragging');
-                const threshold = Math.max(70, (drawer.offsetHeight || 320) * 0.28);
+                const threshold = Math.max(60, (drawer.offsetHeight || 300) * 0.25);
+                const shouldDismiss = currentDeltaY >= threshold;
                 drawer.style.transform = '';
-                if (currentDeltaY >= threshold) {
+                currentDeltaY = 0;
+                if (shouldDismiss) {
                     if (typeof closeCommentsDrawer === 'function') closeCommentsDrawer();
                     syncBackdropState();
                 }
-                currentDeltaY = 0;
             };
 
             drawer.addEventListener('touchstart', (e) => {
@@ -594,6 +669,21 @@
 
             drawer.addEventListener('touchend', onEnd);
             drawer.addEventListener('touchcancel', onEnd);
+
+            drawer.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch') return;
+                onStart(e.clientY, e.target);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!tracking || e.pointerType === 'touch') return;
+                onMove(e.clientY, e);
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (!tracking || e.pointerType === 'touch') return;
+                onEnd();
+            });
         }
 
         async function fetchFeedVideos() {
@@ -662,6 +752,7 @@
 
         async function initReels() {
             renderState('Loading feed videos...', '', false);
+            patchToggleReactionForReels();
             try {
                 const { videos, totalPosts } = await fetchFeedVideos();
 
