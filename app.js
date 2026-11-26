@@ -275,6 +275,232 @@ html.dark .nv-video-wrap { border-color: #333; }
 .shared-post-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(128,128,128,0.25); }
 .shared-post-cta { font-size: 12px; font-weight: 700; text-decoration: underline; }
 
+/* Stories Rainbow Ring, Plus Button & Right-Sliding Drawer */
+.feed-avatar-container {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.feed-avatar-container.has-story {
+    background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4, #22c55e, #facc15, #f58529);
+    background-size: 240% 240%;
+    animation: nvRainbowSpin 5s ease infinite;
+    padding: 2.5px;
+}
+.feed-avatar-container.has-story .post-avatar {
+    width: 100%;
+    height: 100%;
+    border: 2px solid #fff;
+}
+html.dark .feed-avatar-container.has-story .post-avatar {
+    border-color: #121212;
+}
+
+.story-ring-wrapper.has-story {
+    background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4, #22c55e, #facc15, #f58529) !important;
+    background-size: 240% 240% !important;
+    animation: nvRainbowSpin 5s ease infinite;
+    padding: 3px !important;
+}
+.story-ring-wrapper.has-story .profile-pfp-img {
+    border: 2px solid #fff;
+}
+html.dark .story-ring-wrapper.has-story .profile-pfp-img {
+    border-color: #181818;
+}
+
+@keyframes nvRainbowSpin {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.story-plus-btn {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #000;
+    color: #fff;
+    border: 2px solid #fff;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    padding: 0;
+}
+.story-plus-btn:active {
+    transform: scale(0.92);
+}
+html.dark .story-plus-btn {
+    background: #fff;
+    color: #000;
+    border-color: #181818;
+}
+
+.nv-story-drawer {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background: #09090b;
+    color: #fff;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: right;
+    overflow: hidden;
+}
+.nv-story-drawer.open {
+    right: 0;
+}
+.nv-story-topbar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.72), rgba(0,0,0,0));
+}
+.nv-story-top-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.nv-story-close-btn {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.nv-story-author-pfp {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.35);
+    flex-shrink: 0;
+}
+.nv-story-author-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.nv-story-author-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nv-story-time-ago {
+    font-size: 11px;
+    color: rgba(255,255,255,0.78);
+    margin-top: 1px;
+}
+.nv-story-delete-btn {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+}
+.nv-story-delete-btn:active {
+    transform: scale(0.95);
+}
+.nv-story-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 1;
+}
+.nv-story-media-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.nv-story-media-video {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+.nv-story-reply-bar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0));
+}
+.nv-story-reply-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.28);
+    background: rgba(24,24,27,0.85);
+    color: #fff;
+    font-size: 14px;
+}
+.nv-story-reply-input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+.nv-story-reply-send {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 999px;
+    padding: 9px 15px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 html.dark { color-scheme: dark; }
 html.dark body { background:#121212; color:#eee; }
 html.dark header, html.dark footer { background:#121212; border-color:#2a2a2a; }
@@ -1081,14 +1307,15 @@ async function renderPosts(posts, container, options = {}) {
                </div>`;
 
         const profileUrl = `profile.html?user=${encodeURIComponent(authorUsername || authorEmail)}`;
-        const hasStoryClass = post.has_story ? 'has-story' : '';
-        const avatarClickAttr = post.has_story && typeof viewUserStory === 'function'
-            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(authorEmail)}', '${escapeHtml(post.story_created_at || '')}')"`
+        const hasStory = Boolean(post.has_story || (fallbackAuthor && fallbackAuthor.has_story));
+        const hasStoryClass = hasStory ? 'has-story' : '';
+        const avatarClickAttr = hasStory && typeof viewUserStory === 'function'
+            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(authorEmail)}', '${escapeHtml(post.story_created_at || '')}', { username: '${escapeHtml(authorUsername)}', display_name: '${escapeHtml(authorDisplayName)}', pfp_url: '${escapeHtml(authorPfp)}' })"`
             : `onclick="goToProfile('${profileUrl}', event)"`;
 
         const authorRowHtml = `
             <div class="post-header-line">
-                <div class="feed-avatar-container ${hasStoryClass}" ${avatarClickAttr} title="${post.has_story ? 'View Story' : 'View Profile'}">
+                <div class="feed-avatar-container ${hasStoryClass}" ${avatarClickAttr} title="${hasStory ? 'View Story' : 'View Profile'}">
                     <img class="post-avatar" src="${authorPfp}">
                 </div>
                 <div style="flex-grow: 1;">
@@ -2506,3 +2733,201 @@ function compressImage(file, maxDimension = 1280, quality = 0.8) {
 async function compressVideo(file) {
     return file;
 }
+
+// ===== STORIES VIEWER, POSTING & RELATIVE TIME =====
+function formatTimeAgo(isoOrDate) {
+    if (!isoOrDate) return 'just now';
+    const ts = new Date(isoOrDate).getTime();
+    if (isNaN(ts)) return 'just now';
+    const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (diffSec < 60) return diffSec <= 5 ? 'just now' : `${diffSec} sec ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} ${diffHr === 1 ? 'hr' : 'hrs'} ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay} ${diffDay === 1 ? 'day' : 'days'} ago`;
+}
+
+let _activeStoryOwnerEmail = null;
+
+function ensureStoryDrawer() {
+    let drawer = document.getElementById('nv-story-drawer');
+    if (drawer) return drawer;
+
+    drawer = document.createElement('div');
+    drawer.id = 'nv-story-drawer';
+    drawer.className = 'nv-story-drawer';
+    drawer.innerHTML = `
+        <div class="nv-story-stage" id="nv-story-stage"></div>
+        <div class="nv-story-topbar">
+            <div class="nv-story-top-left">
+                <button type="button" class="nv-story-close-btn" id="nv-story-close-btn" aria-label="Close story">✕</button>
+                <img id="nv-story-author-pfp" class="nv-story-author-pfp" src="" alt="">
+                <div class="nv-story-author-meta">
+                    <span id="nv-story-author-name" class="nv-story-author-name"></span>
+                    <span id="nv-story-time-ago" class="nv-story-time-ago"></span>
+                </div>
+            </div>
+            <button type="button" class="nv-story-delete-btn" id="nv-story-delete-btn" style="display:none;">Delete</button>
+        </div>
+        <div class="nv-story-reply-bar" id="nv-story-reply-bar">
+            <input type="text" id="nv-story-reply-input" class="nv-story-reply-input" maxlength="300" placeholder="Reply to story...">
+            <button type="button" id="nv-story-reply-send" class="nv-story-reply-send">Send</button>
+        </div>
+    `;
+    document.body.appendChild(drawer);
+
+    document.getElementById('nv-story-close-btn').addEventListener('click', closeStoryDrawer);
+    document.getElementById('nv-story-delete-btn').addEventListener('click', deleteActiveStory);
+    document.getElementById('nv-story-reply-send').addEventListener('click', sendStoryReply);
+    document.getElementById('nv-story-reply-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendStoryReply();
+        }
+    });
+
+    return drawer;
+}
+
+function closeStoryDrawer() {
+    const drawer = document.getElementById('nv-story-drawer');
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    const stage = document.getElementById('nv-story-stage');
+    if (stage) {
+        const vid = stage.querySelector('video');
+        if (vid) vid.pause();
+        setTimeout(() => {
+            if (!drawer.classList.contains('open')) stage.innerHTML = '';
+        }, 280);
+    }
+    _activeStoryOwnerEmail = null;
+}
+
+async function deleteActiveStory() {
+    if (!_activeStoryOwnerEmail) return;
+    showConfirmDialog("Delete Story", "Delete your active story?", "Delete", async () => {
+        try {
+            const res = await fetch(`${WORKER_ORIGIN}/api/stories/delete`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete story');
+            closeStoryDrawer();
+            showToast("Story deleted");
+            if (typeof loadProfilePage === 'function') await loadProfilePage();
+        } catch (err) {
+            showToast(err.message);
+        }
+    });
+}
+
+async function sendStoryReply() {
+    const user = getSessionUser();
+    if (!user) return promptSignup('reply to stories');
+    const input = document.getElementById('nv-story-reply-input');
+    const text = input ? input.value.trim() : '';
+    if (!text || !_activeStoryOwnerEmail) return;
+
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/reply`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ ownerEmail: _activeStoryOwnerEmail, content: text })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not send reply');
+        input.value = '';
+        showToast("Reply sent");
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
+async function viewUserStory(ownerEmail, fallbackCreatedAt = '', authorMeta = null) {
+    if (!ownerEmail) return;
+    const drawer = ensureStoryDrawer();
+    const stage = document.getElementById('nv-story-stage');
+    const nameEl = document.getElementById('nv-story-author-name');
+    const timeEl = document.getElementById('nv-story-time-ago');
+    const pfpEl = document.getElementById('nv-story-author-pfp');
+    const delBtn = document.getElementById('nv-story-delete-btn');
+    const replyBar = document.getElementById('nv-story-reply-bar');
+
+    const session = getSessionUser();
+    const isOwner = !!(session && session.email && session.email.toLowerCase() === ownerEmail.toLowerCase());
+    _activeStoryOwnerEmail = ownerEmail.toLowerCase();
+
+    const defaultPfp = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23333'/></svg>";
+    nameEl.innerText = authorMeta ? getDisplayName(authorMeta, ownerEmail) : ownerEmail;
+    pfpEl.src = (authorMeta && authorMeta.pfp_url) || defaultPfp;
+    timeEl.innerText = formatTimeAgo(fallbackCreatedAt);
+    delBtn.style.display = isOwner ? 'inline-flex' : 'none';
+    replyBar.style.display = isOwner ? 'none' : 'flex';
+    stage.innerHTML = '<div style="color:#aaa;font-size:13px;">Loading story...</div>';
+
+    requestAnimationFrame(() => drawer.classList.add('open'));
+
+    try {
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(ownerEmail.toLowerCase())}`);
+        const data = await res.json();
+        const story = data && data.story;
+        if (!res.ok || !story || !story.media_url) {
+            throw new Error(data.error || 'Story expired or not found');
+        }
+
+        timeEl.innerText = formatTimeAgo(story.created_at || fallbackCreatedAt);
+        if (isVideoMediaUrl(story.media_url)) {
+            stage.innerHTML = `<video class="nv-story-media-video" src="${escapeHtml(story.media_url)}" autoplay playsinline controls></video>`;
+        } else {
+            stage.innerHTML = `<img class="nv-story-media-img" src="${escapeHtml(story.media_url)}" alt="Story">`;
+        }
+    } catch (err) {
+        showToast(err.message || 'Could not load story');
+        closeStoryDrawer();
+    }
+}
+
+async function uploadStoryFile(file) {
+    const user = getSessionUser();
+    if (!user) return promptSignup('post stories');
+    if (!file) return;
+
+    const isVid = file.type.startsWith('video/');
+    const isImg = file.type.startsWith('image/');
+    if (!isVid && !isImg) {
+        showToast("Please choose a video or image for your story.");
+        return;
+    }
+
+    showToast("Uploading story...");
+    try {
+        const prepared = isImg ? await compressImage(file, 1080, 0.85) : await compressVideo(file);
+        const fd = new FormData();
+        fd.append('media', prepared);
+
+        const res = await fetch(`${WORKER_ORIGIN}/api/stories/create`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to post story');
+
+        showToast("Story posted!");
+        if (typeof loadProfilePage === 'function') {
+            await loadProfilePage();
+        }
+    } catch (err) {
+        showToast(err.message);
+    }
+}
+
+window.viewUserStory = viewUserStory;
+window.closeStoryDrawer = closeStoryDrawer;
+window.uploadStoryFile = uploadStoryFile;
+window.formatTimeAgo = formatTimeAgo;
