@@ -46,7 +46,6 @@
             color: #ffffff;
             text-decoration: none;
         }
-        .top-actions { display: flex; align-items: center; gap: 10px; }
         .pill-link {
             background: rgba(255, 255, 255, 0.16);
             border: 1px solid rgba(255, 255, 255, 0.24);
@@ -92,6 +91,7 @@
             justify-content: center;
         }
 
+        /* Override app.js inline/card video sizing so reels fill the viewport cleanly */
         .reel-media-layer .nv-video-wrap {
             width: 100%;
             height: 100%;
@@ -102,13 +102,11 @@
             margin-bottom: 0;
             background: #000;
         }
-
         .reel-media-layer .nv-video-wrap .nv-video-el {
             width: 100%;
             height: 100%;
             max-width: 100%;
             max-height: 100%;
-            min-height: 100%;
             object-fit: contain;
         }
 
@@ -154,7 +152,7 @@
             font-size: 13px;
             line-height: 1.4;
             color: #f4f4f6;
-            max-height: 54px;
+            max-height: 56px;
             overflow-y: auto;
             word-break: break-word;
         }
@@ -165,6 +163,11 @@
             align-items: center;
             gap: 14px;
             flex-shrink: 0;
+        }
+        .side-action-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .side-btn {
             background: rgba(20, 20, 24, 0.78);
@@ -186,11 +189,14 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .side-btn.active {
+        .side-btn.active-like {
             background: #ffffff;
             border-color: #ffffff;
         }
-        .side-btn.active svg { stroke: #000000; fill: #000000; }
+        .side-btn.active-like svg {
+            stroke: #000000;
+            fill: #000000;
+        }
         .side-count {
             font-size: 11px;
             font-weight: 700;
@@ -267,9 +273,7 @@
 <body>
     <header class="top-bar">
         <a href="feed.html" class="brand">Nvaritia</a>
-        <div class="top-actions">
-            <a href="create-post.html" class="pill-link">+ Post Video</a>
-        </div>
+        <a href="create-post.html" class="pill-link">+ Post Video</a>
     </header>
 
     <main id="reels-feed" class="reels-feed" aria-live="polite">
@@ -297,143 +301,97 @@
         </a>
     </footer>
 
-    <script src="video-player.js?v=11"></script>
     <script src="app.js?v=5"></script>
     <script>
         const loggedUser = typeof requireAuth === 'function' ? requireAuth(true) : { guest: true };
         const feedEl = document.getElementById('reels-feed');
 
-        function isVideoUrl(url) {
+        function checkIsVideo(url) {
             if (!url || typeof url !== 'string') return false;
-            if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.isVideoMediaUrl === 'function') {
-                if (window.NvaritiaVideoPlayer.isVideoMediaUrl(url)) return true;
-            }
-            return /\.(mp4|webm|mov|m4v|ogg|3gp)(\?|#|$)/i.test(url)
-                || url.startsWith('data:video/')
-                || /r2\.dev\/.*\.(mp4|webm|mov|m4v|ogg)/i.test(url);
+            if (typeof isVideoMediaUrl === 'function' && isVideoMediaUrl(url)) return true;
+            return /\.(mp4|webm|mov|m4v|ogg|3gp)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
         }
 
-        function extractVideoUrl(post) {
-            if (!post || typeof post !== 'object') return '';
-            const candidates = [
-                post.media_url,
-                post.video_url,
-                post.mediaUrl,
-                post.videoUrl,
-                post.url,
-                post.media,
-                post.file_url
-            ];
-            for (const c of candidates) {
-                if (typeof c === 'string' && isVideoUrl(c)) return c;
-                if (c && typeof c === 'object' && typeof c.url === 'string' && isVideoUrl(c.url)) return c.url;
-            }
-            return '';
-        }
-
-        function unwrapPostsArray(payload) {
+        function unwrapPosts(payload) {
             if (Array.isArray(payload)) return payload;
             if (!payload || typeof payload !== 'object') return [];
-            const keys = ['posts', 'feed', 'items', 'videos', 'results', 'rows'];
-            for (const k of keys) {
-                if (Array.isArray(payload[k])) return payload[k];
+            for (const key of ['posts', 'feed', 'items', 'videos', 'results']) {
+                if (Array.isArray(payload[key])) return payload[key];
             }
-            if (payload.data) {
-                if (Array.isArray(payload.data)) return payload.data;
-                for (const k of keys) {
-                    if (Array.isArray(payload.data[k])) return payload.data[k];
-                }
-            }
+            if (payload.data && Array.isArray(payload.data.posts)) return payload.data.posts;
             return [];
         }
 
-        function extractAuthor(post) {
-            const authorObj = (post && typeof post.author === 'object' && post.author) ? post.author : {};
-            const username = post.username || authorObj.username || post.author_username || post.user || 'user';
-            const pfp = post.pfp_url || authorObj.pfp_url || post.avatar_url || authorObj.avatar_url || '';
-            const verified = Boolean(post.verified || authorObj.verified);
-            return { username, pfp, verified };
-        }
-
         async function fetchFeedVideos() {
-            const origin = (typeof WORKER_ORIGIN !== 'undefined' && WORKER_ORIGIN) ? WORKER_ORIGIN : window.location.origin;
             const headers = typeof authHeaders === 'function' ? authHeaders() : {};
-            const viewerQuery = (loggedUser && !loggedUser.guest && loggedUser.email)
-                ? `?viewer=${encodeURIComponent(loggedUser.email)}`
-                : '';
+            const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
+            const query = viewerEmail ? `?email=${encodeURIComponent(viewerEmail)}&viewer=${encodeURIComponent(viewerEmail)}` : '';
 
-            const endpoints = [
-                `${origin}/api/feed${viewerQuery}`,
-                `${origin}/api/posts${viewerQuery}`
-            ];
+            const origins = [WORKER_ORIGIN];
+            if (window.location.origin && !origins.includes(window.location.origin)) {
+                origins.push(window.location.origin);
+            }
 
+            const paths = ['/api/feed', '/api/posts'];
+            let totalPosts = 0;
             let lastError = '';
-            let totalFetched = 0;
 
-            for (const endpoint of endpoints) {
-                try {
-                    const res = await fetch(endpoint, { headers });
-                    const text = await res.text();
-                    if (!res.ok) {
-                        lastError = `${endpoint} -> HTTP ${res.status}`;
-                        continue;
-                    }
-                    let json = null;
+            for (const base of origins) {
+                for (const path of paths) {
+                    const url = `${base}${path}${query}`;
                     try {
-                        json = JSON.parse(text);
-                    } catch (parseErr) {
-                        lastError = `${endpoint} -> invalid JSON`;
-                        continue;
+                        const res = await fetch(url, { headers });
+                        const rawText = await res.text();
+                        if (!res.ok) {
+                            lastError = `${path} -> HTTP ${res.status}`;
+                            continue;
+                        }
+                        const parsed = JSON.parse(rawText);
+                        const list = unwrapPosts(parsed);
+                        totalPosts = Math.max(totalPosts, list.length);
+
+                        const videos = list
+                            .map(post => {
+                                const videoUrl = post.media_url || post.video_url || post.mediaUrl || '';
+                                return { post, videoUrl };
+                            })
+                            .filter(item => checkIsVideo(item.videoUrl));
+
+                        if (videos.length > 0) {
+                            return { videos, totalPosts, lastError: '' };
+                        }
+                    } catch (err) {
+                        lastError = err && err.message ? err.message : 'Failed to fetch';
                     }
-
-                    const rawPosts = unwrapPostsArray(json);
-                    totalFetched = Math.max(totalFetched, rawPosts.length);
-
-                    const videos = rawPosts
-                        .map(p => ({ post: p, videoUrl: extractVideoUrl(p) }))
-                        .filter(item => Boolean(item.videoUrl));
-
-                    if (videos.length > 0) {
-                        return { videos, totalFetched, lastError: '' };
-                    }
-                } catch (err) {
-                    lastError = err && err.message ? err.message : 'Network error';
                 }
             }
 
-            return { videos: [], totalFetched, lastError };
+            return { videos: [], totalPosts, lastError };
         }
 
-        function renderState(message, detail, showRetry) {
+        function renderState(title, detail, canRetry) {
             feedEl.innerHTML = `
                 <div class="state-box">
-                    <div>${message}</div>
-                    ${detail ? `<div class="state-detail">${detail}</div>` : ''}
-                    ${showRetry ? '<button type="button" class="retry-btn" onclick="initReels()">Retry</button>' : ''}
+                    <div>${escapeHtml(title)}</div>
+                    ${detail ? `<div class="state-detail">${escapeHtml(detail)}</div>` : ''}
+                    ${canRetry ? '<button type="button" class="retry-btn" onclick="initReels()">Retry</button>' : ''}
                 </div>
             `;
         }
 
-        function setupVisibilityObserver() {
+        function setupReelObserver() {
             const items = feedEl.querySelectorAll('.reel-item');
             if (!items.length || !('IntersectionObserver' in window)) return;
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const item = entry.target;
-                    const vid = item.querySelector('.nv-video-el');
+                    const vid = entry.target.querySelector('.nv-video-el');
                     if (!vid) return;
-
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
                         vid.muted = true;
                         vid.play().catch(() => {});
-                    } else {
-                        if (!vid.paused) {
-                            vid.pause();
-                        }
-                        if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.pauseOffscreenVideos === 'function') {
-                            window.NvaritiaVideoPlayer.pauseOffscreenVideos(item);
-                        }
+                    } else if (!vid.paused) {
+                        vid.pause();
                     }
                 });
             }, { threshold: [0.65] });
@@ -443,64 +401,81 @@
 
         async function initReels() {
             renderState('Loading feed videos...', '', false);
-            const { videos, totalFetched, lastError } = await fetchFeedVideos();
+            const { videos, totalPosts, lastError } = await fetchFeedVideos();
 
             if (!videos.length) {
                 const detail = lastError
-                    ? `Could not load feed: ${lastError}`
-                    : `Fetched ${totalFetched} feed post(s), none matched a video URL.`;
+                    ? `Could not load feed: ${lastError} (Worker: ${WORKER_ORIGIN})`
+                    : `Loaded ${totalPosts} feed post(s), none had a video media URL.`;
                 renderState('No feed videos found', detail, true);
                 return;
             }
 
             feedEl.innerHTML = '';
-            const safeText = (str) => typeof escapeHtml === 'function' ? escapeHtml(str || '') : String(str || '');
-            const badgeHtml = (v) => typeof renderVerifiedBadge === 'function' ? renderVerifiedBadge(v) : '';
             const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23222226'/></svg>";
+            const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
 
-            videos.forEach(({ post, videoUrl }, idx) => {
-                const { username, pfp, verified } = extractAuthor(post);
-                const caption = post.content || post.caption || post.text || '';
-                const likes = Number(post.likes_count ?? post.likes ?? 0) || 0;
-                const postId = post.id ?? post.post_id ?? idx;
+            for (let i = 0; i < videos.length; i++) {
+                const { post, videoUrl } = videos[i];
+                const username = post.username || (post.author && post.author.username) || 'user';
+                const pfp = post.pfp_url || (post.author && post.author.pfp_url) || defaultAvatar;
+                const verified = Boolean(post.verified || (post.author && post.author.verified));
+                const caption = post.content || '';
+                const postId = post.id;
+                const commentsCount = post.comments_count ?? post.comment_count ?? 0;
+
+                if (typeof _sharedPostCache !== 'undefined' && postId) {
+                    _sharedPostCache.set(postId, {
+                        id: postId,
+                        user_email: post.user_email || '',
+                        username,
+                        content: caption,
+                        media_url: videoUrl
+                    });
+                }
+
+                let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
+                if (postId) {
+                    try {
+                        const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${encodeURIComponent(postId)}&email=${encodeURIComponent(viewerEmail)}`);
+                        if (rxRes.ok) rxData = await rxRes.json();
+                    } catch (e) {}
+                }
 
                 const slide = document.createElement('section');
-                slide.className = 'reel-item';
-                slide.dataset.postId = String(postId);
+                slide.className = 'reel-item post-box';
+                slide.setAttribute('data-post-id', String(postId ?? i));
 
                 const mediaLayer = document.createElement('div');
                 mediaLayer.className = 'reel-media-layer';
+                mediaLayer.innerHTML = renderPostMediaHtml(videoUrl);
 
-                if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.createVideoPlayer === 'function') {
-                    mediaLayer.appendChild(window.NvaritiaVideoPlayer.createVideoPlayer(videoUrl));
-                } else {
-                    const fallbackVid = document.createElement('video');
-                    fallbackVid.className = 'nv-video-el';
-                    fallbackVid.src = videoUrl;
-                    fallbackVid.playsInline = true;
-                    fallbackVid.controls = true;
-                    mediaLayer.appendChild(fallbackVid);
-                }
-
+                const profileUrl = `profile.html?user=${encodeURIComponent(username)}`;
                 const overlay = document.createElement('div');
                 overlay.className = 'reel-overlay';
                 overlay.innerHTML = `
                     <div class="reel-meta">
                         <div class="reel-author-row">
-                            <img class="reel-avatar" src="${pfp || defaultAvatar}" alt="@${safeText(username)}">
-                            <a class="reel-author" href="profile.html?user=${encodeURIComponent(username)}">@${safeText(username)}${badgeHtml(verified)}</a>
+                            <img class="reel-avatar" src="${escapeHtml(pfp)}" alt="">
+                            <a class="reel-author" href="${profileUrl}" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(username)}${renderVerifiedBadge(verified)}</a>
                         </div>
-                        ${caption ? `<div class="reel-caption">${safeText(caption)}</div>` : ''}
+                        ${caption ? `<div class="reel-caption">${escapeHtml(caption)}</div>` : ''}
                     </div>
                     <div class="reel-side-actions">
-                        <div>
-                            <button type="button" class="side-btn" aria-label="Like reel" onclick="this.classList.toggle('active')">
+                        <div class="side-action-group">
+                            <button type="button" class="side-btn reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" aria-label="Like reel" onclick="event.stopPropagation(); toggleReaction('${escapeHtml(String(postId))}', 'like', this)">
                                 <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                             </button>
-                            <div class="side-count">${likes}</div>
+                            <div class="side-count likes-count">${rxData.likes}</div>
                         </div>
-                        <div>
-                            <button type="button" class="side-btn" aria-label="Share reel" onclick="shareReel('${encodeURIComponent(String(postId))}')">
+                        <div class="side-action-group">
+                            <button type="button" class="side-btn" aria-label="Comments" onclick="event.stopPropagation(); openCommentsDrawer('${escapeHtml(String(postId))}')">
+                                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            </button>
+                            <div class="side-count comments-count">${commentsCount}</div>
+                        </div>
+                        <div class="side-action-group">
+                            <button type="button" class="side-btn" aria-label="Share reel" onclick="event.stopPropagation(); sharePost('${escapeHtml(String(postId))}')">
                                 <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                             </button>
                             <div class="side-count">Share</div>
@@ -511,22 +486,12 @@
                 slide.appendChild(mediaLayer);
                 slide.appendChild(overlay);
                 feedEl.appendChild(slide);
-            });
-
-            setupVisibilityObserver();
-        }
-
-        function shareReel(encodedId) {
-            const shareUrl = `${window.location.origin}/reels.html?post=${encodedId}`;
-            if (window.AndroidBridge && typeof window.AndroidBridge.shareUrl === 'function') {
-                window.AndroidBridge.shareUrl(shareUrl, 'Check out this reel on Nvaritia');
-                return;
             }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    if (typeof showToast === 'function') showToast('Reel link copied');
-                }).catch(() => {});
+
+            if (typeof bindCustomVideoPlayers === 'function') {
+                bindCustomVideoPlayers(feedEl);
             }
+            setupReelObserver();
         }
 
         initReels();
