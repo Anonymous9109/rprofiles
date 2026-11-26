@@ -109,6 +109,36 @@
             object-fit: contain;
         }
 
+        .double-tap-burst {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.22);
+            border: 2px solid #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease;
+        }
+        .double-tap-burst.show {
+            transform: translate(-50%, -50%) scale(1.08);
+            opacity: 1;
+        }
+        .double-tap-burst svg {
+            width: 40px;
+            height: 40px;
+            fill: #ffffff;
+            stroke: #ffffff;
+            stroke-width: 2;
+        }
+
         .reel-overlay {
             position: absolute;
             left: 0;
@@ -132,6 +162,13 @@
             gap: 8px;
             margin-bottom: 6px;
         }
+        .reel-avatar-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
         .reel-avatar {
             width: 34px;
             height: 34px;
@@ -139,7 +176,8 @@
             object-fit: cover;
             background: var(--surface);
             border: 1px solid var(--line);
-            flex-shrink: 0;
+            display: block;
+            cursor: pointer;
         }
         .reel-author {
             font-size: 14px;
@@ -169,8 +207,8 @@
             align-items: center;
         }
         .side-btn {
-            background: rgba(20, 20, 24, 0.78);
-            border: 1px solid var(--line);
+            background: transparent;
+            border: 1.5px solid #ffffff;
             border-radius: 50%;
             width: 44px;
             height: 44px;
@@ -178,6 +216,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: background-color 0.16s ease, color 0.16s ease;
         }
         .side-btn svg {
             width: 19px;
@@ -187,14 +226,15 @@
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
+            transition: fill 0.16s ease, stroke 0.16s ease;
         }
         .side-btn.active-like {
             background: #ffffff;
             border-color: #ffffff;
         }
         .side-btn.active-like svg {
-            stroke: #000000;
             fill: #000000;
+            stroke: #000000;
         }
         .side-count {
             font-size: 11px;
@@ -268,7 +308,18 @@
             stroke-linejoin: round;
         }
 
-        /* Half-screen bottom sheet override for comments drawer */
+        /* Outside tap backdrop & half-screen bottom sheet for comments */
+        #reels-comments-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 2050;
+        }
+        #reels-comments-backdrop.open {
+            display: block;
+        }
+
         #comments-drawer.comments-drawer {
             top: auto !important;
             left: 0 !important;
@@ -282,10 +333,14 @@
             box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
             transition: bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1) !important;
             z-index: 2100;
+            touch-action: pan-y;
         }
         #comments-drawer.comments-drawer.open {
             bottom: 0 !important;
             right: 0 !important;
+        }
+        #comments-drawer.comments-drawer.dragging {
+            transition: none !important;
         }
         html.dark #comments-drawer.comments-drawer {
             border-top-color: #2f2f35;
@@ -293,6 +348,7 @@
         #comments-drawer .drawer-header {
             padding: 10px 14px;
             font-size: 14px;
+            cursor: grab;
         }
         #comments-drawer .drawer-body {
             padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
@@ -320,6 +376,8 @@
         </div>
     </main>
 
+    <div id="reels-comments-backdrop" aria-hidden="true"></div>
+
     <footer>
         <a href="feed.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -343,8 +401,10 @@
     <script>
         const loggedUser = typeof requireAuth === 'function' ? requireAuth(true) : { guest: true };
         const feedEl = document.getElementById('reels-feed');
+        const backdropEl = document.getElementById('reels-comments-backdrop');
 
-        let userHasUnmuted = false;
+        const THUMBS_UP_SVG = `<svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+
         let activeWatch = null;
 
         function checkIsVideo(url) {
@@ -354,7 +414,7 @@
         }
 
         function logReelWatch(postId, durationMs, completed) {
-            if (!postId || durationMs <= 0 && !completed) return;
+            if (!postId || (durationMs <= 0 && !completed)) return;
             const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
             fetch(`${WORKER_ORIGIN}/api/posts/view`, {
                 method: 'POST',
@@ -375,70 +435,165 @@
             activeWatch = null;
         }
 
-        function syncMuteButtonUi(slide, muted) {
-            if (!slide) return;
-            const btn = slide.querySelector('.mute-toggle-btn');
-            const label = slide.querySelector('.mute-status-label');
-            if (btn) btn.dataset.muted = muted ? '1' : '0';
-            if (label) label.textContent = muted ? 'Muted' : 'Sound';
-            if (btn) {
-                btn.innerHTML = muted
-                    ? `<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`
-                    : `<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
-            }
-        }
-
-        function toggleReelMute(slideId) {
-            const slide = feedEl.querySelector(`.reel-item[data-reel-idx="${slideId}"]`);
-            const vid = slide && slide.querySelector('.nv-video-el');
+        function enforceSoundOnVideo(vid) {
             if (!vid) return;
-            const nextMuted = !vid.muted;
-            vid.muted = nextMuted;
-            userHasUnmuted = !nextMuted;
-            syncMuteButtonUi(slide, nextMuted);
-            if (!nextMuted && vid.paused) {
-                vid.play().catch(() => {});
-            }
+            vid.muted = false;
+            vid.defaultMuted = false;
+            vid.volume = 1;
         }
 
-        async function playReelWithSound(vid, slide) {
+        async function playReelAlwaysSound(vid) {
             if (!vid) return;
             document.querySelectorAll('.nv-video-el').forEach(other => {
                 if (other !== vid && !other.paused) other.pause();
             });
-
-            const wantMuted = !userHasUnmuted;
-            vid.muted = wantMuted;
-            syncMuteButtonUi(slide, wantMuted);
-
+            enforceSoundOnVideo(vid);
             try {
                 await vid.play();
+                enforceSoundOnVideo(vid);
             } catch (err) {
-                // Browser autoplay policy blocked unmuted playback before user gesture: fallback to muted
-                if (!vid.muted) {
-                    vid.muted = true;
-                    syncMuteButtonUi(slide, true);
-                    await vid.play().catch(() => {});
-                }
+                // Only if browser blocks unmuted autoplay before gesture: start muted, then unmute immediately once playing
+                vid.muted = true;
+                try {
+                    await vid.play();
+                    vid.muted = false;
+                    vid.volume = 1;
+                } catch (e2) {}
             }
         }
 
-        function unlockAudioOnFirstGesture() {
-            const unlock = () => {
-                userHasUnmuted = true;
-                const activeVid = feedEl.querySelector('.reel-item.is-active .nv-video-el');
-                const activeSlide = activeVid && activeVid.closest('.reel-item');
-                if (activeVid) {
-                    activeVid.muted = false;
-                    activeVid.volume = 1;
-                    syncMuteButtonUi(activeSlide, false);
-                    if (activeVid.paused) activeVid.play().catch(() => {});
+        function showDoubleTapLikeFeedback(slide) {
+            if (!slide) return;
+            let burst = slide.querySelector('.double-tap-burst');
+            if (!burst) {
+                burst = document.createElement('div');
+                burst.className = 'double-tap-burst';
+                burst.innerHTML = THUMBS_UP_SVG;
+                slide.appendChild(burst);
+            }
+            burst.classList.remove('show');
+            void burst.offsetWidth;
+            burst.classList.add('show');
+            clearTimeout(burst._hideTimer);
+            burst._hideTimer = setTimeout(() => burst.classList.remove('show'), 480);
+        }
+
+        function bindDoubleTapLike(slide, postId) {
+            let lastTapTime = 0;
+            const target = slide.querySelector('.reel-media-layer') || slide;
+            target.addEventListener('click', (e) => {
+                if (e.target.closest('button, a, .nv-video-hud, .nv-video-center-btn')) return;
+                const now = Date.now();
+                if (now - lastTapTime < 320) {
+                    lastTapTime = 0;
+                    const likeBtn = slide.querySelector('.like-toggle-btn');
+                    if (typeof toggleReaction === 'function') {
+                        toggleReaction(postId, 'like', likeBtn);
+                    }
+                    showDoubleTapLikeFeedback(slide);
+                } else {
+                    lastTapTime = now;
                 }
-                window.removeEventListener('pointerdown', unlock);
-                window.removeEventListener('keydown', unlock);
+            });
+        }
+
+        function syncBackdropState() {
+            const drawer = document.getElementById('comments-drawer');
+            const isOpen = Boolean(drawer && drawer.classList.contains('open'));
+            if (backdropEl) backdropEl.classList.toggle('open', isOpen);
+        }
+
+        function setupCommentsSheetGestures() {
+            if (backdropEl && !backdropEl.dataset.bound) {
+                backdropEl.dataset.bound = '1';
+                backdropEl.addEventListener('click', () => {
+                    if (typeof closeCommentsDrawer === 'function') closeCommentsDrawer();
+                    syncBackdropState();
+                });
+            }
+
+            const origOpen = window.openCommentsDrawer;
+            if (typeof origOpen === 'function' && !origOpen._reelsWrapped) {
+                const wrappedOpen = function(postId) {
+                    const res = origOpen.apply(this, arguments);
+                    syncBackdropState();
+                    bindDrawerDragToDismiss();
+                    return res;
+                };
+                wrappedOpen._reelsWrapped = true;
+                window.openCommentsDrawer = wrappedOpen;
+            }
+
+            const origClose = window.closeCommentsDrawer;
+            if (typeof origClose === 'function' && !origClose._reelsWrapped) {
+                const wrappedClose = function() {
+                    const res = origClose.apply(this, arguments);
+                    syncBackdropState();
+                    return res;
+                };
+                wrappedClose._reelsWrapped = true;
+                window.closeCommentsDrawer = wrappedClose;
+            }
+        }
+
+        function bindDrawerDragToDismiss() {
+            const drawer = document.getElementById('comments-drawer');
+            const commentsList = document.getElementById('comments-list');
+            if (!drawer || drawer.dataset.dragBound === '1') return;
+            drawer.dataset.dragBound = '1';
+
+            let startY = 0;
+            let currentDeltaY = 0;
+            let tracking = false;
+
+            const onStart = (clientY, target) => {
+                if (!drawer.classList.contains('open')) return;
+                if (target && target.closest('input, textarea, button, form, #comment-sticker-panel')) return;
+                // If dragging inside the scroll list, only dismiss when already scrolled to the top
+                if (commentsList && commentsList.contains(target) && commentsList.scrollTop > 2) return;
+                startY = clientY;
+                currentDeltaY = 0;
+                tracking = true;
+                drawer.classList.add('dragging');
             };
-            window.addEventListener('pointerdown', unlock, { once: true });
-            window.addEventListener('keydown', unlock, { once: true });
+
+            const onMove = (clientY, e) => {
+                if (!tracking) return;
+                const delta = clientY - startY;
+                if (delta > 0) {
+                    currentDeltaY = delta;
+                    if (e && e.cancelable) e.preventDefault();
+                    drawer.style.transform = `translateY(${Math.min(delta, drawer.offsetHeight || 400)}px)`;
+                }
+            };
+
+            const onEnd = () => {
+                if (!tracking) return;
+                tracking = false;
+                drawer.classList.remove('dragging');
+                const threshold = Math.max(70, (drawer.offsetHeight || 320) * 0.28);
+                drawer.style.transform = '';
+                if (currentDeltaY >= threshold) {
+                    if (typeof closeCommentsDrawer === 'function') closeCommentsDrawer();
+                    syncBackdropState();
+                }
+                currentDeltaY = 0;
+            };
+
+            drawer.addEventListener('touchstart', (e) => {
+                if (e.touches && e.touches.length === 1) {
+                    onStart(e.touches[0].clientY, e.target);
+                }
+            }, { passive: true });
+
+            drawer.addEventListener('touchmove', (e) => {
+                if (e.touches && e.touches.length === 1) {
+                    onMove(e.touches[0].clientY, e);
+                }
+            }, { passive: false });
+
+            drawer.addEventListener('touchend', onEnd);
+            drawer.addEventListener('touchcancel', onEnd);
         }
 
         async function fetchFeedVideos() {
@@ -489,7 +644,7 @@
                             flushActiveWatch(false);
                             activeWatch = { postId, startedAt: performance.now() };
                         }
-                        playReelWithSound(vid, item);
+                        playReelAlwaysSound(vid);
                     } else {
                         item.classList.remove('is-active');
                         if (activeWatch && activeWatch.postId === postId) {
@@ -526,6 +681,7 @@
                 for (let i = 0; i < videos.length; i++) {
                     const { post, videoUrl } = videos[i];
                     const username = post.username || 'user';
+                    const authorEmail = post.user_email || '';
                     const pfp = post.pfp_url || defaultAvatar;
                     const verified = Boolean(post.verified);
                     const caption = post.content || '';
@@ -535,7 +691,7 @@
                     if (typeof _sharedPostCache !== 'undefined' && postId) {
                         _sharedPostCache.set(postId, {
                             id: postId,
-                            user_email: post.user_email || '',
+                            user_email: authorEmail,
                             username,
                             content: caption,
                             media_url: videoUrl
@@ -561,26 +717,35 @@
 
                     const vid = mediaLayer.querySelector('.nv-video-el');
                     if (vid) {
+                        enforceSoundOnVideo(vid);
+                        vid.addEventListener('volumechange', () => {
+                            if (vid.muted && !vid.paused) {
+                                vid.muted = false;
+                                vid.volume = 1;
+                            }
+                        });
                         vid.addEventListener('ended', () => {
                             flushActiveWatch(true);
                         });
                     }
 
-                    const profileUrl = `profile.html?user=${encodeURIComponent(username)}`;
+                    const profileUrl = `profile.html?user=${encodeURIComponent(username || authorEmail)}`;
                     const overlay = document.createElement('div');
                     overlay.className = 'reel-overlay';
                     overlay.innerHTML = `
                         <div class="reel-meta">
                             <div class="reel-author-row">
-                                <img class="reel-avatar" src="${escapeHtml(pfp)}" alt="">
+                                <a class="reel-avatar-link" href="${profileUrl}" onclick="goToProfile('${profileUrl}', event)" aria-label="View @${escapeHtml(username)}'s profile">
+                                    <img class="reel-avatar" src="${escapeHtml(pfp)}" alt="@${escapeHtml(username)}">
+                                </a>
                                 <a class="reel-author" href="${profileUrl}" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(username)}${renderVerifiedBadge(verified)}</a>
                             </div>
                             ${caption ? `<div class="reel-caption">${escapeHtml(caption)}</div>` : ''}
                         </div>
                         <div class="reel-side-actions">
                             <div class="side-action-group">
-                                <button type="button" class="side-btn reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" aria-label="Like reel" onclick="event.stopPropagation(); toggleReaction('${escapeHtml(String(postId))}', 'like', this)">
-                                    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <button type="button" class="side-btn reaction-btn like-toggle-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" aria-label="Like reel" onclick="event.stopPropagation(); toggleReaction('${escapeHtml(String(postId))}', 'like', this)">
+                                    ${THUMBS_UP_SVG}
                                 </button>
                                 <div class="side-count likes-count">${rxData.likes}</div>
                             </div>
@@ -589,12 +754,6 @@
                                     <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                 </button>
                                 <div class="side-count comments-count">${commentsCount}</div>
-                            </div>
-                            <div class="side-action-group">
-                                <button type="button" class="side-btn mute-toggle-btn" data-muted="1" aria-label="Toggle sound" onclick="event.stopPropagation(); toggleReelMute('${i}')">
-                                    <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-                                </button>
-                                <div class="side-count mute-status-label">Muted</div>
                             </div>
                             <div class="side-action-group">
                                 <button type="button" class="side-btn" aria-label="Share reel" onclick="event.stopPropagation(); sharePost('${escapeHtml(String(postId))}')">
@@ -608,12 +767,13 @@
                     slide.appendChild(mediaLayer);
                     slide.appendChild(overlay);
                     feedEl.appendChild(slide);
+                    bindDoubleTapLike(slide, String(postId ?? i));
                 }
 
                 if (typeof bindCustomVideoPlayers === 'function') {
                     bindCustomVideoPlayers(feedEl);
                 }
-                unlockAudioOnFirstGesture();
+                setupCommentsSheetGestures();
                 setupReelObserver();
             } catch (err) {
                 renderState(
