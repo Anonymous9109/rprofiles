@@ -151,6 +151,10 @@
             <div id="auth-error" class="error-msg"></div>
 
             <form id="auth-form" onsubmit="handleAuth(event)">
+                <div class="form-row" id="display-name-row">
+                    <label for="auth-display-name">Name</label>
+                    <input type="text" id="auth-display-name" placeholder="Your display name" autocomplete="name" maxlength="50" required>
+                </div>
                 <div class="form-row" id="username-row">
                     <label for="auth-username">Username</label>
                     <input type="text" id="auth-username" placeholder="yourname" autocomplete="username" autocapitalize="none" required>
@@ -219,15 +223,14 @@
             document.getElementById('tab-login').classList.toggle('active', !register);
             document.getElementById('auth-title').innerText = register ? 'Create your account to get started' : 'Welcome back';
             document.getElementById('auth-submit-btn').innerText = register ? 'Create account' : 'Log in';
+            document.getElementById('display-name-row').style.display = register ? 'flex' : 'none';
             document.getElementById('username-row').style.display = register ? 'flex' : 'none';
             document.getElementById('terms-row').style.display = register ? 'flex' : 'none';
+            document.getElementById('auth-display-name').required = register;
             document.getElementById('auth-username').required = register;
             document.getElementById('auth-terms').required = register;
             document.getElementById('auth-error').style.display = 'none';
         }
-
-        // NOTE: FCM functions (onFcmTokenReady, tryRegisterFcmWithRetry) live in app.js only.
-        // Do not redefine them here.
 
         async function handleAuth(event) {
             event.preventDefault();
@@ -235,6 +238,7 @@
             const idleText = btn.innerText;
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value.trim();
+            const displayName = isRegister ? document.getElementById('auth-display-name').value.trim() : '';
             const username = isRegister ? document.getElementById('auth-username').value.trim() : '';
             const agreedTerms = isRegister ? document.getElementById('auth-terms').checked : true;
             const endpoint = isRegister ? '/api/signup' : '/api/login';
@@ -244,7 +248,9 @@
             document.getElementById('auth-error').style.display = 'none';
 
             try {
-                const bodyData = isRegister ? { email, password, username, agreedTerms } : { email, password };
+                const bodyData = isRegister
+                    ? { email, password, username, displayName, agreedTerms }
+                    : { email, password };
                 const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -266,8 +272,6 @@
                 } else {
                     setSessionUser(data.user, data.token);
                 }
-                // Registration happens on feed.html's DOMContentLoaded (app.js),
-                // so no need to fire it here right before navigating away.
                 window.location.href = 'feed.html';
             } catch (err) {
                 const el = document.getElementById('auth-error');
