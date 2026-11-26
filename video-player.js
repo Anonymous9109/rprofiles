@@ -81,15 +81,27 @@
                 cursor: pointer;
                 opacity: 1;
                 visibility: visible;
+                pointer-events: auto;
                 transition: opacity 0.2s ease, visibility 0.2s ease;
                 z-index: 2;
             }
             .nv-video-wrap.is-playing:not(.show-hud) .nv-video-center-btn,
-            .nv-video-wrap.is-playing:not(.show-hud) .nv-video-play-overlay,
+            .nv-video-wrap.is-playing:not(.show-hud) .nv-video-play-overlay {
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
             .nv-video-wrap.is-playing:not(.show-hud) .nv-video-hud {
                 opacity: 0;
                 visibility: hidden;
                 pointer-events: none;
+            }
+            .nv-video-wrap.is-playing.show-hud .nv-video-center-btn,
+            .nv-video-wrap.is-playing.show-hud .nv-video-play-overlay,
+            .nv-video-wrap.is-playing.show-hud .nv-video-hud {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
             }
             .nv-video-play-badge {
                 width: 52px;
@@ -125,6 +137,7 @@
                 gap: 6px;
                 opacity: 1;
                 visibility: visible;
+                pointer-events: auto;
                 transition: opacity 0.2s ease, visibility 0.2s ease;
                 z-index: 3;
             }
@@ -292,17 +305,14 @@
                         wrap.classList.add('is-frame-ready');
                     }).catch(() => {});
                 }
-                pulseHud();
             } else {
                 video.dataset.userPlayed = '';
                 video.pause();
-                clearHideTimer();
-                wrap.classList.remove('is-playing', 'show-hud');
             }
         };
 
         video.addEventListener('play', () => {
-            wrap.classList.add('is-playing');
+            wrap.classList.add('is-playing', 'is-frame-ready');
             if (video.dataset.userPlayed) {
                 unmuteVideo(video);
             }
