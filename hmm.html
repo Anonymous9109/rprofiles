@@ -91,7 +91,6 @@
             justify-content: center;
         }
 
-        /* Override app.js inline/card video sizing so reels fill the viewport cleanly */
         .reel-media-layer .nv-video-wrap {
             width: 100%;
             height: 100%;
@@ -312,61 +311,25 @@
             return /\.(mp4|webm|mov|m4v|ogg|3gp)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
         }
 
-        function unwrapPosts(payload) {
-            if (Array.isArray(payload)) return payload;
-            if (!payload || typeof payload !== 'object') return [];
-            for (const key of ['posts', 'feed', 'items', 'videos', 'results']) {
-                if (Array.isArray(payload[key])) return payload[key];
-            }
-            if (payload.data && Array.isArray(payload.data.posts)) return payload.data.posts;
-            return [];
-        }
-
         async function fetchFeedVideos() {
             const headers = typeof authHeaders === 'function' ? authHeaders() : {};
-            const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
-            const query = viewerEmail ? `?email=${encodeURIComponent(viewerEmail)}&viewer=${encodeURIComponent(viewerEmail)}` : '';
+            const email = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
+            const params = new URLSearchParams({ limit: '50' });
+            if (email) params.set('email', email);
 
-            const origins = [WORKER_ORIGIN];
-            if (window.location.origin && !origins.includes(window.location.origin)) {
-                origins.push(window.location.origin);
+            const endpoint = `${WORKER_ORIGIN}/api/posts/feed?${params.toString()}`;
+            const res = await fetch(endpoint, { headers });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || `HTTP ${res.status}`);
             }
 
-            const paths = ['/api/feed', '/api/posts'];
-            let totalPosts = 0;
-            let lastError = '';
+            const posts = Array.isArray(data.posts) ? data.posts : [];
+            const videos = posts
+                .filter(post => post && checkIsVideo(post.media_url))
+                .map(post => ({ post, videoUrl: post.media_url }));
 
-            for (const base of origins) {
-                for (const path of paths) {
-                    const url = `${base}${path}${query}`;
-                    try {
-                        const res = await fetch(url, { headers });
-                        const rawText = await res.text();
-                        if (!res.ok) {
-                            lastError = `${path} -> HTTP ${res.status}`;
-                            continue;
-                        }
-                        const parsed = JSON.parse(rawText);
-                        const list = unwrapPosts(parsed);
-                        totalPosts = Math.max(totalPosts, list.length);
-
-                        const videos = list
-                            .map(post => {
-                                const videoUrl = post.media_url || post.video_url || post.mediaUrl || '';
-                                return { post, videoUrl };
-                            })
-                            .filter(item => checkIsVideo(item.videoUrl));
-
-                        if (videos.length > 0) {
-                            return { videos, totalPosts, lastError: '' };
-                        }
-                    } catch (err) {
-                        lastError = err && err.message ? err.message : 'Failed to fetch';
-                    }
-                }
-            }
-
-            return { videos: [], totalPosts, lastError };
+            return { videos, totalPosts: posts.length };
         }
 
         function renderState(title, detail, canRetry) {
@@ -401,97 +364,106 @@
 
         async function initReels() {
             renderState('Loading feed videos...', '', false);
-            const { videos, totalPosts, lastError } = await fetchFeedVideos();
+            try {
+                const { videos, totalPosts } = await fetchFeedVideos();
 
-            if (!videos.length) {
-                const detail = lastError
-                    ? `Could not load feed: ${lastError} (Worker: ${WORKER_ORIGIN})`
-                    : `Loaded ${totalPosts} feed post(s), none had a video media URL.`;
-                renderState('No feed videos found', detail, true);
-                return;
-            }
-
-            feedEl.innerHTML = '';
-            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23222226'/></svg>";
-            const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
-
-            for (let i = 0; i < videos.length; i++) {
-                const { post, videoUrl } = videos[i];
-                const username = post.username || (post.author && post.author.username) || 'user';
-                const pfp = post.pfp_url || (post.author && post.author.pfp_url) || defaultAvatar;
-                const verified = Boolean(post.verified || (post.author && post.author.verified));
-                const caption = post.content || '';
-                const postId = post.id;
-                const commentsCount = post.comments_count ?? post.comment_count ?? 0;
-
-                if (typeof _sharedPostCache !== 'undefined' && postId) {
-                    _sharedPostCache.set(postId, {
-                        id: postId,
-                        user_email: post.user_email || '',
-                        username,
-                        content: caption,
-                        media_url: videoUrl
-                    });
+                if (!videos.length) {
+                    renderState(
+                        'No feed videos found',
+                        `Loaded ${totalPosts} feed post(s), none had a video attachment.`,
+                        true
+                    );
+                    return;
                 }
 
-                let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
-                if (postId) {
-                    try {
-                        const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${encodeURIComponent(postId)}&email=${encodeURIComponent(viewerEmail)}`);
-                        if (rxRes.ok) rxData = await rxRes.json();
-                    } catch (e) {}
+                feedEl.innerHTML = '';
+                const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect width='100%' height='100%' fill='%23222226'/></svg>";
+                const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
+
+                for (let i = 0; i < videos.length; i++) {
+                    const { post, videoUrl } = videos[i];
+                    const username = post.username || 'user';
+                    const pfp = post.pfp_url || defaultAvatar;
+                    const verified = Boolean(post.verified);
+                    const caption = post.content || '';
+                    const postId = post.id;
+                    const commentsCount = post.comments_count ?? 0;
+
+                    if (typeof _sharedPostCache !== 'undefined' && postId) {
+                        _sharedPostCache.set(postId, {
+                            id: postId,
+                            user_email: post.user_email || '',
+                            username,
+                            content: caption,
+                            media_url: videoUrl
+                        });
+                    }
+
+                    let rxData = { likes: post.likes_count || 0, dislikes: post.dislikes_count || 0, userReaction: null };
+                    if (postId) {
+                        try {
+                            const rxRes = await fetch(`${WORKER_ORIGIN}/api/reactions/get?postId=${encodeURIComponent(postId)}&email=${encodeURIComponent(viewerEmail)}`);
+                            if (rxRes.ok) rxData = await rxRes.json();
+                        } catch (e) {}
+                    }
+
+                    const slide = document.createElement('section');
+                    slide.className = 'reel-item post-box';
+                    slide.setAttribute('data-post-id', String(postId ?? i));
+
+                    const mediaLayer = document.createElement('div');
+                    mediaLayer.className = 'reel-media-layer';
+                    mediaLayer.innerHTML = renderPostMediaHtml(videoUrl);
+
+                    const profileUrl = `profile.html?user=${encodeURIComponent(username)}`;
+                    const overlay = document.createElement('div');
+                    overlay.className = 'reel-overlay';
+                    overlay.innerHTML = `
+                        <div class="reel-meta">
+                            <div class="reel-author-row">
+                                <img class="reel-avatar" src="${escapeHtml(pfp)}" alt="">
+                                <a class="reel-author" href="${profileUrl}" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(username)}${renderVerifiedBadge(verified)}</a>
+                            </div>
+                            ${caption ? `<div class="reel-caption">${escapeHtml(caption)}</div>` : ''}
+                        </div>
+                        <div class="reel-side-actions">
+                            <div class="side-action-group">
+                                <button type="button" class="side-btn reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" aria-label="Like reel" onclick="event.stopPropagation(); toggleReaction('${escapeHtml(String(postId))}', 'like', this)">
+                                    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                </button>
+                                <div class="side-count likes-count">${rxData.likes}</div>
+                            </div>
+                            <div class="side-action-group">
+                                <button type="button" class="side-btn" aria-label="Comments" onclick="event.stopPropagation(); openCommentsDrawer('${escapeHtml(String(postId))}')">
+                                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <div class="side-count comments-count">${commentsCount}</div>
+                            </div>
+                            <div class="side-action-group">
+                                <button type="button" class="side-btn" aria-label="Share reel" onclick="event.stopPropagation(); sharePost('${escapeHtml(String(postId))}')">
+                                    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                </button>
+                                <div class="side-count">Share</div>
+                            </div>
+                        </div>
+                    `;
+
+                    slide.appendChild(mediaLayer);
+                    slide.appendChild(overlay);
+                    feedEl.appendChild(slide);
                 }
 
-                const slide = document.createElement('section');
-                slide.className = 'reel-item post-box';
-                slide.setAttribute('data-post-id', String(postId ?? i));
-
-                const mediaLayer = document.createElement('div');
-                mediaLayer.className = 'reel-media-layer';
-                mediaLayer.innerHTML = renderPostMediaHtml(videoUrl);
-
-                const profileUrl = `profile.html?user=${encodeURIComponent(username)}`;
-                const overlay = document.createElement('div');
-                overlay.className = 'reel-overlay';
-                overlay.innerHTML = `
-                    <div class="reel-meta">
-                        <div class="reel-author-row">
-                            <img class="reel-avatar" src="${escapeHtml(pfp)}" alt="">
-                            <a class="reel-author" href="${profileUrl}" onclick="goToProfile('${profileUrl}', event)">@${escapeHtml(username)}${renderVerifiedBadge(verified)}</a>
-                        </div>
-                        ${caption ? `<div class="reel-caption">${escapeHtml(caption)}</div>` : ''}
-                    </div>
-                    <div class="reel-side-actions">
-                        <div class="side-action-group">
-                            <button type="button" class="side-btn reaction-btn ${rxData.userReaction === 'like' ? 'active-like' : ''}" aria-label="Like reel" onclick="event.stopPropagation(); toggleReaction('${escapeHtml(String(postId))}', 'like', this)">
-                                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            </button>
-                            <div class="side-count likes-count">${rxData.likes}</div>
-                        </div>
-                        <div class="side-action-group">
-                            <button type="button" class="side-btn" aria-label="Comments" onclick="event.stopPropagation(); openCommentsDrawer('${escapeHtml(String(postId))}')">
-                                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
-                            <div class="side-count comments-count">${commentsCount}</div>
-                        </div>
-                        <div class="side-action-group">
-                            <button type="button" class="side-btn" aria-label="Share reel" onclick="event.stopPropagation(); sharePost('${escapeHtml(String(postId))}')">
-                                <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            </button>
-                            <div class="side-count">Share</div>
-                        </div>
-                    </div>
-                `;
-
-                slide.appendChild(mediaLayer);
-                slide.appendChild(overlay);
-                feedEl.appendChild(slide);
+                if (typeof bindCustomVideoPlayers === 'function') {
+                    bindCustomVideoPlayers(feedEl);
+                }
+                setupReelObserver();
+            } catch (err) {
+                renderState(
+                    'Could not load feed videos',
+                    err && err.message ? err.message : 'Request failed',
+                    true
+                );
             }
-
-            if (typeof bindCustomVideoPlayers === 'function') {
-                bindCustomVideoPlayers(feedEl);
-            }
-            setupReelObserver();
         }
 
         initReels();
