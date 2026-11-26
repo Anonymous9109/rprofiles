@@ -12,7 +12,6 @@
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
-
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -20,118 +19,46 @@
         .footer-tab.active .footer-icon { stroke: #000; }
         .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
 
-        /* Horizontal Stories & Notes Tray */
-        .stories-tray { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; padding: 6px 0 16px 0; margin-bottom: 6px; border-bottom: 1px solid #eee; scrollbar-width: none; -ms-overflow-style: none; }
-        .stories-tray::-webkit-scrollbar { display: none; }
-        .story-tray-item,
-        .note-tray-card { display: flex; flex-direction: column; align-items: center; width: clamp(78px, 21vw, 96px); flex-shrink: 0; cursor: pointer; user-select: none; }
-        .story-tray-name,
-        .note-tray-user { font-size: 12px; color: #222; margin-top: 5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-        .story-tray-item.watched .story-tray-name { color: #888; }
-
-        .stories-tray .story-ring-wrapper,
-        .note-tray-ring { position: relative; width: clamp(64px, 18vw, 80px); height: clamp(64px, 18vw, 80px); flex-shrink: 0; border-radius: 50%; padding: 3px; display: flex; align-items: center; justify-content: center; }
-        .note-tray-ring { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); }
-        .note-tray-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2.5px solid #fff; display: block; }
-        html.dark .note-tray-ring img { border-color: #121212; }
-        .note-tray-song { margin-top: 5px; max-width: 100%; font-size: 10.5px; font-weight: 600; background: #fef9c3; color: #111; padding: 2px 7px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .section-title { font-size: 14px; font-weight: bold; margin: 12px 0 8px 0; border-bottom: 1px solid #e5e5e5; padding-bottom: 4px; color: #333; }
-        .inbox-item { display: flex; align-items: center; gap: 14px; padding: 12px 6px; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; cursor: pointer; border-radius: 8px; transition: background 0.15s ease; }
+        .inbox-item { display: flex; align-items: center; gap: 12px; padding: 12px 8px; border-bottom: 1px solid #e5e5e5; cursor: pointer; }
         .inbox-item:hover { background: #fafafa; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; flex-shrink: 0; }
+        .inbox-info { flex-grow: 1; min-width: 0; }
+        .inbox-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+        .inbox-preview { color: #666; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
-        /* Bigger PFP size + story ring and yellow music note ring */
-        .story-ring-wrapper { position: relative; width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; cursor: pointer; }
-        .story-ring-wrapper.has-story.watched { background: #b5b5b5; }
-        .story-ring-wrapper.has-note:not(.has-story) { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 3px; cursor: pointer; }
-        .avatar { width: 100%; height: 100%; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; display: block; flex-shrink: 0; }
-        .story-ring-wrapper.has-story .avatar,
-        .story-ring-wrapper.has-note:not(.has-story) .avatar { border: 2.5px solid #fff; }
-        html.dark .story-ring-wrapper.has-story .avatar,
-        html.dark .story-ring-wrapper.has-note:not(.has-story) .avatar { border-color: #121212; }
-        html.dark .story-ring-wrapper.has-story.watched { background: #555; }
-
-        .info { flex-grow: 1; min-width: 0; }
-        .name { font-weight: bold; font-size: clamp(14px, 4vw, 17px); display: flex; align-items: center; gap: 4px; }
-        .preview { color: #666; font-size: clamp(13px, 3.7vw, 16px); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .loading-spinner { text-align: center; padding: 15px; color: #666; font-weight: 600; }
-
-        .chat-drawer { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #fff; z-index: 1000; display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform 0.3s ease, visibility 0s 0.3s; }
-        .chat-drawer.open { transform: translateX(0); visibility: visible; transition: transform 0.3s ease, visibility 0s; }
-        .drawer-header { height: 48px; flex-shrink: 0; padding: 0 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e5e5; background: #fff; }
-        .back-btn { background: none; border: none; padding: 6px; cursor: pointer; color: #111; display: flex; align-items: center; }
-        .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-        .drawer-header .story-ring-wrapper { width: clamp(34px, 9.5vw, 42px); height: clamp(34px, 9.5vw, 42px); }
-        .drawer-header .story-ring-wrapper.has-story,
-        .drawer-header .story-ring-wrapper.has-note:not(.has-story) { padding: 2px; }
-        #drawer-title { font-weight: bold; font-size: clamp(14px, 4vw, 17px); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .drawer-body { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; padding: 0; }
-        .chat-container { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; background: #fafafa; }
-        .drawer-body form { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e5e5e5; background: #fff; }
-
-        .chat-row { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
-        .chat-row.received { justify-content: flex-start; }
-        .chat-row.sent { justify-content: flex-end; }
-        .chat-row.no-pfp.received { padding-left: 36px; }
-        .chat-row.no-pfp.sent { padding-right: 0; }
-        .msg-pfp-link { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; text-decoration: none; }
-        .msg-pfp { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; cursor: pointer; }
-        html.dark .msg-pfp { border-color: #333; background: #1c1c1c; }
-
-        .chat-bubble { max-width: min(76%, 440px); padding: 9px 14px; border-radius: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.35; word-break: break-word; }
-        .chat-bubble.sent { background: #000; color: #fff; }
-        .chat-bubble.received { background: #eee; color: #111; }
-        .receipt { align-self: flex-end; font-size: clamp(11px, 3vw, 12px); color: #888; margin-top: -2px; }
-        .receipt.seen { color: #2563eb; font-weight: 600; }
-
-        @media (min-width: 700px) {
-            .chat-drawer { left: calc(50% - 340px); width: 680px; border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; }
-        }
-        @media (max-width: 360px) {
-            .wrapper { padding: 12px; }
-        }
-
-        #app-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        #app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .chat-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; background: #fff; z-index: 2000; transition: right 0.25s ease; display: flex; flex-direction: column; }
+        .chat-drawer.open { right: 0; }
+        .drawer-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #fff; }
+        .chat-header-title { font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+        .chat-container { flex-grow: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.4; word-break: break-word; }
+        .chat-bubble.sent { background: #000; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-bubble.received { background: #e5e5ea; color: #111; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-form { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #e5e5e5; background: #fff; }
+        .chat-form input { flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 14px; outline: none; }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 18px; color: #fff; font-weight: 600; padding: 0 16px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="app-toast"></div>
-
-    <header><a href="feed.html" class="brand">Nvaritia</a></header>
+    <header>
+        <a href="feed.html" class="brand">Nvaritia</a>
+    </header>
 
     <div class="wrapper">
-        <div id="notification-banner" style="display: none; background: #f4f4f5; border: 1px solid #e4e4e7; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; align-items: center; justify-content: space-between; font-size: 12px;">
-            <span>Enable browser push notifications for new messages</span>
-            <button onclick="requestNotificationPermissionPrompt()" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;">Enable</button>
-        </div>
-
-        <!-- Horizontal Friends Stories & Music Notes Row -->
-        <div id="stories-tray" class="stories-tray"></div>
-
-        <div class="section-title">Messages</div>
-        <div id="inbox-container"><div class="loading-spinner">Loading conversations...</div></div>
+        <div id="inbox-list"><p style="color:#666;text-align:center;padding:20px;">Loading messages...</p></div>
     </div>
 
     <div id="chat-drawer" class="chat-drawer">
         <div class="drawer-header">
-            <button class="back-btn" onclick="closeDrawer()" aria-label="Back">
-                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <div id="drawer-avatar-container" class="story-ring-wrapper">
-                <img id="drawer-avatar" class="avatar" src="" alt="">
-            </div>
-            <span id="drawer-title"></span>
-            <span id="block-peer-btn" style="cursor: pointer; color: #ef4444; font-size: 12px; font-weight: 600;" onclick="blockActivePeer()">Block</span>
+            <button type="button" style="background:none;border:none;font-size:18px;cursor:pointer;color:inherit;" onclick="closeChatDrawer()">←</button>
+            <img id="chat-peer-avatar" class="avatar" style="width:34px;height:34px;" src="" alt="">
+            <span id="chat-peer-name" class="chat-header-title"></span>
         </div>
-        <div class="drawer-body">
-            <div class="chat-container" id="chat-messages">Loading...</div>
-            <form id="dm-form" onsubmit="sendDm(event)" style="display: flex; gap: 6px;">
-                <input type="text" id="dm-input" placeholder="Type a message..." required style="flex-grow: 1; min-width: 0; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px;">
-                <button type="submit" style="background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: 600; cursor: pointer;">Send</button>
-            </form>
-        </div>
+        <div id="chat-messages" class="chat-container"></div>
+        <form id="chat-form" class="chat-form" onsubmit="sendChatMessage(event)">
+            <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off" required>
+            <button type="submit" class="btn-app">Send</button>
+        </form>
     </div>
 
     <footer>
@@ -139,12 +66,16 @@
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             Home
         </a>
+        <a href="feed.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Search
+        </a>
         <a href="create-post.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
         </a>
         <a href="messages.html" class="footer-tab active">
-            <svg id="Layer_1" data-name="Layer 1" class="footer-icon icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.56 122.88"><title>sent</title><path d="M112.27,10.31l-99,38.07,30,14.37L89.21,33.18,60.44,80.53l14,29.06,37.81-99.28ZM2.42,44.49,117.16.37a3.73,3.73,0,0,1,3-.12,3.78,3.78,0,0,1,2.19,4.87L78.4,120.45a3.78,3.78,0,0,1-6.92.3l-22.67-47L2.14,51.39a3.76,3.76,0,0,1,.28-6.9Z"/></svg>
+            <svg class="footer-icon icon-filled" viewBox="0 0 122.56 122.88"><path d="M112.27,10.31l-99,38.07,30,14.37L89.21,33.18,60.44,80.53l14,29.06,37.81-99.28ZM2.42,44.49,117.16.37a3.73,3.73,0,0,1,3-.12,3.78,3.78,0,0,1,2.19,4.87L78.4,120.45a3.78,3.78,0,0,1-6.92.3l-22.67-47L2.14,51.39a3.76,3.76,0,0,1,.28-6.9Z"/></svg>
             Messages
         </a>
         <a href="profile.html" class="footer-tab">
@@ -154,536 +85,62 @@
     </footer>
 
     <script src="app.js?v=5"></script>
-    <script src="music-notes.js"></script>
     <script>
-        const currentUser = requireAuth();
+        const currentUser = requireAuth(false);
+        const DEFAULT_PFP = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
         let activePeer = null;
-        let threadTimer = null;
-        let inboxTimer = null;
-        let notifiedMessageKeys = new Set();
-        let activeThreadLoadedOnce = false;
-        let inboxLoadedOnce = false;
-        let inboxLastMessages = {};
+        let pollTimer = null;
 
-        const noteAudioPlayer = window.__nvaritiaNoteAudio || (window.__nvaritiaNoteAudio = new Audio());
-        noteAudioPlayer.preload = 'auto';
-        function triggerNoteAudio(note) {
-            const url = note && (note.preview_url || note.previewUrl || note.audio_url || note.url);
-            if (!url) return;
-            if (noteAudioPlayer.src !== url) {
-                noteAudioPlayer.src = url;
-                noteAudioPlayer.currentTime = 0;
-            }
-            const p = noteAudioPlayer.play();
-            if (p && typeof p.catch === 'function') {
-                p.catch((err) => console.warn('Note audio play blocked:', err));
-            }
-        }
-
-        const storyCache = new Map();
-        const noteCache = new Map();
-        let friendStoriesList = [];
-        let friendNotesList = [];
-        let myActiveNote = null;
-
-        const WATCHED_STORIES_KEY = `nvaritia_watched_stories_${(currentUser.email || '').toLowerCase()}`;
-        function getWatchedStoryIds() {
-            try {
-                return new Set(JSON.parse(localStorage.getItem(WATCHED_STORIES_KEY) || '[]'));
-            } catch (e) {
-                return new Set();
-            }
-        }
-        function markStoryWatched(storyId) {
-            if (!storyId) return;
-            const watched = getWatchedStoryIds();
-            if (!watched.has(storyId)) {
-                watched.add(storyId);
-                const arr = [...watched].slice(-150);
-                localStorage.setItem(WATCHED_STORIES_KEY, JSON.stringify(arr));
-            }
-            renderStoriesTray();
-            hydrateStoryRings(document);
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('app-toast');
-            toast.innerText = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
-        const AVATAR_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-
-        function getMessageSenderProfile(isSent, peer) {
-            if (isSent) {
-                const identifier = currentUser.username || currentUser.email || '';
-                return {
-                    pfpUrl: currentUser.pfp_url || AVATAR_PLACEHOLDER,
-                    profileUrl: `profile.html?user=${encodeURIComponent(identifier)}`,
-                    label: currentUser.username ? `@${currentUser.username}` : 'Your profile'
-                };
-            }
-            const identifier = (peer && (peer.username || peer.email)) || '';
-            return {
-                pfpUrl: (peer && peer.pfp_url) || AVATAR_PLACEHOLDER,
-                profileUrl: `profile.html?user=${encodeURIComponent(identifier)}`,
-                label: peer && peer.username ? `@${peer.username}` : 'User profile'
-            };
-        }
-
-        async function loadMyNote() {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/notes/get?email=${encodeURIComponent(currentUser.email)}`);
-                const data = await res.json();
-                if (res.ok) {
-                    myActiveNote = data.note || null;
-                    renderStoriesTray();
-                }
-            } catch (e) {}
-        }
-
-        async function loadFriendStories() {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/stories/friends`, { headers: authHeaders() });
-                const data = await res.json();
-                if (!res.ok) return;
-
-                friendStoriesList = data.stories || [];
-                for (const s of friendStoriesList) {
-                    const emailKey = (s.user_email || '').toLowerCase();
-                    const userKey = (s.username || '').toLowerCase();
-                    const entry = { ...s, ownerEmail: s.user_email };
-                    if (emailKey) storyCache.set(emailKey, entry);
-                    if (userKey) storyCache.set(userKey, entry);
-                }
-                renderStoriesTray();
-            } catch (e) {}
-        }
-
-        async function loadFriendNotes() {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/notes/friends`, { headers: authHeaders() });
-                const data = await res.json();
-                if (!res.ok) return;
-
-                friendNotesList = data.notes || [];
-                noteCache.clear();
-                for (const n of friendNotesList) {
-                    const emailKey = (n.user_email || '').toLowerCase();
-                    const userKey = (n.username || '').toLowerCase();
-                    if (emailKey) noteCache.set(emailKey, n);
-                    if (userKey) noteCache.set(userKey, n);
-                }
-                renderStoriesTray();
-                hydrateStoryRings(document);
-            } catch (e) {}
-        }
-
-        function renderStoriesTray() {
-            const tray = document.getElementById('stories-tray');
-            const watchedSet = getWatchedStoryIds();
-            const unwatched = [];
-            const watched = [];
-
-            for (const s of friendStoriesList) {
-                if (watchedSet.has(s.id)) watched.push(s);
-                else unwatched.push(s);
-            }
-
-            const ordered = [...unwatched, ...watched];
-            tray.style.display = 'flex';
-            tray.innerHTML = '';
-
-            const selfNoteItem = document.createElement('div');
-            selfNoteItem.className = 'note-tray-card';
-            if (myActiveNote) {
-                selfNoteItem.innerHTML = `
-                    <div class="note-tray-ring">
-                        <img src="${currentUser.pfp_url || AVATAR_PLACEHOLDER}" alt="">
-                    </div>
-                    <div class="note-tray-song">♫ ${escapeHtml(myActiveNote.track_name)}</div>
-                    <div class="note-tray-user">Your Note</div>
-                `;
-                selfNoteItem.onclick = () => {
-                    triggerNoteAudio(myActiveNote);
-                    openNoteViewer(myActiveNote, 'Your', true, () => {
-                        myActiveNote = null;
-                        loadMyNote();
-                    });
-                };
-            } else {
-                selfNoteItem.innerHTML = `
-                    <div class="note-tray-ring" style="background: #f4f4f5; border: 1px dashed #999;">
-                        <div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#111;">♫+</div>
-                    </div>
-                    <div class="note-tray-song" style="background:#f4f4f5;color:#333;">Song Note</div>
-                    <div class="note-tray-user">Add Note</div>
-                `;
-                selfNoteItem.onclick = () => {
-                    openNotePicker((createdNote) => {
-                        myActiveNote = createdNote || null;
-                        loadMyNote();
-                    });
-                };
-            }
-            tray.appendChild(selfNoteItem);
-
-            for (const n of friendNotesList) {
-                const item = document.createElement('div');
-                item.className = 'note-tray-card';
-                item.innerHTML = `
-                    <div class="note-tray-ring">
-                        <img src="${n.pfp_url || AVATAR_PLACEHOLDER}" alt="">
-                    </div>
-                    <div class="note-tray-song">♫ ${escapeHtml(n.track_name)}</div>
-                    <div class="note-tray-user">${escapeHtml(n.username)}</div>
-                `;
-                item.onclick = () => {
-                    triggerNoteAudio(n);
-                    openNoteViewer(n, `@${n.username}'s`, false);
-                };
-                tray.appendChild(item);
-            }
-
-            for (const s of ordered) {
-                const isWatched = watchedSet.has(s.id);
-                const item = document.createElement('div');
-                item.className = `story-tray-item${isWatched ? ' watched' : ''}`;
-                item.innerHTML = `
-                    <div class="story-ring-wrapper has-story${isWatched ? ' watched' : ''}">
-                        <img class="avatar" src="${s.pfp_url || AVATAR_PLACEHOLDER}" alt="">
-                    </div>
-                    <div class="story-tray-name">${escapeHtml(s.username)}</div>
-                `;
-                item.addEventListener('click', () => {
-                    markStoryWatched(s.id);
-                    openStory({
-                        mediaUrl: s.media_url,
-                        createdAt: s.created_at,
-                        ownerEmail: s.user_email,
-                        onDeleted: () => {
-                            friendStoriesList = friendStoriesList.filter(st => st.id !== s.id);
-                            storyCache.delete((s.user_email || '').toLowerCase());
-                            renderStoriesTray();
-                            hydrateStoryRings(document);
-                        }
-                    });
-                });
-                tray.appendChild(item);
-            }
-        }
-
-        async function hydrateStoryRings(rootEl = document) {
-            const wrappers = Array.from(rootEl.querySelectorAll('.story-ring-wrapper[data-story-user]'));
-            const uniqueUsers = [...new Set(wrappers.map(w => w.getAttribute('data-story-user')).filter(Boolean))];
-            const watchedSet = getWatchedStoryIds();
-
-            await Promise.all(uniqueUsers.map(async (identifier) => {
-                const key = identifier.toLowerCase();
-                if (!storyCache.has(key)) {
-                    try {
-                        const url = identifier.includes('@')
-                            ? `${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(identifier)}`
-                            : `${WORKER_ORIGIN}/api/profile/${encodeURIComponent(identifier)}`;
-                        const res = await fetch(url);
-                        const data = await res.json();
-                        const story = res.ok && data.story ? data.story : null;
-                        const ownerEmail = (data.user && data.user.email) || (identifier.includes('@') ? identifier : '');
-                        storyCache.set(key, story ? { ...story, ownerEmail } : null);
-                    } catch (e) {
-                        storyCache.set(key, null);
-                    }
-                }
-
-                if (!noteCache.has(key) && identifier.includes('@')) {
-                    try {
-                        const nRes = await fetch(`${WORKER_ORIGIN}/api/notes/get?email=${encodeURIComponent(identifier)}`);
-                        const nData = await nRes.json();
-                        noteCache.set(key, nRes.ok && nData.note ? nData.note : null);
-                    } catch (e) {
-                        noteCache.set(key, null);
-                    }
-                }
-
-                const story = storyCache.get(key);
-                const note = noteCache.get(key);
-                wrappers.forEach(w => {
-                    if ((w.getAttribute('data-story-user') || '').toLowerCase() !== key) return;
-                    if (story && story.media_url) {
-                        w.classList.remove('has-note');
-                        w.classList.add('has-story');
-                        if (watchedSet.has(story.id)) w.classList.add('watched');
-                        else w.classList.remove('watched');
-                        w.title = 'View Story';
-                        w.onclick = (e) => {
-                            e.stopPropagation();
-                            markStoryWatched(story.id);
-                            openStory({
-                                mediaUrl: story.media_url,
-                                createdAt: story.created_at,
-                                ownerEmail: story.ownerEmail,
-                                onDeleted: () => {
-                                    storyCache.delete(key);
-                                    w.classList.remove('has-story', 'watched');
-                                    w.onclick = null;
-                                }
-                            });
-                        };
-                    } else if (note && note.track_id) {
-                        w.classList.remove('has-story', 'watched');
-                        w.classList.add('has-note');
-                        w.title = `♫ ${note.track_name} - ${note.artist_name}`;
-                        w.onclick = (e) => {
-                            e.stopPropagation();
-                            triggerNoteAudio(note);
-                            openNoteViewer(note, `@${note.username || key}'s`, false);
-                        };
-                    } else {
-                        w.classList.remove('has-story', 'watched', 'has-note');
-                        w.title = '';
-                        w.onclick = null;
-                    }
-                });
-            }));
-        }
-
-        function checkNotificationBanner() {
-            const banner = document.getElementById('notification-banner');
-            if (!banner) return;
-            if ("Notification" in window && Notification.permission === "default") {
-                banner.style.display = 'flex';
-            } else {
-                banner.style.display = 'none';
-            }
-        }
-
-        async function requestNotificationPermissionPrompt() {
-            if ("Notification" in window) {
-                const permission = await Notification.requestPermission();
-                checkNotificationBanner();
-                if (permission === 'granted') {
-                    showToast('Notifications enabled!');
-                } else {
-                    showToast('Notification permission denied.');
-                }
-            }
-        }
-
-        function notifyUser(title, body, icon) {
-            if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-                try {
-                    const validIcon = (icon && icon.startsWith('http')) ? icon : undefined;
-                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification(title, { body, icon: validIcon });
-                        });
-                    } else {
-                        new Notification(title, { body, icon: validIcon });
-                    }
-                } catch (e) {
-                    console.error("Notification error:", e);
-                }
-            } else {
-                showToast(`${title}: ${body}`);
-            }
-        }
-
-        async function loadInbox() {
-            const container = document.getElementById('inbox-container');
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/messages/inbox`, { headers: authHeaders() });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                if (!data.conversations.length) {
-                    container.innerHTML = '<p style="color: #666; padding: 12px 6px; font-size: 12px;">No conversations yet.</p>';
-                    return;
-                }
-
-                container.innerHTML = '';
-                for (const conv of data.conversations) {
-                    const peer = conv.peer;
-                    const peerEmail = peer.email.toLowerCase();
-                    const lastMsgText = formatInboxPreviewText(conv.last_message);
-
-                    if (!inboxLoadedOnce) {
-                        inboxLastMessages[peerEmail] = lastMsgText;
-                    } else {
-                        if (inboxLastMessages[peerEmail] !== lastMsgText) {
-                            inboxLastMessages[peerEmail] = lastMsgText;
-                            if (!activePeer || activePeer.email.toLowerCase() !== peerEmail) {
-                                notifyUser(`@${peer.username}`, lastMsgText, peer.pfp_url);
-                            }
-                        }
-                    }
-
-                    const el = document.createElement('div');
-                    el.className = 'inbox-item';
-                    el.innerHTML = `
-                        <div class="story-ring-wrapper" data-story-user="${escapeHtml(peer.email)}">
-                            <img class="avatar" src="${peer.pfp_url || AVATAR_PLACEHOLDER}">
-                        </div>
-                        <div class="info">
-                            <div class="name">@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}</div>
-                            <div class="preview">${escapeHtml(lastMsgText)}</div>
-                        </div>
-                    `;
-                    el.addEventListener('click', () => openDrawer(peer));
-                    container.appendChild(el);
-                }
-                inboxLoadedOnce = true;
-                hydrateStoryRings(container);
-            } catch (err) {
-                container.innerHTML = '<p style="color: red; font-size: 12px;">Failed to load inbox.</p>';
-            }
-        }
-
-        async function openDrawer(peer) {
+        function openChatWithPeer(peer) {
             activePeer = peer;
-            activeThreadLoadedOnce = false;
-
-            const avatarContainer = document.getElementById('drawer-avatar-container');
-            avatarContainer.className = 'story-ring-wrapper';
-            avatarContainer.setAttribute('data-story-user', peer.email || '');
-            avatarContainer.onclick = null;
-            avatarContainer.innerHTML = `<img id="drawer-avatar" class="avatar" src="${peer.pfp_url || AVATAR_PLACEHOLDER}" alt="">`;
-
-            document.getElementById('drawer-title').innerHTML = `@${escapeHtml(peer.username)}${renderVerifiedBadge(peer.verified)}`;
-            document.getElementById('block-peer-btn').style.display = 'inline';
-            document.getElementById('dm-form').style.display = 'flex';
-            document.getElementById('chat-messages').innerHTML = 'Loading...';
+            const peerName = getDisplayName(peer, peer.username || peer.email);
+            document.getElementById('chat-peer-avatar').src = peer.pfp_url || DEFAULT_PFP;
+            const nameEl = document.getElementById('chat-peer-name');
+            nameEl.innerHTML = `${escapeHtml(peerName)}${renderVerifiedBadge(peer.verified)}`;
+            nameEl.onclick = () => {
+                window.location.href = `profile.html?user=${encodeURIComponent(peer.username || peer.email)}`;
+            };
             document.getElementById('chat-drawer').classList.add('open');
-
-            hydrateStoryRings(document.querySelector('.drawer-header'));
-            await loadThread(true);
-            clearInterval(threadTimer);
-            threadTimer = setInterval(loadThread, 5000);
+            loadThread();
+            clearInterval(pollTimer);
+            pollTimer = setInterval(loadThread, 4000);
         }
 
-        function closeDrawer() {
-            clearInterval(threadTimer);
-            document.getElementById('chat-drawer').classList.remove('open');
+        function closeChatDrawer() {
+            clearInterval(pollTimer);
             activePeer = null;
+            document.getElementById('chat-drawer').classList.remove('open');
             loadInbox();
         }
 
-        function blockActivePeer() {
-            if (!activePeer) return;
-            blockUser(activePeer.email, activePeer.username, () => {
-                closeDrawer();
-            });
-        }
-
-        async function markRead() {
-            if (!activePeer) return;
+        async function loadThread() {
+            if (!currentUser || !activePeer) return;
             try {
-                await fetch(`${WORKER_ORIGIN}/api/messages/read`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ peerEmail: activePeer.email })
-                });
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(currentUser.email)}&user2=${encodeURIComponent(activePeer.email)}`);
+                const data = await res.json();
+                const container = document.getElementById('chat-messages');
+                const msgs = data.messages || [];
+
+                container.innerHTML = msgs.map(m => {
+                    const isSent = m.sender_email && m.sender_email.toLowerCase() === currentUser.email.toLowerCase();
+                    const shared = parseSharedPostContent(m.content);
+                    if (shared) {
+                        return renderSharedPostBubbleHtml(shared, isSent);
+                    }
+                    return `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content || '')}</div>`;
+                }).join('') || `<p style="color:#666;text-align:center;margin:auto;">No messages yet.</p>`;
+
+                container.scrollTop = container.scrollHeight;
             } catch (e) {}
         }
 
-        async function loadThread(forceScroll) {
-            if (!activePeer) return;
-            const peerAtRequest = activePeer;
-            const chatContainer = document.getElementById('chat-messages');
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/messages/thread?user1=${encodeURIComponent(currentUser.email)}&user2=${encodeURIComponent(peerAtRequest.email)}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                if (activePeer !== peerAtRequest) return;
-
-                if (!data.messages.length) {
-                    chatContainer.innerHTML = '<p style="color: #666; text-align: center; font-size: 11px; margin: auto;">No messages yet.</p>';
-                    return;
-                }
-
-                const me = currentUser.email.toLowerCase();
-                const nearBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
-                const hasUnread = data.messages.some(m => m.sender_email.toLowerCase() !== me && (!m.read_at || m.read_at === ""));
-
-                if (!activeThreadLoadedOnce) {
-                    data.messages.forEach(m => {
-                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
-                        notifiedMessageKeys.add(msgKey);
-                    });
-                    activeThreadLoadedOnce = true;
-                } else {
-                    data.messages.forEach(m => {
-                        const isSent = m.sender_email.toLowerCase() === me;
-                        const msgKey = m.id || `${m.sender_email}_${m.created_at}_${m.content}`;
-                        if (!isSent && !notifiedMessageKeys.has(msgKey)) {
-                            notifiedMessageKeys.add(msgKey);
-                            notifyUser(`@${peerAtRequest.username}`, formatInboxPreviewText(m.content), peerAtRequest.pfp_url);
-                        }
-                    });
-                }
-
-                let lastSentIdx = -1;
-                data.messages.forEach((m, i) => { if (m.sender_email.toLowerCase() === me) lastSentIdx = i; });
-
-                chatContainer.innerHTML = data.messages.map((m, i) => {
-                    const senderEmail = (m.sender_email || '').toLowerCase();
-                    const isSent = senderEmail === me;
-                    const nextMsg = data.messages[i + 1];
-                    const nextSenderEmail = nextMsg ? (nextMsg.sender_email || '').toLowerCase() : null;
-                    const showPfp = nextSenderEmail !== senderEmail;
-
-                    const senderMeta = getMessageSenderProfile(isSent, peerAtRequest);
-                    const shared = parseSharedPostContent(m.content);
-                    const bubbleHtml = shared
-                        ? renderSharedPostBubbleHtml(shared, isSent)
-                        : `<div class="chat-bubble ${isSent ? 'sent' : 'received'}">${escapeHtml(m.content)}</div>`;
-
-                    const pfpHtml = showPfp
-                        ? `<a href="${senderMeta.profileUrl}" class="msg-pfp-link" title="View ${escapeHtml(senderMeta.label)}'s profile" onclick="goToProfile('${senderMeta.profileUrl}', event)"><img class="msg-pfp" src="${senderMeta.pfpUrl}" alt=""></a>`
-                        : '';
-
-                    let html = `
-                        <div class="chat-row ${isSent ? 'sent' : 'received'} ${showPfp ? '' : 'no-pfp'}">
-                            ${pfpHtml}
-                            ${bubbleHtml}
-                        </div>
-                    `;
-
-                    if (isSent && i === lastSentIdx) {
-                        if (m.read_at && m.read_at !== "") {
-                            let d = new Date(m.read_at);
-                            if (isNaN(d.getTime())) {
-                                d = new Date(m.read_at.replace(' ', 'T') + 'Z');
-                            }
-
-                            if (!isNaN(d.getTime())) {
-                                const t = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                html += `<div class="receipt seen">Seen ${t}</div>`;
-                            } else {
-                                html += `<div class="receipt seen">Seen</div>`;
-                            }
-                        } else {
-                            html += `<div class="receipt">Delivered</div>`;
-                        }
-                    }
-                    return html;
-                }).join('');
-
-                if (forceScroll === true || nearBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
-                if (hasUnread) markRead();
-            } catch (err) {
-                chatContainer.innerHTML = '<p style="color: red; font-size: 11px;">Failed to load thread.</p>';
-            }
-        }
-
-        async function sendDm(e) {
+        async function sendChatMessage(e) {
             e.preventDefault();
-            const input = document.getElementById('dm-input');
+            if (!activePeer) return;
+            const input = document.getElementById('chat-input');
             const content = input.value.trim();
-            if (!content || !activePeer) return;
-
+            if (!content) return;
+            input.value = '';
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/messages/send`, {
                     method: 'POST',
@@ -691,47 +148,60 @@
                     body: JSON.stringify({ receiverEmail: activePeer.email, content })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                input.value = '';
-                loadThread(true);
-                loadInbox();
+                if (!res.ok) throw new Error(data.error || 'Failed to send');
+                await loadThread();
             } catch (err) {
                 showToast(err.message);
             }
         }
 
-        async function init() {
-            checkNotificationBanner();
-            renderStoriesTray();
-            loadMyNote();
-            loadFriendStories();
-            loadFriendNotes();
-            loadInbox();
+        async function loadInbox() {
+            if (!currentUser || !currentUser.email) return;
+            const listEl = document.getElementById('inbox-list');
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/messages/inbox`, { headers: authHeaders() });
+                const data = await res.json();
+                const convos = data.conversations || [];
 
-            if (inboxTimer) clearInterval(inboxTimer);
-            inboxTimer = setInterval(() => {
-                if (!activePeer) {
-                    loadInbox();
+                if (!convos.length) {
+                    listEl.innerHTML = '<p style="color:#666;text-align:center;padding:24px;">No conversations yet.</p>';
+                    return;
                 }
-            }, 5000);
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetUser = urlParams.get('user');
-            if (targetUser) {
-                try {
-                    const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetUser)}`);
-                    const data = await res.json();
-                    if (res.ok && data.user) {
-                        openDrawer(data.user);
+                listEl.innerHTML = '';
+                for (const c of convos) {
+                    const peer = c.peer;
+                    const peerName = getDisplayName(peer, peer.username || peer.email);
+                    const row = document.createElement('div');
+                    row.className = 'inbox-item';
+                    row.innerHTML = `
+                        <img class="avatar" src="${peer.pfp_url || DEFAULT_PFP}" alt="">
+                        <div class="inbox-info">
+                            <div class="inbox-name">${escapeHtml(peerName)}${renderVerifiedBadge(peer.verified)}</div>
+                            <div class="inbox-preview">${escapeHtml(formatInboxPreviewText(c.last_message))}</div>
+                        </div>
+                    `;
+                    row.addEventListener('click', () => openChatWithPeer(peer));
+                    listEl.appendChild(row);
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                const openPeerParam = params.get('peer');
+                if (openPeerParam) {
+                    const match = convos.find(c =>
+                        c.peer.email.toLowerCase() === openPeerParam.toLowerCase() ||
+                        (c.peer.username && c.peer.username.toLowerCase() === openPeerParam.toLowerCase())
+                    );
+                    if (match) {
+                        openChatWithPeer(match.peer);
                     }
-                } catch (e) {
-                    console.error("Could not open direct chat target", e);
                 }
+            } catch (err) {
+                listEl.innerHTML = '<p style="color:#ef4444;text-align:center;padding:20px;">Failed to load messages.</p>';
             }
         }
 
-        init();
+        loadInbox();
     </script>
 </body>
 </html>
