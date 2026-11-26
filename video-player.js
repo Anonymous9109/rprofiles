@@ -16,7 +16,8 @@
                 border: 1px solid #e5e5e5;
                 margin-bottom: 4px;
                 overflow: hidden;
-                background: #000;
+                background: #000000;
+                background-color: #000000;
                 cursor: pointer;
                 user-select: none;
                 -webkit-tap-highlight-color: transparent;
@@ -31,8 +32,27 @@
                 border: none;
                 border-radius: 0;
                 margin-bottom: 0;
-                background: #000;
+                background: #000000;
+                background-color: #000000;
+                color: #000000;
                 -webkit-tap-highlight-color: transparent;
+            }
+            .nv-video-poster-black {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                background: #000000;
+                background-color: #000000;
+                pointer-events: none;
+                opacity: 1;
+                visibility: visible;
+                transition: opacity 0.15s ease;
+                z-index: 1;
+            }
+            .nv-video-wrap.is-frame-ready .nv-video-poster-black {
+                opacity: 0;
+                visibility: hidden;
             }
             .nv-video-center-btn,
             .nv-video-play-overlay {
@@ -101,6 +121,7 @@
                 width: 100%;
                 padding: 6px 0;
                 cursor: pointer;
+                touch-action: none;
             }
             .nv-video-progress-track {
                 width: 100%;
@@ -117,6 +138,17 @@
             }
         `;
         document.head.appendChild(style);
+    }
+
+    function ensureBlackCover(wrap, video) {
+        if (!wrap || !video) return null;
+        let cover = wrap.querySelector('.nv-video-poster-black');
+        if (!cover) {
+            cover = document.createElement('div');
+            cover.className = 'nv-video-poster-black';
+            video.insertAdjacentElement('afterend', cover);
+        }
+        return cover;
     }
 
     function formatTime(sec) {
@@ -139,12 +171,17 @@
         videoEl.volume = 1.0;
     }
 
-    function primeFirstFrame(videoEl) {
+    function primeFirstFrame(videoEl, wrap) {
         if (!videoEl || videoEl.dataset.nvPrimed === '1') return;
         videoEl.dataset.nvPrimed = '1';
 
+        const markReady = () => {
+            if (wrap) wrap.classList.add('is-frame-ready');
+        };
+
         const seekOnce = () => {
             if (!videoEl.paused || videoEl.dataset.nvSeeked === '1') return;
+            if (videoEl.readyState < 1) return;
             videoEl.dataset.nvSeeked = '1';
             try {
                 const dur = videoEl.duration;
@@ -155,8 +192,16 @@
         };
 
         videoEl.addEventListener('loadedmetadata', seekOnce, { once: true });
-        videoEl.addEventListener('loadeddata', seekOnce, { once: true });
-        if (videoEl.readyState >= 1) {
+        videoEl.addEventListener('loadeddata', () => {
+            seekOnce();
+            markReady();
+        }, { once: true });
+        videoEl.addEventListener('seeked', markReady, { once: true });
+        videoEl.addEventListener('playing', markReady, { once: true });
+
+        if (videoEl.readyState >= 2) {
+            markReady();
+        } else if (videoEl.readyState >= 1) {
             seekOnce();
         }
     }
@@ -165,8 +210,10 @@
         if (!wrap || !video || wrap.dataset.nvBound === '1') return;
         wrap.dataset.nvBound = '1';
         injectStyles();
+        ensureBlackCover(wrap, video);
 
         let hideTimer = null;
+        let isScrubbing = false;
         const timerEl = wrap.querySelector('.nv-video-timer');
         const fillEl = wrap.querySelector('.nv-video-progress-fill');
         const hitEl = wrap.querySelector('.nv-video-progress-hit');
@@ -180,7 +227,7 @@
 
         const scheduleHide = () => {
             clearHideTimer();
-            if (!video.paused && !video.ended) {
+            if (!video.paused && !video.ended && !isScrubbing) {
                 hideTimer = setTimeout(() => {
                     wrap.classList.remove('show-hud');
                 }, HUD_HIDE_DELAY);
@@ -204,13 +251,27 @@
             }
         };
 
+        const seekFromClientX = (clientX) => {
+            if (!hitEl) return;
+            const dur = video.duration;
+            if (!isFinite(dur) || dur <= 0) return;
+            const rect = hitEl.getBoundingClientRect();
+            if (!rect.width) return;
+            const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+            video.currentTime = ratio * dur;
+            syncProgress();
+        };
+
         const togglePlay = () => {
             if (video.paused || video.ended) {
                 video.dataset.userPlayed = '1';
                 unmuteVideo(video);
                 const p = video.play();
                 if (p && typeof p.then === 'function') {
-                    p.then(() => unmuteVideo(video)).catch(() => {});
+                    p.then(() => {
+                        unmuteVideo(video);
+                        wrap.classList.add('is-frame-ready');
+                    }).catch(() => {});
                 }
                 pulseHud();
             } else {
@@ -245,26 +306,51 @@
         video.addEventListener('seeked', syncProgress);
 
         if (hitEl) {
+            hitEl.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                isScrubbing = true;
+                clearHideTimer();
+                wrap.classList.add('show-hud');
+                if (hitEl.setPointerCapture) {
+                    try { hitEl.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+                seekFromClientX(e.clientX);
+            });
+
+            hitEl.addEventListener('pointermove', (e) => {
+                if (!isScrubbing) return;
+                e.stopPropagation();
+                seekFromClientX(e.clientX);
+            });
+
+            const finishScrub = (e) => {
+                if (!isScrubbing) return;
+                e.stopPropagation();
+                seekFromClientX(e.clientX);
+                isScrubbing = false;
+                if (hitEl.releasePointerCapture) {
+                    try { hitEl.releasePointerCapture(e.pointerId); } catch (_) {}
+                }
+                scheduleHide();
+            };
+
+            hitEl.addEventListener('pointerup', finishScrub);
+            hitEl.addEventListener('pointercancel', finishScrub);
+
             hitEl.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const dur = video.duration;
-                if (!isFinite(dur) || dur <= 0) return;
-                const rect = hitEl.getBoundingClientRect();
-                const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-                video.currentTime = ratio * dur;
-                syncProgress();
+                seekFromClientX(e.clientX);
                 pulseHud();
             });
         }
 
         wrap.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (isScrubbing) return;
             if (video.paused || video.ended) {
                 togglePlay();
                 return;
             }
-            // If controls are currently visible while playing, tapping toggles pause;
-            // if hidden after inactivity, tapping wakes controls first and resets the timer.
             if (wrap.classList.contains('show-hud')) {
                 togglePlay();
             } else {
@@ -272,7 +358,7 @@
             }
         });
 
-        primeFirstFrame(video);
+        primeFirstFrame(video, wrap);
         syncProgress();
     }
 
@@ -290,6 +376,9 @@
         video.setAttribute('webkit-playsinline', '');
         video.preload = 'metadata';
         unmuteVideo(video);
+
+        const blackCover = document.createElement('div');
+        blackCover.className = 'nv-video-poster-black';
 
         const overlay = document.createElement('div');
         overlay.className = 'nv-video-play-overlay';
@@ -313,6 +402,7 @@
         `;
 
         wrap.appendChild(video);
+        wrap.appendChild(blackCover);
         wrap.appendChild(overlay);
         wrap.appendChild(hud);
         bindPlayerToWrap(wrap, video);
