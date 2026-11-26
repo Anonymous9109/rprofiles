@@ -6,6 +6,10 @@
         const style = document.createElement('style');
         style.id = 'nv-video-player-styles';
         style.textContent = `
+            .nv-video-wrap,
+            .nv-video-wrap * {
+                box-sizing: border-box;
+            }
             .nv-video-wrap {
                 position: relative;
                 display: flex;
@@ -31,7 +35,8 @@
                 object-fit: contain;
                 border: none;
                 border-radius: 0;
-                margin-bottom: 0;
+                margin: 0;
+                padding: 0;
                 background: #000000;
                 background-color: #000000;
                 color: #000000;
@@ -39,7 +44,10 @@
             }
             .nv-video-poster-black {
                 position: absolute;
-                inset: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
                 width: 100%;
                 height: 100%;
                 background: #000000;
@@ -57,14 +65,19 @@
             .nv-video-center-btn,
             .nv-video-play-overlay {
                 position: absolute;
-                inset: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: rgba(0, 0, 0, 0.24);
+                background: transparent;
                 border: none;
-                width: 100%;
-                height: 100%;
                 cursor: pointer;
                 opacity: 1;
                 visibility: visible;
@@ -87,6 +100,12 @@
                 align-items: center;
                 justify-content: center;
                 pointer-events: none;
+                transition: background 0.15s ease, transform 0.15s ease;
+            }
+            .nv-video-play-overlay:hover .nv-video-play-badge,
+            .nv-video-center-btn:hover .nv-video-play-badge {
+                background: rgba(0, 0, 0, 0.88);
+                transform: scale(1.06);
             }
             .nv-video-play-badge svg {
                 width: 24px;
