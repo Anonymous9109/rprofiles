@@ -12,179 +12,203 @@
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
-        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; }
+        .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; background: none; border: none; cursor: pointer; }
         .footer-tab.active { color: #000; }
         .footer-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .footer-icon.icon-filled { fill: currentColor; stroke: none; }
         .footer-tab.active .footer-icon { stroke: #000; }
         .footer-tab.active .footer-icon.icon-filled { fill: #000; stroke: none; }
-        .profile-header-card { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
+
+        /* PFP on the right, big name + badge on the left, smaller @username below */
+        .profile-header-card {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .profile-info-left {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .profile-name-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            max-width: 100%;
+        }
+        .profile-display-name {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #111;
+            word-break: break-word;
+        }
+        .profile-username-sub {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            margin-top: 3px;
+            word-break: break-all;
+        }
+        .profile-bio-text {
+            font-size: 13px;
+            line-height: 1.45;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .profile-stats-row {
+            display: flex;
+            gap: 14px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #444;
+        }
+        .stat-link {
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .stat-link:hover {
+            text-decoration: underline;
+        }
+        .profile-actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
         .pfp-container { position: relative; width: 86px; height: 86px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .story-ring-wrapper { position: relative; width: 82px; height: 82px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 3px; }
-        .story-ring-wrapper.has-note:not(.has-story) { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); padding: 3px; }
-        .profile-pfp { width: 76px; height: 76px; object-fit: cover; border-radius: 50%; border: 1px solid #e5e5e5; background: #f0f0f0; display: block; }
-        .add-story-badge { position: absolute; bottom: 0px; left: 0px; width: 26px; height: 26px; background: #000; color: #fff; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-        .profile-info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0; }
-        .profile-name { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 6px; color: #111; }
-        .profile-stats { display: flex; gap: 16px; font-size: 13px; color: #333; margin: 2px 0; }
-        .profile-stats div { cursor: pointer; }
-        .profile-stats strong { font-weight: bold; color: #111; }
-        .users-drawer { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100dvh; background: #fff; border-left: 1px solid #e5e5e5; box-shadow: -4px 0 16px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; }
-        .users-drawer.open { right: 0; }
-        .users-drawer-header { height: 48px; padding: 0 16px; background: #fafafa; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 15px; }
-        .users-drawer-body { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-        .user-row-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; text-decoration: none; color: inherit; border-bottom: 1px solid #eee; }
-        .user-row-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; flex-shrink: 0; }
-        .user-row-name { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 4px; }
-        .upload-progress-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none; }
-        .upload-progress-text { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #111; }
-        .upload-progress-track { width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; }
-        .upload-progress-fill { width: 0%; height: 100%; background: #000; transition: width 0.15s ease; }
-        .panel { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
-        .panel-header { background: #fafafa; border-bottom: 1px solid #e5e5e5; padding: 6px 10px; font-weight: bold; }
-        .panel-content { padding: 10px; }
-        .btn-app { background: #000; border: 1px solid #000; border-radius: 4px; color: #fff; font-weight: 600; padding: 6px 12px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
-        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; text-align: center; font-weight: 600; text-decoration: none; display: inline-block; color: #111; }
+        .story-ring-wrapper.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2.5px; }
+        .profile-pfp-img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
+
+        .section-title { font-size: 14px; font-weight: 700; padding: 10px 0; border-bottom: 1px solid #e5e5e5; margin-bottom: 8px; }
         .post-box { border-top: 1px solid #e5e5e5; padding: 12px 0; }
-        .post-box:first-child { border-top: none; }
-        .post-header-line { display: flex; align-items: center; gap: 10px; margin-top: 8px; margin-bottom: 8px; }
-        .feed-avatar-container { position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .feed-avatar-container.has-story { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
-        .post-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; display: block; background: #f0f0f0; }
-        .post-meta { font-weight: 600; color: #111; text-decoration: none; display: inline-block; padding: 2px 0; }
-        .post-meta:hover { text-decoration: underline; }
-        .post-text { font-size: 13px; margin-top: 6px; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+        .post-header-line { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .post-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e5e5e5; object-fit: cover; background: #f0f0f0; }
+        .post-meta { font-weight: 600; color: #111; text-decoration: none; }
         .post-timestamp { color: #666; font-size: 10px; }
-        .post-media { max-width: 100%; max-height: 350px; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 4px; display: block; }
-        .post-actions { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; font-size: 12px; }
-        .reaction-group { display: flex; gap: 10px; align-items: center; }
-        .reaction-btn { background: #ffffff; border: 1px solid #cccccc; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: #111111; user-select: none; }
-        .reaction-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .reaction-btn.active-like { background: #000000; color: #ffffff; border-color: #000000; }
-        .reaction-btn.active-like .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-        .reaction-btn.active-dislike { background: #ef4444; color: #ffffff; border-color: #ef4444; }
-        .reaction-btn.active-dislike .reaction-icon { fill: #ffffff; stroke: #ffffff; }
-        .safety-actions { display: flex; gap: 8px; align-items: center; }
-        .safety-btn { background: none; border: none; color: #777; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; user-select: none; }
-        .safety-btn:hover { color: #ef4444; text-decoration: underline; }
-        .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; user-select: none; }
-        .loading-spinner { text-align: center; padding: 20px; color: #666; font-weight: 600; }
-        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 14px; }
-        .modal-window { width: 100%; max-width: 440px; background: #fff; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
-        .modal-header { background: #f0f0f0; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #e5e5e5; }
-        .modal-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-        .form-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .form-row textarea, .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .error-msg { background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 600; display: none; }
-        .mutual-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; }
-        .mutual-item { display: flex; flex-direction: column; align-items: center; width: 58px; flex-shrink: 0; text-decoration: none; color: inherit; }
-        .mutual-pfp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e5e5; background: #f0f0f0; }
-        .mutual-name { font-size: 10px; font-weight: 600; margin-top: 4px; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-        .pfp-pick-btn { display: inline-block; background: #000; color: #fff; border: 1px solid #000; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; user-select: none; }
-        .pfp-pick-btn input[type="file"] { display: none; }
+        .post-text { font-size: 13px; margin: 6px 0 8px; white-space: pre-wrap; word-break: break-word; }
+        .post-media { max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 6px; display: block; }
+        .delete-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: auto; }
 
-        .friendship-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
-        .friendship-bar-text { font-size: 13px; font-weight: 600; color: #111; }
-        .friendship-view-btn { background: #000; color: #fff; border: 1px solid #000; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
-        .friendship-view-btn:active { transform: scale(0.97); }
+        .btn-app { background: #000; border: 1px solid #000; border-radius: 6px; color: #fff; font-weight: 600; padding: 7px 14px; cursor: pointer; font-size: 12px; }
+        .btn-app-secondary { background: #fff; border: 1px solid #ccc; border-radius: 6px; color: #111; font-weight: 600; padding: 7px 14px; cursor: pointer; font-size: 12px; }
 
-        .friendship-drawer { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; height: 100dvh; background: #fff; z-index: 2200; transition: right 0.3s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column; overflow-y: auto; }
-        .friendship-drawer.open { right: 0; }
-        .friendship-drawer-header { height: 52px; padding: 0 16px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 16px; flex-shrink: 0; background: #fff; position: sticky; top: 0; z-index: 5; }
-        .friendship-back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; color: inherit; border-radius: 50%; }
-        .friendship-drawer-body { width: 100%; max-width: 520px; margin: 0 auto; padding: 28px 20px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; flex-grow: 1; }
+        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 2500; padding: 16px; }
+        .modal-window { width: 100%; max-width: 420px; background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { padding: 12px 14px; font-weight: 700; background: #f5f5f5; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 75vh; overflow-y: auto; }
+        .modal-body label { font-size: 12px; font-weight: 600; color: #444; }
+        .modal-body input, .modal-body textarea { width: 100%; padding: 9px 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; }
+        .follow-list-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px; border-bottom: 1px solid #eee; }
+        .follow-list-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #f0f0f0; }
 
-        .friendship-pfp-duo { position: relative; width: 224px; height: 204px; margin: 4px auto 18px; }
-        .friendship-pfp-large { position: absolute; width: 122px; height: 122px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.14); background: #f0f0f0; }
-        .friendship-pfp-left { top: 0; left: 4px; z-index: 1; }
-        .friendship-pfp-right { bottom: 0; right: 4px; z-index: 2; }
-        .friendship-amp-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: #000; color: #fff; border: 3px solid #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 3; box-shadow: 0 4px 14px rgba(0,0,0,0.22); user-select: none; }
-
-        .friendship-since-heading { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 22px; }
-        .friendship-stats-stack { width: 100%; display: flex; flex-direction: column; gap: 12px; }
-        .friendship-stat-card { width: 100%; border: 1px solid #e5e5e5; background: #fafafa; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease; }
-        .friendship-stat-card.visible { opacity: 1; transform: translateY(0); }
-        .friendship-stat-number { font-size: 26px; font-weight: 800; color: #111; line-height: 1.15; letter-spacing: -0.02em; }
-        .friendship-stat-label { font-size: 12px; font-weight: 600; color: #666; }
-
-        html.dark .friendship-bar { background: #1c1c1c; border-color: #2a2a2a; }
-        html.dark .friendship-bar-text { color: #eee; }
-        html.dark .friendship-view-btn { background: #fff; color: #000; border-color: #fff; }
-        html.dark .friendship-drawer, html.dark .friendship-drawer-header { background: #121212; border-color: #2a2a2a; color: #eee; }
-        html.dark .friendship-pfp-large { border-color: #121212; background: #1c1c1c; }
-        html.dark .friendship-amp-badge { background: #fff; color: #000; border-color: #121212; }
-        html.dark .friendship-since-heading { color: #eee; }
-        html.dark .friendship-stat-card { background: #1c1c1c; border-color: #2a2a2a; }
-        html.dark .friendship-stat-number { color: #fff; }
-        html.dark .friendship-stat-label { color: #a1a1aa; }
+        html.dark .profile-header-card { background: #181818; border-color: #2a2a2a; }
+        html.dark .profile-display-name { color: #fff; }
+        html.dark .profile-username-sub { color: #9ca3af; }
+        html.dark .profile-stats-row { color: #ccc; }
     </style>
 </head>
 <body>
-    <input type="file" id="story-file-input" accept="video/*" style="display: none;" onchange="handleStoryUpload(this)">
-    <header><a href="feed.html" class="brand">Nvaritia</a></header>
+    <header>
+        <a href="feed.html" class="brand">Nvaritia</a>
+        <div id="header-right-actions"></div>
+    </header>
+
     <div class="wrapper">
-        <div class="profile-header-card">
+        <div id="profile-card" class="profile-header-card">
+            <div class="profile-info-left">
+                <div class="profile-name-row">
+                    <span id="profile-display-name" class="profile-display-name">Loading...</span>
+                    <span id="profile-verified-badge"></span>
+                </div>
+                <div id="profile-username-sub" class="profile-username-sub"></div>
+                <div id="profile-bio" class="profile-bio-text"></div>
+                <div id="profile-stats" class="profile-stats-row"></div>
+                <div id="profile-actions" class="profile-actions-row"></div>
+            </div>
             <div class="pfp-container">
-                <div id="story-ring-container" class="story-ring-wrapper" onclick="openProfileStory()">
-                    <img id="pfp-img" class="profile-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'></svg>">
+                <div id="story-ring" class="story-ring-wrapper">
+                    <img id="profile-pfp" class="profile-pfp-img" src="" alt="Profile picture">
                 </div>
-                <div id="add-story-btn" class="add-story-badge" title="Post a Story" onclick="triggerStoryUpload()">+</div>
             </div>
-            <div class="profile-info">
-                <div class="profile-name" id="username-display">Loading profile...</div>
-                <div class="profile-stats">
-                    <div onclick="openUsersDrawer('followers')"><strong id="followers-count">0</strong> followers</div>
-                    <div onclick="openUsersDrawer('following')"><strong id="following-count">0</strong> following</div>
+        </div>
+
+        <div class="section-title">Posts</div>
+        <div id="profile-posts"><p style="color:#666;padding:12px;">Loading posts...</p></div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span>Edit Profile</span>
+                <span style="cursor:pointer;" onclick="closeEditModal()">✕</span>
+            </div>
+            <form id="edit-profile-form" class="modal-body" onsubmit="saveProfileEdit(event)">
+                <div>
+                    <label for="edit-display-name">Name</label>
+                    <input type="text" id="edit-display-name" maxlength="50" required>
                 </div>
-                <div id="verification-btn-container"></div>
+                <div>
+                    <label for="edit-username">Username</label>
+                    <input type="text" id="edit-username" autocapitalize="none" required>
+                </div>
+                <div>
+                    <label for="edit-bio">Bio</label>
+                    <textarea id="edit-bio" rows="3" maxlength="250"></textarea>
+                </div>
+                <div>
+                    <label for="edit-pfp-file">Profile Picture</label>
+                    <input type="file" id="edit-pfp-file" accept="image/*">
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">
+                    <button type="button" class="btn-app-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-app" id="save-profile-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Followers / Following Modal -->
+    <div id="follow-list-modal" class="modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span id="follow-list-title">Users</span>
+                <span style="cursor:pointer;" onclick="closeFollowListModal()">✕</span>
             </div>
-        </div>
-        <div id="story-upload-progress" class="upload-progress-panel">
-            <div id="story-upload-status-text" class="upload-progress-text">Uploading story... (0%)</div>
-            <div class="upload-progress-track">
-                <div id="story-upload-bar" class="upload-progress-fill"></div>
-            </div>
-        </div>
-        <div class="panel">
-            <div class="panel-header">Bio</div>
-            <div class="panel-content" id="bio-display">No bio provided.</div>
-        </div>
-        <div id="owner-controls" style="display: none; gap: 8px; margin-bottom: 12px;"></div>
-        <div id="friendship-bar" class="friendship-bar"></div>
-        <div id="mutual-friends" style="display: none;"></div>
-        <div class="panel">
-            <div class="panel-header" id="posts-header">Posts</div>
-            <div class="panel-content" id="posts-container"><div class="loading-spinner">Loading posts...</div></div>
+            <div id="follow-list-body" class="modal-body"></div>
         </div>
     </div>
-    <div id="users-drawer" class="users-drawer">
-        <div class="users-drawer-header">
-            <span id="users-drawer-title">Users</span>
-            <span style="cursor: pointer; font-size: 18px;" onclick="closeUsersDrawer()">✕</span>
-        </div>
-        <div class="users-drawer-body" id="users-drawer-list"><div class="loading-spinner">Loading...</div></div>
-    </div>
-    <div id="friendship-drawer" class="friendship-drawer">
-        <div class="friendship-drawer-header">
-            <button type="button" class="friendship-back-btn" onclick="closeFriendshipDrawer()" aria-label="Back">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <span>Friendship</span>
-        </div>
-        <div class="friendship-drawer-body" id="friendship-drawer-body"></div>
-    </div>
+
     <footer>
         <a href="feed.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             Home
+        </a>
+        <a href="feed.html" class="footer-tab">
+            <svg class="footer-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Search
         </a>
         <a href="create-post.html" class="footer-tab">
             <svg class="footer-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Post
         </a>
         <a href="messages.html" class="footer-tab">
-            <svg id="Layer_1" data-name="Layer 1" class="footer-icon icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.56 122.88"><title>sent</title><path d="M112.27,10.31l-99,38.07,30,14.37L89.21,33.18,60.44,80.53l14,29.06,37.81-99.28ZM2.42,44.49,117.16.37a3.73,3.73,0,0,1,3-.12,3.78,3.78,0,0,1,2.19,4.87L78.4,120.45a3.78,3.78,0,0,1-6.92.3l-22.67-47L2.14,51.39a3.76,3.76,0,0,1,.28-6.9Z"/></svg>
+            <svg class="footer-icon icon-filled" viewBox="0 0 122.56 122.88"><path d="M112.27,10.31l-99,38.07,30,14.37L89.21,33.18,60.44,80.53l14,29.06,37.81-99.28ZM2.42,44.49,117.16.37a3.73,3.73,0,0,1,3-.12,3.78,3.78,0,0,1,2.19,4.87L78.4,120.45a3.78,3.78,0,0,1-6.92.3l-22.67-47L2.14,51.39a3.76,3.76,0,0,1,.28-6.9Z"/></svg>
             Messages
         </a>
         <a href="profile.html" class="footer-tab active">
@@ -192,518 +216,215 @@
             Profile
         </a>
     </footer>
-    <div id="edit-modal" class="modal">
-        <div class="modal-window">
-            <div class="modal-header">
-                <span>Edit Profile</span>
-                <span style="cursor: pointer;" onclick="closeModal('edit-modal')">✕</span>
-            </div>
-            <div class="modal-body">
-                <div id="edit-error" class="error-msg"></div>
-                <form onsubmit="saveProfile(event)">
-                    <div class="form-row">
-                        <label>Username:</label>
-                        <input type="text" id="edit-username" required>
-                    </div>
-                    <div class="form-row">
-                        <label>Bio:</label>
-                        <textarea id="edit-bio"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <label>PFP Image (Max 25MB):</label>
-                        <label class="pfp-pick-btn">
-                            Choose Image
-                            <input type="file" id="edit-pfp" accept="image/*" onchange="document.getElementById('pfp-file-name').innerText = this.files[0] ? this.files[0].name : ''">
-                        </label>
-                        <span id="pfp-file-name" style="font-size: 11px; color: #666;"></span>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="submit" class="btn-app-secondary" style="flex: 1; background: #000; color: #fff;">Save</button>
-                        <button type="button" class="btn-app-secondary" onclick="closeModal('edit-modal')">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <script src="video-player.js?v=11"></script>
-    <script src="app.js?v=5"></script>
-    <script src="music-notes.js"></script>
-    <script>
-        const loggedUser = requireAuth(true);
-        const urlParams = new URLSearchParams(window.location.search);
-        const guestNoTarget = loggedUser.guest && !urlParams.get('user');
-        if (guestNoTarget) promptSignup('view your profile');
-        const targetIdentifier = urlParams.get('user') || loggedUser.username || loggedUser.email;
-        let activeProfileUser = null;
-        let activeStory = null;
-        let activeNote = null;
-        let activeFriendsSince = null;
-        let isFollowingActiveUser = false;
-        let profileFollowData = { followers: [], following: [] };
 
-        async function loadProfile() {
-            document.getElementById('mutual-friends').style.display = 'none';
-            const fBar = document.getElementById('friendship-bar');
-            if (fBar) { fBar.style.display = 'none'; fBar.innerHTML = ''; }
-            activeFriendsSince = null;
+    <script src="app.js?v=5"></script>
+    <script>
+        const sessionUser = requireAuth(true);
+        const DEFAULT_PFP = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='86' height='86'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
+        let profileData = null;
+
+        function getTargetIdentifier() {
+            const params = new URLSearchParams(window.location.search);
+            const paramUser = params.get('user');
+            if (paramUser) return paramUser.trim();
+            if (sessionUser && sessionUser.email) return sessionUser.email;
+            return '';
+        }
+
+        function openEditModal() {
+            if (!profileData || !profileData.user) return;
+            document.getElementById('edit-display-name').value = getDisplayName(profileData.user, profileData.user.username);
+            document.getElementById('edit-username').value = profileData.user.username || '';
+            document.getElementById('edit-bio').value = profileData.user.bio || '';
+            document.getElementById('edit-pfp-file').value = '';
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-profile-modal').style.display = 'none';
+        }
+
+        async function saveProfileEdit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('save-profile-btn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
 
             try {
-                const viewerParam = loggedUser && !loggedUser.guest ? `?viewer=${encodeURIComponent(loggedUser.email)}` : '';
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetIdentifier)}${viewerParam}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                activeProfileUser = data.user;
-                activeStory = data.story || null;
-                activeNote = data.note || null;
-                isFollowingActiveUser = data.is_following;
-                profileFollowData = {
-                    followers: data.followers || [],
-                    following: data.following || []
-                };
-
-                document.getElementById('username-display').innerHTML = `<span>@${escapeHtml(activeProfileUser.username || activeProfileUser.email)}</span>${renderVerifiedBadge(activeProfileUser.verified)}`;
-                document.getElementById('bio-display').innerText = activeProfileUser.bio || 'No bio provided.';
-                if (activeProfileUser.pfp_url) document.getElementById('pfp-img').src = activeProfileUser.pfp_url;
-
-                document.getElementById('followers-count').innerText = data.followers_count;
-                document.getElementById('following-count').innerText = data.following_count;
-
-                const isOwner = !loggedUser.guest && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
-                document.getElementById('add-story-btn').style.display = isOwner ? 'flex' : 'none';
-
-                const ringContainer = document.getElementById('story-ring-container');
-                ringContainer.classList.remove('has-story', 'has-note');
-                if (activeStory) ringContainer.classList.add('has-story');
-                else if (activeNote) ringContainer.classList.add('has-note');
-
-                const verificationBtnContainer = document.getElementById('verification-btn-container');
-                const controlsEl = document.getElementById('owner-controls');
-                controlsEl.style.display = 'flex';
-
-                if (isOwner) {
-                    applyTheme(activeProfileUser.theme);
-
-                    const isNativeApp = navigator.userAgent.includes("NvaritiaApp");
-                    if (!activeProfileUser.verified && !isNativeApp) {
-                        verificationBtnContainer.innerHTML = `<a href="verify.html" class="btn-app" style="background:#3b82f6; border-color:#3b82f6; font-size:11px; padding:4px 10px; display:inline-block; text-align:center; width:fit-content;">Get Verified</a>`;
-                    } else {
-                        verificationBtnContainer.innerHTML = '';
-                    }
-
-                    controlsEl.innerHTML = `
-                        <button type="button" class="btn-app-secondary" style="flex: 1;" onclick="openModal('edit-modal')">Edit Profile</button>
-                        <button type="button" class="btn-app-secondary" style="flex: 1; border-color: #eab308; background: #fef9c3; color: #111;" onclick="${activeNote ? "openNoteViewer(activeNote, 'Your', true, loadProfile)" : "openNotePicker(() => loadProfile())"}">${activeNote ? '♫ My Note' : '+ Song Note'}</button>
-                        <a href="settings.html" class="btn-app-secondary" style="flex: 1; text-align: center;">Settings</a>
-                    `;
-                    document.getElementById('edit-username').value = activeProfileUser.username || '';
-                    document.getElementById('edit-bio').value = activeProfileUser.bio || '';
-                } else {
-                    verificationBtnContainer.innerHTML = '';
-                    if (data.isBlocked) {
-                        controlsEl.innerHTML = `<button type="button" class="btn-app-secondary" style="width: 100%; padding: 8px;" onclick="unblockUser('${escapeHtml(activeProfileUser.email)}')">Unblock User</button>`;
-                        document.getElementById('posts-container').innerHTML = '<p style="color: #666; padding: 10px;">You have blocked this user.</p>';
-                        return;
-                    } else {
-                        let fStatus = 'none';
-                        let fSince = null;
-                        if (!loggedUser.guest) {
-                            try {
-                                const fr = await fetch(`${WORKER_ORIGIN}/api/friends/status?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
-                                if (fr.ok) {
-                                    const fData = await fr.json();
-                                    fStatus = fData.status;
-                                    fSince = fData.friendsSince || null;
-                                }
-                            } catch (e) {}
-                        }
-                        const followBtnText = isFollowingActiveUser ? 'Unfollow' : 'Follow';
-                        const followBtnStyle = isFollowingActiveUser ? 'background: #fff; color: #111; border: 1px solid #ccc;' : 'background: #000; color: #fff; border: 1px solid #000;';
-
-                        controlsEl.innerHTML = `
-                            <button type="button" id="friend-btn" class="btn-app" style="flex: 1; padding: 8px;">Friend Request</button>
-                            <button type="button" id="follow-btn" class="btn-app" style="flex: 1; padding: 8px; ${followBtnStyle}" onclick="toggleFollow()">${followBtnText}</button>
-                            <button type="button" class="btn-app-secondary" style="padding: 8px; color: #ef4444;" onclick="blockUser('${escapeHtml(activeProfileUser.email)}', '${escapeHtml(activeProfileUser.username || '')}', loadProfile)">Block</button>
-                        `;
-                        setFriendButton(fStatus, fSince);
-                        if (!loggedUser.guest) loadMutualFriends();
-                    }
+                const fd = new FormData();
+                fd.append('displayName', document.getElementById('edit-display-name').value.trim());
+                fd.append('username', document.getElementById('edit-username').value.trim());
+                fd.append('bio', document.getElementById('edit-bio').value.trim());
+                const pfpInput = document.getElementById('edit-pfp-file');
+                if (pfpInput && pfpInput.files && pfpInput.files[0]) {
+                    const compressed = await compressImage(pfpInput.files[0], 512, 0.85);
+                    fd.append('pfp', compressed);
                 }
 
-                document.getElementById('posts-header').innerText = isOwner ? 'My Posts' : `${activeProfileUser.username || 'User'}'s Posts`;
-                const container = document.getElementById('posts-container');
-                await renderPosts(data.posts, container, {
-                    clear: true,
-                    fallbackAuthor: activeProfileUser
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: fd
                 });
-                if (window.NvaritiaVideoPlayer && typeof window.NvaritiaVideoPlayer.renderVideoPlayers === 'function') {
-                    window.NvaritiaVideoPlayer.renderVideoPlayers(container);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+
+                if (data.user) {
+                    setSessionUser({ ...(sessionUser || {}), ...data.user }, data.token);
                 }
-            } catch (e) {
-                document.getElementById('username-display').innerText = 'User not found or offline';
-                document.getElementById('posts-container').innerHTML = '';
+                closeEditModal();
+                showToast('Profile updated');
+                await loadProfilePage();
+            } catch (err) {
+                showToast(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save';
             }
         }
 
-        async function openUsersDrawer(type) {
-            const drawer = document.getElementById('users-drawer');
-            const titleEl = document.getElementById('users-drawer-title');
-            const listEl = document.getElementById('users-drawer-list');
-            titleEl.innerText = type === 'followers' ? 'Followers' : 'Following';
-            drawer.classList.add('open');
-            listEl.innerHTML = '<div class="loading-spinner">Loading...</div>';
-            const emailArray = profileFollowData[type] || [];
-            if (!emailArray.length) { listEl.innerHTML = `<p style="color: #666; text-align: center; padding: 20px; font-size: 13px;">No ${type} yet.</p>`; return; }
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/users/list?emails=${encodeURIComponent(emailArray.join(','))}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                const users = data.users || [];
-                const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-                listEl.innerHTML = users.map(u => `
-                    <a class="user-row-item" href="profile.html?user=${encodeURIComponent(u.username)}">
-                        <img class="user-row-avatar" src="${u.pfp_url || placeholder}">
-                        <div class="user-row-name">@${escapeHtml(u.username)}${renderVerifiedBadge(u.verified)}</div>
-                    </a>
-                `).join('');
-            } catch (err) { listEl.innerHTML = '<p style="color: red; text-align: center; padding: 20px; font-size: 13px;">Failed to load list.</p>'; }
-        }
-
-        function closeUsersDrawer() { document.getElementById('users-drawer').classList.remove('open'); }
-
-        async function toggleFollow() {
-            if (loggedUser.guest) return promptSignup('follow users');
-            const endpoint = isFollowingActiveUser ? '/api/users/unfollow' : '/api/users/follow';
+        async function toggleFollowUser(targetEmail, currentlyFollowing) {
+            if (!sessionUser || !sessionUser.email) return promptSignup('follow users');
+            const endpoint = currentlyFollowing ? '/api/users/unfollow' : '/api/users/follow';
             try {
                 const res = await fetch(`${WORKER_ORIGIN}${endpoint}`, {
                     method: 'POST',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ targetEmail: activeProfileUser.email })
+                    body: JSON.stringify({ targetEmail })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                isFollowingActiveUser = data.is_following;
-                const btn = document.getElementById('follow-btn');
-                if (isFollowingActiveUser) {
-                    btn.innerText = 'Unfollow';
-                    btn.style.background = '#fff'; btn.style.color = '#111'; btn.style.border = '1px solid #ccc';
-                    if (!profileFollowData.followers.includes(loggedUser.email.toLowerCase())) profileFollowData.followers.push(loggedUser.email.toLowerCase());
-                } else {
-                    btn.innerText = 'Follow';
-                    btn.style.background = '#000'; btn.style.color = '#fff'; btn.style.border = '1px solid #000';
-                    profileFollowData.followers = profileFollowData.followers.filter(e => e !== loggedUser.email.toLowerCase());
-                }
-                const countElem = document.getElementById('followers-count');
-                let current = parseInt(countElem.innerText, 10) || 0;
-                countElem.innerText = isFollowingActiveUser ? current + 1 : Math.max(0, current - 1);
-            } catch (err) { showToast(err.message); }
-        }
-
-        function triggerStoryUpload() {
-            if (loggedUser.guest) return promptSignup('post a story');
-            document.getElementById('story-file-input').click();
-        }
-
-        function uploadStoryWithProgress(file, onProgress) {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', `${WORKER_ORIGIN}/api/stories/create`);
-                const headers = authHeaders();
-                for (const key in headers) xhr.setRequestHeader(key, headers[key]);
-                xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
-                xhr.onload = () => {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
-                        else reject(new Error(data.error || 'Failed'));
-                    } catch (err) { reject(new Error('Invalid response')); }
-                };
-                xhr.onerror = () => reject(new Error('Network error'));
-                const formData = new FormData();
-                formData.append('media', file);
-                xhr.send(formData);
-            });
-        }
-
-        async function handleStoryUpload(input) {
-            let file = input.files[0];
-            if (!file) return;
-            if (!file.type.startsWith('video/')) { showToast("Stories must be video files."); input.value = ''; return; }
-            const video = document.createElement('video');
-            video.preload = 'metadata'; video.muted = true; video.playsInline = true;
-            video.onloadedmetadata = async function() {
-                window.URL.revokeObjectURL(video.src);
-                if (video.duration > 30.5) { showToast("Story video cannot exceed 30 seconds."); input.value = ''; return; }
-                const progressBox = document.getElementById('story-upload-progress');
-                const progressBar = document.getElementById('story-upload-bar');
-                const progressText = document.getElementById('story-upload-status-text');
-                progressBox.style.display = 'block'; progressBar.style.width = '0%'; progressText.innerText = 'Uploading story... (0%)';
-                try {
-                    await uploadStoryWithProgress(file, (p) => { progressBar.style.width = p + '%'; progressText.innerText = `Uploading story... (${p}%)`; });
-                    showToast("Story posted successfully!");
-                    loadProfile();
-                } catch (err) { showToast(err.message); }
-                finally { progressBox.style.display = 'none'; input.value = ''; }
-            };
-            video.onerror = function() { window.URL.revokeObjectURL(video.src); showToast("Could not read video."); input.value = ''; };
-            video.src = URL.createObjectURL(file);
-        }
-
-        function openProfileStory() {
-            const isOwner = !loggedUser.guest && activeProfileUser && activeProfileUser.email.toLowerCase() === loggedUser.email.toLowerCase();
-            if (activeStory) {
-                openStory({ mediaUrl: activeStory.media_url, createdAt: activeStory.created_at, ownerEmail: activeProfileUser.email, onDeleted: loadProfile });
-                return;
-            }
-            if (activeNote) {
-                openNoteViewer(activeNote, isOwner ? 'Your' : `@${activeProfileUser.username || activeProfileUser.email}'s`, isOwner, loadProfile);
-                return;
-            }
-            if (isOwner) triggerStoryUpload();
-        }
-
-        function formatFriendshipDate(isoStr) {
-            if (!isoStr) return 'Recently';
-            let s = String(isoStr).trim();
-            if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
-            const d = new Date(s);
-            if (isNaN(d.getTime())) return 'Recently';
-            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-
-        function formatFriendshipDuration(isoStr) {
-            if (!isoStr) return '0 days';
-            let s = String(isoStr).trim();
-            if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
-            const start = Date.parse(s);
-            if (isNaN(start)) return '0 days';
-            const diffMs = Math.max(0, Date.now() - start);
-            const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            if (totalDays < 1) {
-                const hours = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
-                return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-            }
-            const years = Math.floor(totalDays / 365);
-            const remAfterYears = totalDays % 365;
-            const months = Math.floor(remAfterYears / 30);
-            const days = remAfterYears % 30;
-            const parts = [];
-            if (years) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
-            if (months) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
-            if (days || !parts.length) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
-            return parts.slice(0, 2).join(', ');
-        }
-
-        function animateCountUp(el, target, duration = 900) {
-            if (!el) return;
-            const endVal = Math.max(0, Number(target) || 0);
-            if (endVal === 0) {
-                el.innerText = '0';
-                return;
-            }
-            const startTime = performance.now();
-            function tick(now) {
-                const progress = Math.min(1, (now - startTime) / duration);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                el.innerText = Math.round(eased * endVal).toLocaleString();
-                if (progress < 1) requestAnimationFrame(tick);
-            }
-            requestAnimationFrame(tick);
-        }
-
-        function setFriendButton(status, friendsSince = null) {
-            const btn = document.getElementById('friend-btn');
-            const fBar = document.getElementById('friendship-bar');
-            if (!btn || !activeProfileUser) return;
-            btn.disabled = false; btn.style.opacity = '1';
-
-            if (status === 'friends') {
-                activeFriendsSince = friendsSince || activeFriendsSince || new Date().toISOString();
-                btn.innerText = 'Message';
-                btn.onclick = () => { location.href = `messages.html?user=${encodeURIComponent(activeProfileUser.username || activeProfileUser.email)}`; };
-
-                if (fBar) {
-                    fBar.innerHTML = `
-                        <span class="friendship-bar-text">Friends since ${escapeHtml(formatFriendshipDate(activeFriendsSince))}</span>
-                        <button type="button" class="friendship-view-btn" onclick="openFriendshipDrawer()">
-                            <span>View</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                        </button>
-                    `;
-                    fBar.style.display = 'flex';
-                }
-            } else {
-                activeFriendsSince = null;
-                if (fBar) { fBar.style.display = 'none'; fBar.innerHTML = ''; }
-                if (status === 'sent') {
-                    btn.innerText = 'Request Sent'; btn.disabled = true; btn.style.opacity = '0.6'; btn.onclick = null;
-                } else if (status === 'received') {
-                    btn.innerText = 'Respond to Request'; btn.onclick = () => { location.href = 'messages.html'; };
-                } else {
-                    btn.innerText = 'Friend Request'; btn.onclick = sendFriendRequest;
-                }
-            }
-        }
-
-        async function openFriendshipDrawer() {
-            if (!activeProfileUser || loggedUser.guest) return;
-            const drawer = document.getElementById('friendship-drawer');
-            const body = document.getElementById('friendship-drawer-body');
-            if (!drawer || !body) return;
-
-            const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='122' height='122'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-            const myPfp = loggedUser.pfp_url || defaultAvatar;
-            const friendPfp = activeProfileUser.pfp_url || defaultAvatar;
-            const initialDateLabel = formatFriendshipDate(activeFriendsSince);
-
-            body.innerHTML = `
-                <div class="friendship-pfp-duo">
-                    <img class="friendship-pfp-large friendship-pfp-left" src="${myPfp}" alt="Your profile picture">
-                    <div class="friendship-amp-badge">&amp;</div>
-                    <img class="friendship-pfp-large friendship-pfp-right" src="${friendPfp}" alt="Friend profile picture">
-                </div>
-                <div class="friendship-since-heading" id="fs-since-label">Friends since ${escapeHtml(initialDateLabel)}</div>
-                <div class="friendship-stats-stack">
-                    <div class="friendship-stat-card" id="fs-card-messages">
-                        <div class="friendship-stat-number" id="fs-messages-count">0</div>
-                        <div class="friendship-stat-label">Messages exchanged</div>
-                    </div>
-                    <div class="friendship-stat-card" id="fs-card-posts">
-                        <div class="friendship-stat-number" id="fs-posts-count">0</div>
-                        <div class="friendship-stat-label">Posts shared in chat</div>
-                    </div>
-                    <div class="friendship-stat-card" id="fs-card-duration">
-                        <div class="friendship-stat-number" id="fs-duration-text" style="font-size: 20px;">${escapeHtml(formatFriendshipDuration(activeFriendsSince))}</div>
-                        <div class="friendship-stat-label">Friendship duration</div>
-                    </div>
-                </div>
-            `;
-
-            requestAnimationFrame(() => drawer.classList.add('open'));
-
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/friends/friendship-details?target=${encodeURIComponent(activeProfileUser.email)}`, {
-                    headers: authHeaders()
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to load friendship details');
-
-                const sinceIso = data.friendsSince || activeFriendsSince;
-                activeFriendsSince = sinceIso;
-
-                const sinceEl = document.getElementById('fs-since-label');
-                const durEl = document.getElementById('fs-duration-text');
-                if (sinceEl) sinceEl.innerText = `Friends since ${formatFriendshipDate(sinceIso)}`;
-                if (durEl) durEl.innerText = formatFriendshipDuration(sinceIso);
-
-                const c1 = document.getElementById('fs-card-messages');
-                const c2 = document.getElementById('fs-card-posts');
-                const c3 = document.getElementById('fs-card-duration');
-
-                setTimeout(() => {
-                    if (c1) c1.classList.add('visible');
-                    animateCountUp(document.getElementById('fs-messages-count'), data.messagesCount || 0, 900);
-                }, 80);
-
-                setTimeout(() => {
-                    if (c2) c2.classList.add('visible');
-                    animateCountUp(document.getElementById('fs-posts-count'), data.sharedPostsCount || 0, 900);
-                }, 220);
-
-                setTimeout(() => {
-                    if (c3) c3.classList.add('visible');
-                }, 360);
+                if (!res.ok) throw new Error(data.error || 'Failed to update follow status');
+                await loadProfilePage();
             } catch (err) {
-                ['fs-card-messages', 'fs-card-posts', 'fs-card-duration'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('visible');
-                });
                 showToast(err.message);
             }
         }
 
-        function closeFriendshipDrawer() {
-            const drawer = document.getElementById('friendship-drawer');
-            if (drawer) drawer.classList.remove('open');
-        }
-
-        async function sendFriendRequest() {
-            if (loggedUser.guest) return promptSignup('send friend requests');
-            const btn = document.getElementById('friend-btn');
-            btn.disabled = true; btn.style.opacity = '0.6';
+        async function sendFriendReq(addresseeEmail) {
+            if (!sessionUser || !sessionUser.email) return promptSignup('add friends');
             try {
                 const res = await fetch(`${WORKER_ORIGIN}/api/friends/request`, {
                     method: 'POST',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ addresseeEmail: activeProfileUser.email })
+                    body: JSON.stringify({ addresseeEmail })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                setFriendButton(data.status, data.friendsSince || new Date().toISOString());
-                if (data.status === 'friends') loadMutualFriends();
-            } catch (err) { setFriendButton('none'); showToast(err.message); }
-        }
-
-        async function loadMutualFriends() {
-            const box = document.getElementById('mutual-friends');
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/friends/mutual?viewer=${encodeURIComponent(loggedUser.email)}&target=${encodeURIComponent(activeProfileUser.email)}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                const list = data.mutual || [];
-                const placeholder = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect width='100%' height='100%' fill='%23f0f0f0'/></svg>";
-                box.innerHTML = `
-                    <div class="panel">
-                        <div class="panel-header">Mutual Friends (${list.length})</div>
-                        <div class="panel-content">
-                            ${list.length ? `<div class="mutual-row">${list.map(f => `
-                                <a class="mutual-item" href="profile.html?user=${encodeURIComponent(f.username)}">
-                                    <img class="mutual-pfp" src="${f.pfp_url || placeholder}">
-                                    <span class="mutual-name">${escapeHtml(f.username)}</span>
-                                </a>`).join('')}</div>` : '<span style="color: #666;">No mutual friends yet.</span>'}
-                        </div>
-                    </div>
-                `;
-                box.style.display = 'block';
-            } catch (e) { box.style.display = 'none'; }
-        }
-
-        async function unblockUser(targetEmail) {
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/users/unblock`, {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ blockedEmail: targetEmail })
-                });
-                if (!res.ok) throw new Error('Failed');
-                showToast("User unblocked");
-                loadProfile();
-            } catch (err) { showToast(err.message); }
-        }
-
-        async function saveProfile(e) {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('username', document.getElementById('edit-username').value.trim());
-            formData.append('bio', document.getElementById('edit-bio').value.trim());
-            const file = document.getElementById('edit-pfp').files[0];
-            if (file) formData.append('pfp', typeof compressImage === 'function' ? await compressImage(file, 512) : file);
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/profile/update`, { method: 'POST', headers: authHeaders(), body: formData });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                setSessionUser(data.user, data.token);
-                closeModal('edit-modal');
-                window.location.href = `profile.html?user=${encodeURIComponent(data.user.username || data.user.email)}`;
+                if (!res.ok) throw new Error(data.error || 'Failed to send request');
+                showToast(data.status === 'friends' ? 'You are now friends' : 'Friend request sent');
+                await loadProfilePage();
             } catch (err) {
-                const el = document.getElementById('edit-error');
-                el.innerText = err.message; el.style.display = 'block';
+                showToast(err.message);
             }
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        if (!guestNoTarget) loadProfile();
+        async function openFollowListModal(title, emailList) {
+            const modal = document.getElementById('follow-list-modal');
+            const body = document.getElementById('follow-list-body');
+            document.getElementById('follow-list-title').innerText = title;
+            body.innerHTML = '<div style="text-align:center;padding:12px;color:#666;">Loading...</div>';
+            modal.style.display = 'flex';
+
+            if (!Array.isArray(emailList) || !emailList.length) {
+                body.innerHTML = `<p style="text-align:center;color:#666;padding:12px;">No ${title.toLowerCase()} yet.</p>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/users/list?emails=${encodeURIComponent(emailList.join(','))}`);
+                const data = await res.json();
+                const users = data.users || [];
+                body.innerHTML = users.map(u => {
+                    const name = getDisplayName(u, u.username);
+                    const url = `profile.html?user=${encodeURIComponent(u.username)}`;
+                    return `
+                        <div class="follow-list-row" style="cursor:pointer;" onclick="window.location.href='${url}'">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <img class="follow-list-avatar" src="${u.pfp_url || DEFAULT_PFP}" alt="">
+                                <div>
+                                    <div style="font-weight:700;">${escapeHtml(name)}${renderVerifiedBadge(u.verified)}</div>
+                                    <div style="color:#666;font-size:11px;">@${escapeHtml(u.username)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') || `<p style="text-align:center;color:#666;padding:12px;">No ${title.toLowerCase()} yet.</p>`;
+            } catch (err) {
+                body.innerHTML = `<p style="text-align:center;color:#ef4444;padding:12px;">Failed to load list.</p>`;
+            }
+        }
+
+        function closeFollowListModal() {
+            document.getElementById('follow-list-modal').style.display = 'none';
+        }
+
+        async function loadProfilePage() {
+            const targetId = getTargetIdentifier();
+            if (!targetId) {
+                document.getElementById('profile-display-name').innerText = 'Guest';
+                document.getElementById('profile-posts').innerHTML = '<p style="color:#666;padding:12px;">Sign in to view your profile.</p>';
+                return;
+            }
+
+            const viewerParam = sessionUser && sessionUser.email ? `?viewer=${encodeURIComponent(sessionUser.email)}` : '';
+            try {
+                const res = await fetch(`${WORKER_ORIGIN}/api/profile/${encodeURIComponent(targetId)}${viewerParam}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'User not found');
+
+                profileData = data;
+                const u = data.user;
+                const displayName = getDisplayName(u, u.username);
+                const isOwn = !!(sessionUser && sessionUser.email && u.email.toLowerCase() === sessionUser.email.toLowerCase());
+
+                document.getElementById('profile-display-name').innerText = displayName;
+                document.getElementById('profile-verified-badge').innerHTML = renderVerifiedBadge(u.verified);
+                document.getElementById('profile-username-sub').innerText = `@${u.username}`;
+                document.getElementById('profile-bio').innerText = u.bio || '';
+                document.getElementById('profile-pfp').src = u.pfp_url || DEFAULT_PFP;
+
+                const ring = document.getElementById('story-ring');
+                ring.classList.toggle('has-story', !!data.story);
+
+                const followersArr = data.followers || [];
+                const followingArr = data.following || [];
+                document.getElementById('profile-stats').innerHTML = `
+                    <span class="stat-link" onclick='openFollowListModal("Followers", ${JSON.stringify(followersArr)})'><strong>${data.followers_count || 0}</strong> Followers</span>
+                    <span class="stat-link" onclick='openFollowListModal("Following", ${JSON.stringify(followingArr)})'><strong>${data.following_count || 0}</strong> Following</span>
+                `;
+
+                const actionsEl = document.getElementById('profile-actions');
+                const headerActionsEl = document.getElementById('header-right-actions');
+
+                if (isOwn) {
+                    actionsEl.innerHTML = `<button type="button" class="btn-app" onclick="openEditModal()">Edit Profile</button>`;
+                    headerActionsEl.innerHTML = `<button type="button" class="btn-app-secondary" onclick="logout()">Logout</button>`;
+                } else {
+                    headerActionsEl.innerHTML = '';
+                    let friendBtnHtml = `<button type="button" class="btn-app-secondary" onclick="sendFriendReq('${escapeHtml(u.email)}')">Add Friend</button>`;
+                    if (sessionUser && sessionUser.email) {
+                        try {
+                            const fRes = await fetch(`${WORKER_ORIGIN}/api/friends/status?viewer=${encodeURIComponent(sessionUser.email)}&target=${encodeURIComponent(u.email)}`);
+                            if (fRes.ok) {
+                                const fData = await fRes.json();
+                                if (fData.status === 'friends') friendBtnHtml = `<button type="button" class="btn-app-secondary" onclick="window.location.href='messages.html?peer=${encodeURIComponent(u.email)}'">Message</button>`;
+                                else if (fData.status === 'sent') friendBtnHtml = `<button type="button" class="btn-app-secondary" disabled>Request Sent</button>`;
+                            }
+                        } catch (e) {}
+                    }
+                    actionsEl.innerHTML = `
+                        <button type="button" class="btn-app" onclick="toggleFollowUser('${escapeHtml(u.email)}', ${!!data.is_following})">${data.is_following ? 'Following' : 'Follow'}</button>
+                        ${friendBtnHtml}
+                    `;
+                }
+
+                await renderPosts(data.posts || [], document.getElementById('profile-posts'), { fallbackAuthor: u });
+            } catch (err) {
+                document.getElementById('profile-display-name').innerText = 'Not Found';
+                document.getElementById('profile-posts').innerHTML = `<p style="color:#ef4444;padding:12px;">${escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        loadProfilePage();
     </script>
 </body>
 </html>
