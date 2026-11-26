@@ -267,6 +267,45 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
+
+        /* Half-screen bottom sheet override for comments drawer */
+        #comments-drawer.comments-drawer {
+            top: auto !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: -55dvh !important;
+            width: 100% !important;
+            height: 50dvh !important;
+            max-height: 50dvh !important;
+            border-radius: 16px 16px 0 0;
+            border-top: 1px solid #d4d4d8;
+            box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
+            transition: bottom 0.26s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            z-index: 2100;
+        }
+        #comments-drawer.comments-drawer.open {
+            bottom: 0 !important;
+            right: 0 !important;
+        }
+        html.dark #comments-drawer.comments-drawer {
+            border-top-color: #2f2f35;
+        }
+        #comments-drawer .drawer-header {
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+        #comments-drawer .drawer-body {
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+        }
+        #comments-drawer .comments-container {
+            padding: 10px;
+            gap: 10px;
+            font-size: 14px;
+        }
+        #comments-drawer #comment-input {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -305,10 +344,101 @@
         const loggedUser = typeof requireAuth === 'function' ? requireAuth(true) : { guest: true };
         const feedEl = document.getElementById('reels-feed');
 
+        let userHasUnmuted = false;
+        let activeWatch = null;
+
         function checkIsVideo(url) {
             if (!url || typeof url !== 'string') return false;
             if (typeof isVideoMediaUrl === 'function' && isVideoMediaUrl(url)) return true;
             return /\.(mp4|webm|mov|m4v|ogg|3gp)(\?|#|$)/i.test(url) || url.startsWith('data:video/');
+        }
+
+        function logReelWatch(postId, durationMs, completed) {
+            if (!postId || durationMs <= 0 && !completed) return;
+            const viewerEmail = (loggedUser && !loggedUser.guest && loggedUser.email) ? loggedUser.email : '';
+            fetch(`${WORKER_ORIGIN}/api/posts/view`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    email: viewerEmail,
+                    postId,
+                    durationMs: Math.round(durationMs),
+                    completed: Boolean(completed)
+                })
+            }).catch(() => {});
+        }
+
+        function flushActiveWatch(completed = false) {
+            if (!activeWatch) return;
+            const elapsed = Math.max(0, performance.now() - activeWatch.startedAt);
+            logReelWatch(activeWatch.postId, elapsed, completed);
+            activeWatch = null;
+        }
+
+        function syncMuteButtonUi(slide, muted) {
+            if (!slide) return;
+            const btn = slide.querySelector('.mute-toggle-btn');
+            const label = slide.querySelector('.mute-status-label');
+            if (btn) btn.dataset.muted = muted ? '1' : '0';
+            if (label) label.textContent = muted ? 'Muted' : 'Sound';
+            if (btn) {
+                btn.innerHTML = muted
+                    ? `<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`
+                    : `<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+            }
+        }
+
+        function toggleReelMute(slideId) {
+            const slide = feedEl.querySelector(`.reel-item[data-reel-idx="${slideId}"]`);
+            const vid = slide && slide.querySelector('.nv-video-el');
+            if (!vid) return;
+            const nextMuted = !vid.muted;
+            vid.muted = nextMuted;
+            userHasUnmuted = !nextMuted;
+            syncMuteButtonUi(slide, nextMuted);
+            if (!nextMuted && vid.paused) {
+                vid.play().catch(() => {});
+            }
+        }
+
+        async function playReelWithSound(vid, slide) {
+            if (!vid) return;
+            document.querySelectorAll('.nv-video-el').forEach(other => {
+                if (other !== vid && !other.paused) other.pause();
+            });
+
+            const wantMuted = !userHasUnmuted;
+            vid.muted = wantMuted;
+            syncMuteButtonUi(slide, wantMuted);
+
+            try {
+                await vid.play();
+            } catch (err) {
+                // Browser autoplay policy blocked unmuted playback before user gesture: fallback to muted
+                if (!vid.muted) {
+                    vid.muted = true;
+                    syncMuteButtonUi(slide, true);
+                    await vid.play().catch(() => {});
+                }
+            }
+        }
+
+        function unlockAudioOnFirstGesture() {
+            const unlock = () => {
+                userHasUnmuted = true;
+                const activeVid = feedEl.querySelector('.reel-item.is-active .nv-video-el');
+                const activeSlide = activeVid && activeVid.closest('.reel-item');
+                if (activeVid) {
+                    activeVid.muted = false;
+                    activeVid.volume = 1;
+                    syncMuteButtonUi(activeSlide, false);
+                    if (activeVid.paused) activeVid.play().catch(() => {});
+                }
+                window.removeEventListener('pointerdown', unlock);
+                window.removeEventListener('keydown', unlock);
+            };
+            window.addEventListener('pointerdown', unlock, { once: true });
+            window.addEventListener('keydown', unlock, { once: true });
         }
 
         async function fetchFeedVideos() {
@@ -348,13 +478,26 @@
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const vid = entry.target.querySelector('.nv-video-el');
+                    const item = entry.target;
+                    const vid = item.querySelector('.nv-video-el');
+                    const postId = item.getAttribute('data-post-id');
                     if (!vid) return;
+
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
-                        vid.muted = true;
-                        vid.play().catch(() => {});
-                    } else if (!vid.paused) {
-                        vid.pause();
+                        item.classList.add('is-active');
+                        if (!activeWatch || activeWatch.postId !== postId) {
+                            flushActiveWatch(false);
+                            activeWatch = { postId, startedAt: performance.now() };
+                        }
+                        playReelWithSound(vid, item);
+                    } else {
+                        item.classList.remove('is-active');
+                        if (activeWatch && activeWatch.postId === postId) {
+                            flushActiveWatch(false);
+                        }
+                        if (!vid.paused) {
+                            vid.pause();
+                        }
                     }
                 });
             }, { threshold: [0.65] });
@@ -410,10 +553,18 @@
                     const slide = document.createElement('section');
                     slide.className = 'reel-item post-box';
                     slide.setAttribute('data-post-id', String(postId ?? i));
+                    slide.setAttribute('data-reel-idx', String(i));
 
                     const mediaLayer = document.createElement('div');
                     mediaLayer.className = 'reel-media-layer';
                     mediaLayer.innerHTML = renderPostMediaHtml(videoUrl);
+
+                    const vid = mediaLayer.querySelector('.nv-video-el');
+                    if (vid) {
+                        vid.addEventListener('ended', () => {
+                            flushActiveWatch(true);
+                        });
+                    }
 
                     const profileUrl = `profile.html?user=${encodeURIComponent(username)}`;
                     const overlay = document.createElement('div');
@@ -440,6 +591,12 @@
                                 <div class="side-count comments-count">${commentsCount}</div>
                             </div>
                             <div class="side-action-group">
+                                <button type="button" class="side-btn mute-toggle-btn" data-muted="1" aria-label="Toggle sound" onclick="event.stopPropagation(); toggleReelMute('${i}')">
+                                    <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                                </button>
+                                <div class="side-count mute-status-label">Muted</div>
+                            </div>
+                            <div class="side-action-group">
                                 <button type="button" class="side-btn" aria-label="Share reel" onclick="event.stopPropagation(); sharePost('${escapeHtml(String(postId))}')">
                                     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                                 </button>
@@ -456,6 +613,7 @@
                 if (typeof bindCustomVideoPlayers === 'function') {
                     bindCustomVideoPlayers(feedEl);
                 }
+                unlockAudioOnFirstGesture();
                 setupReelObserver();
             } catch (err) {
                 renderState(
@@ -466,6 +624,7 @@
             }
         }
 
+        window.addEventListener('pagehide', () => flushActiveWatch(false));
         initReels();
     </script>
 </body>
