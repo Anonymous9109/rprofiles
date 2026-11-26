@@ -11,6 +11,8 @@
         header { border-bottom: 1px solid #e5e5e5; height: 48px; top: 0; }
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
+        .header-icon-btn { background: none; border: none; color: #111; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; text-decoration: none; transition: background 0.15s ease; }
+        .header-icon-btn:hover { background: #f4f4f5; }
         .wrapper { width: 100%; max-width: 680px; margin: 0 auto; padding: 16px; flex-grow: 1; }
         .footer-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; gap: 2px; background: none; border: none; cursor: pointer; }
         .footer-tab.active { color: #000; }
@@ -138,6 +140,8 @@
         html.dark .profile-display-name { color: #fff; }
         html.dark .profile-username-sub { color: #9ca3af; }
         html.dark .profile-stats-row { color: #ccc; }
+        html.dark .header-icon-btn { color: #fff; }
+        html.dark .header-icon-btn:hover { background: #262626; }
     </style>
 </head>
 <body>
@@ -418,7 +422,11 @@
 
                 if (isOwn) {
                     actionsEl.innerHTML = `<button type="button" class="btn-app" onclick="openEditModal()">Edit Profile</button>`;
-                    headerActionsEl.innerHTML = `<button type="button" class="btn-app-secondary" onclick="logout()">Logout</button>`;
+                    headerActionsEl.innerHTML = `
+                        <a href="settings.html" class="header-icon-btn" aria-label="Settings" title="Settings">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        </a>
+                    `;
                 } else {
                     headerActionsEl.innerHTML = '';
                     let friendBtnHtml = `<button type="button" class="btn-app-secondary" onclick="sendFriendReq('${escapeHtml(u.email)}')">Add Friend</button>`;
