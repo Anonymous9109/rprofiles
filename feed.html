@@ -13,6 +13,10 @@
         footer { border-top: 1px solid #e5e5e5; height: 50px; bottom: 0; display: flex; align-items: center; justify-content: space-around; }
         .brand { font-size: 18px; font-weight: bold; color: #111; text-decoration: none; }
 
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .header-story-btn { background: none; border: 1px solid #d4d4d8; color: #111; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        html.dark .header-story-btn { border-color: #3f3f46; color: #eee; }
+
         .notif-icon-btn { position: relative; background: none; border: none; color: #111; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: background 0.15s ease; }
         .notif-icon-btn:hover { background: #f4f4f5; }
         .notif-badge { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: none; }
@@ -106,12 +110,17 @@
     <header>
         <div class="header-top">
             <a href="feed.html" class="brand">Nvaritia</a>
-            <button type="button" class="notif-icon-btn" onclick="openActivityDrawer()" aria-label="Activity and Notifications">
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                <span id="notif-badge" class="notif-badge"></span>
-            </button>
+            <div class="header-actions">
+                <button type="button" class="header-story-btn" onclick="triggerFeedStoryUpload()" title="Post Story" aria-label="Post Story">+</button>
+                <button type="button" class="notif-icon-btn" onclick="openActivityDrawer()" aria-label="Activity and Notifications">
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span id="notif-badge" class="notif-badge"></span>
+                </button>
+            </div>
         </div>
     </header>
+
+    <input type="file" id="feed-story-file-input" accept="image/*,video/*" style="display:none;" onchange="handleFeedStoryFile(this)">
 
     <div class="wrapper">
         <div id="feed-container"><div class="loading-spinner">Loading posts...</div></div>
@@ -191,6 +200,23 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        function triggerFeedStoryUpload() {
+            const user = getSessionUser();
+            if (!user) return promptSignup('post stories');
+            const input = document.getElementById('feed-story-file-input');
+            if (input) input.click();
+        }
+
+        async function handleFeedStoryFile(input) {
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            input.value = '';
+            if (typeof uploadStoryFile === 'function') {
+                await uploadStoryFile(file);
+                await loadFeed();
+            }
         }
 
         function getSeenActivityKeys() {
@@ -498,7 +524,7 @@
                         const profileUrl = `profile.html?user=${encodeURIComponent(u.username)}`;
                         const userDisplayName = getDisplayName(u, u.username);
                         const avatarClickAttr = u.has_story
-                            ? `onclick="event.stopPropagation(); viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}')"`
+                            ? `onclick="event.stopPropagation(); window.viewUserStory('${escapeHtml(u.email)}', '${escapeHtml(u.story_created_at || '')}', { username: '${escapeHtml(u.username || '')}', display_name: '${escapeHtml(userDisplayName)}', pfp_url: '${escapeHtml(u.pfp_url || '')}' })"`
                             : `onclick="goToProfile('${profileUrl}', event)"`;
 
                         const uEl = document.createElement('div');
@@ -526,30 +552,6 @@
                 }
             } catch (e) {
                 container.innerHTML = '<p style="color: #666; padding: 12px; text-align: center;">Search unavailable offline.</p>';
-            }
-        }
-
-        async function viewUserStory(email, createdAt) {
-            if (!email) return;
-            try {
-                const res = await fetch(`${WORKER_ORIGIN}/api/stories/get?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-                let data = null;
-                try { data = await res.json(); } catch (e) { data = null; }
-
-                if (res.ok && data && data.story && data.story.media_url) {
-                    const viewer = typeof getSessionUser === 'function' ? getSessionUser() : null;
-                    const isOwn = !!(viewer && viewer.email && viewer.email.toLowerCase() === String(email).trim().toLowerCase());
-                    showStoryInPlayer(data.story.media_url, {
-                        canDelete: isOwn,
-                        createdAt: data.story.created_at || createdAt || '',
-                        ownerEmail: email.trim().toLowerCase(),
-                        onDeleted: loadFeed
-                    });
-                } else {
-                    showToast((data && data.error) ? data.error : "No active story found.");
-                }
-            } catch (err) {
-                showToast("Failed to load story: " + (err && err.message ? err.message : "network error"));
             }
         }
 
